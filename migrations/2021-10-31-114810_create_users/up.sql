@@ -1,0 +1,30 @@
+-- Storing user information
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    usr TEXT NOT NULL,
+    pwd TEXT NOT NULL, -- Will be hashed
+    lckdwn timestamp with time zone DEFAULT (now() at time zone 'utc'), -- If this is a date in the future, this user should get 429 until then.
+    crt timestamp with time zone DEFAULT (now() at time zone 'utc'),
+    last_accessed timestamp with time zone DEFAULT (now() at time zone 'utc')
+);
+
+-- Stores requests to/from this database. Used for rate limiting, and logging.
+CREATE TABLE reqs (
+    id SERIAL PRIMARY KEY,
+    usr_id SERIAL NOT NULL,
+    crt timestamp with time zone DEFAULT (now() at time zone 'utc'),
+    word TEXT NOT NULL,
+    lang TEXT NOT NULL,
+    speed REAL NOT NULL,
+    ip_addr BYTEA NOT NULL,
+    CONSTRAINT fk_users FOREIGN KEY(usr_id) REFERENCES users(id)
+);
+
+-- A smart-cache, useful for caching the most popular 1000 requests so we don't have to regenerate them.
+CREATE TABLE cache (
+    id SERIAL PRIMARY KEY,
+    crt timestamp with time zone DEFAULT (now() at time zone 'utc'),
+    nme TEXT NOT NULL,
+    word TEXT NOT NULL,
+    lang TEXT NOT NULL
+)
