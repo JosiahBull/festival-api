@@ -23,16 +23,16 @@ jobs:
                 override: true
                 components: rustfmt, rust-src
 
-            - name: Build Documentation
+            - name: Build
               uses: actions-rs/cargo@v1
               with:
                 command: doc
                 args: --all --no-deps
             
-            - name: Deploy Documentation
+            - name: Deploy
               uses: peaceiris/actions-gh-pages@v3
               with:
-                deploy_key: ${{ secrets.GITHUB_TOKEN }}
+                github_token: ${{ secrets.GITHUB_TOKEN }}
                 publish_branch: gh-pages
                 publish_dir: ./target/doc
                 keep_files: true
