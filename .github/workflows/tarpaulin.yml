@@ -1,5 +1,8 @@
 name: tarpaulin
-on: push
+on:
+  pull_request:
+    branches: [ main ]
+
 jobs:
   check:
     name: Rust project

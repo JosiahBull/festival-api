@@ -2,9 +2,6 @@ use rocket::fs::NamedFile;
 
 #[macro_use] extern crate rocket;
 
-mod common;
-mod database;
-
 const API_NAME: &str = "Jo";
 
 #[get("/")]
