@@ -1,6 +1,7 @@
 [![codecov](https://codecov.io/gh/JosiahBull/festival-api/branch/main/graph/badge.svg?token=ISOL8A7QVA)](https://codecov.io/gh/JosiahBull/festival-api)
 ![Build](https://github.com/JosiahBull/festival-api/actions/workflows/test.yml/badge.svg)
-[![Docs](https://github.com/JosiahBull/festival-api/actions/workflows/docs.yml/badge.svg)](https://josiahbull.github.io/festival-api/)
+[![Docs](https://github.com/JosiahBull/festival-api/actions/workflows/docs.yml/badge.svg)](https://josiahbull.github.io/festival-api/festival_api/index.html)
+<!-- TODO - will eventually link to OAS docs, and use an OAS contract testing system to ensure the api is correct. [![OAS](https://github.com/JosiahBull/festival-api/actions/workflows/oas.yml/badge.svg)](https://josiahbull.github.io/festival-api/) -->
 # Festival to Wav API
 A simple REST api which takes a request body of the form:
 ```json
