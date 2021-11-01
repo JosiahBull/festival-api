@@ -1,11 +1,11 @@
 //! This module handles the generation of responses for the api.
-//! 
-//! 
+//!
+//!
 //! Intended usage is to create a ResponseBuilder, then call.build on it
-//! 
+//!
 //! **Example:**
 //! ```rust
-//! 
+//!
 //! #[get("/")]
 //! fn my_endpoint<'a>() -> Response<'a> {
 //!     //...processing...//
@@ -15,15 +15,15 @@
 //!         status: rocket::http::Status::Ok
 //!     }.build()
 //! }
-//! 
+//!
 //! ```
-//! 
+//!
 //! This is a very helpful way to easily return responses to the user. Note that any type which implements Respondable
 //! may be passed into the ResponseBuilder. This trait may also be implemented for your own types.
-//! 
+//!
 //! The trait must take a reference to your type, and then return a reference to a string which will be returned in
 //! the body of the request to the user.
-//! 
+//!
 //! **Example:**
 //! ```rust
 //! impl Respondable for String {
@@ -33,7 +33,7 @@
 //!     fn transform_ct<'b>(&'b self) -> ContentType {
 //!         ContentType::TextPlain
 //!     }
-//! } 
+//! }
 //! ```
 
 use rocket::http::Status;
@@ -45,11 +45,12 @@ use std::io::Cursor;
 pub enum ContentType {
     JsonApplication,
     TextPlain,
+    #[allow(dead_code)]
     AudioMpeg(String),
 }
 
 /// Represents a response from the api, the content-type and content-disposition headers are automatically generated.
-/// This is automatically generated from calling `.build()` on a `ResponseBuilder`. Do not attempt to generate this 
+/// This is automatically generated from calling `.build()` on a `ResponseBuilder`. Do not attempt to generate this
 /// manually.
 #[derive(Debug)]
 pub struct Response {
@@ -74,26 +75,22 @@ where
 {
     pub fn build(self) -> Response {
         let c_type = self.data.transform_ct();
-        return match self.data.transform_body() {
-            Ok(body) => {
-                Response {
-                    c_type,
-                    body,
-                    status: self.status,
-                }       
+        match self.data.transform_body() {
+            Ok(body) => Response {
+                c_type,
+                body,
+                status: self.status,
             },
-            Err(body) => {
-                Response {
-                    c_type: ContentType::TextPlain,
-                    body,
-                    status: Status::InternalServerError,
-                }
+            Err(body) => Response {
+                c_type: ContentType::TextPlain,
+                body,
+                status: Status::InternalServerError,
             },
         }
     }
 }
 
-impl<T> Default for ResponseBuilder<T> 
+impl<T> Default for ResponseBuilder<T>
 where
     T: Respondable + Default,
 {
@@ -119,7 +116,10 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
 
         //Generate content disposition header
         let c_disp = match self.c_type {
-            ContentType::AudioMpeg(s) => rocket::http::Header::new("Content-Disposition", format!("attachment; filename=\"{}\"", s)),
+            ContentType::AudioMpeg(s) => rocket::http::Header::new(
+                "Content-Disposition",
+                format!("attachment; filename=\"{}\"", s),
+            ),
             _ => rocket::http::Header::new("Content-Disposition", "inline"),
         };
 
@@ -138,14 +138,14 @@ pub trait Respondable {
     /// Generate the body of this response
     fn transform_body(self) -> Result<String, String>;
     /// Generate the content-type of this response.
-    fn transform_ct<'a>(&'a self) -> ContentType;
+    fn transform_ct(&self) -> ContentType;
 }
 
 impl<'a> Respondable for &'a str {
     fn transform_body(self) -> Result<String, String> {
         Ok(self.to_string())
     }
-    fn transform_ct<'b>(&'b self) -> ContentType {
+    fn transform_ct(&self) -> ContentType {
         ContentType::TextPlain
     }
 }
@@ -154,7 +154,7 @@ impl Respondable for String {
     fn transform_body(self) -> Result<String, String> {
         Ok(self)
     }
-    fn transform_ct<'b>(&'b self) -> ContentType {
+    fn transform_ct(&self) -> ContentType {
         ContentType::TextPlain
     }
 }
@@ -164,7 +164,7 @@ impl Respondable for crate::models::User {
         serde_json::to_string(&self).map_err(|e| e.to_string())
     }
 
-    fn transform_ct<'a>(&'a self) -> ContentType {
+    fn transform_ct(&self) -> ContentType {
         ContentType::JsonApplication
     }
 }

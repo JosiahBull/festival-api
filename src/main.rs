@@ -1,21 +1,21 @@
-#[rustfmt::skip] 
+#[rustfmt::skip]
 mod schema;
 mod common;
 mod models;
 mod response;
 
-#[macro_use] 
+#[macro_use]
 extern crate rocket;
-#[macro_use] 
+#[macro_use]
 extern crate diesel;
 
 use std::env::var;
 
-use rocket::{http::Status, serde::json::Json};
-use lazy_static::lazy_static;
-use models::{UserCredentials};
-use response::{Response, ResponseBuilder};
 use diesel::prelude::*;
+use lazy_static::lazy_static;
+use models::UserCredentials;
+use response::{Response, ResponseBuilder};
+use rocket::{http::Status, serde::json::Json};
 
 /// Database connection
 #[rocket_sync_db_pools::database("postgres_database")]
@@ -25,11 +25,14 @@ const API_NAME: &str = "Jo";
 
 lazy_static! {
     static ref JWT_SECRET: String = var("JWT_SECRET").expect("Env var JWT_SECRET not set!");
-    static ref JWT_EXPIRY_TIME_HOURS: usize = var("JWT_EXPIRY_TIME_HOURS").expect("Env var JWT_EXPIRY_TIME_HOURS not set!").parse().unwrap();
+    static ref JWT_EXPIRY_TIME_HOURS: usize = var("JWT_EXPIRY_TIME_HOURS")
+        .expect("Env var JWT_EXPIRY_TIME_HOURS not set!")
+        .parse()
+        .unwrap();
 }
 
 // General Todos
-// TODO Implement rate limiting for account creation/login based on ip address. This is especially relevant due to how 
+// TODO Implement rate limiting for account creation/login based on ip address. This is especially relevant due to how
 // expensive hashing passwords is compute-wise.
 // TODO have another crack at implementing a response api which doesn't require owned values.
 // TODO if not found in the global env, static refs should fall back to looking for .env, or Rocket.toml.
@@ -41,15 +44,11 @@ fn index() -> String {
 
 #[get("/docs")]
 fn docs() -> String {
-    format!("Api docs not yet setup with automated github actions. Feel free to implement that though if you're up for a challenge!")
+    "Api docs not yet setup with automated github actions. Feel free to implement that though if you're up for a challenge!".to_string()
 }
 
 /// Attempt to login a student
-#[post(
-    "/login",
-    data = "<creds>",
-    format = "application/json"
-)]
+#[post("/login", data = "<creds>", format = "application/json")]
 async fn login(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, Response> {
     let creds = creds.into_inner();
 
@@ -59,7 +58,8 @@ async fn login(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, R
         return Err(ResponseBuilder {
             data: "Incorrect Password or Username",
             status: Status::BadRequest,
-        }.build())
+        }
+        .build());
     }
     let user = user.unwrap();
 
@@ -69,7 +69,8 @@ async fn login(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, R
         return Err(ResponseBuilder {
             data: "Incorrect Password or Username",
             status: Status::BadRequest,
-        }.build())
+        }
+        .build());
     }
 
     //Update the users last_seen status
@@ -78,15 +79,12 @@ async fn login(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, R
     Ok(ResponseBuilder {
         data: models::Claims::new_token(user.id),
         status: Status::Ok,
-    }.build())
+    }
+    .build())
 }
 
 /// Attempt to create a new user account
-#[post(
-    "/create",
-    data = "<creds>",
-    format = "application/json"
-)]
+#[post("/create", data = "<creds>", format = "application/json")]
 async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, Response> {
     let creds = creds.into_inner();
 
@@ -107,7 +105,10 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
     }
 
     //Validate the username isn't taken
-    if common::find_user_in_db(&conn, creds.usr.clone()).await?.is_some() {
+    if common::find_user_in_db(&conn, creds.usr.clone())
+        .await?
+        .is_some()
+    {
         return Err(ResponseBuilder {
             data: "Username Taken",
             status: Status::BadRequest,
@@ -124,11 +125,7 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
     //Save account in db
     use schema::users;
     let r: Result<models::User, diesel::result::Error> = conn
-        .run(move |c| {
-            diesel::insert_into(users::table)
-                .values(user)
-                .get_result(c)
-        })
+        .run(move |c| diesel::insert_into(users::table).values(user).get_result(c))
         .await;
 
     if let Err(e) = r {
@@ -143,7 +140,8 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
     Ok(ResponseBuilder {
         data: models::Claims::new_token(r.unwrap().id),
         status: Status::Ok,
-    }.build())
+    }
+    .build())
 }
 
 #[get("/convert")]

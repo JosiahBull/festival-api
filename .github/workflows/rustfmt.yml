@@ -1,7 +1,5 @@
 name: Rustfmt
-on:
-  pull_request:
-    branches: [ main ]
+on: push
 jobs:
   format:
     runs-on: ubuntu-latest

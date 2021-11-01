@@ -1,12 +1,12 @@
-use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET};
 use crate::response::{Response, ResponseBuilder};
+use crate::schema::*;
+use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest, Request};
 use rocket::serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::schema::*;
 
 /// User credentials, to be used when logging in or creating a new account
 #[derive(Deserialize, Insertable)]
@@ -47,7 +47,7 @@ impl Claims {
             .expect("Time went backwards!")
             .as_secs() as usize;
         let c: Claims = Claims {
-            exp: curr_time + * JWT_EXPIRY_TIME_HOURS * 60 * 60,
+            exp: curr_time + *JWT_EXPIRY_TIME_HOURS * 60 * 60,
             iat: curr_time,
             sub,
         };
@@ -79,7 +79,7 @@ impl<'r> FromRequest<'r> for Claims {
         }
 
         match decode::<Claims>(
-            &auth_header.unwrap(),
+            auth_header.unwrap(),
             &DecodingKey::from_secret((*JWT_SECRET).as_ref()),
             &Validation::default(),
         ) {
