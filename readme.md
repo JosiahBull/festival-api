@@ -1,8 +1,8 @@
 [![codecov](https://codecov.io/gh/JosiahBull/festival-api/branch/main/graph/badge.svg?token=ISOL8A7QVA)](https://codecov.io/gh/JosiahBull/festival-api)
 ![Build](https://github.com/JosiahBull/festival-api/actions/workflows/test.yml/badge.svg)
 [![Docs](https://github.com/JosiahBull/festival-api/actions/workflows/docs.yml/badge.svg)](https://josiahbull.github.io/festival-api/festival_api/index.html)
-[![OAS Docs](https://github.com/JosiahBull/festival-api/actions/workflows/redoc.yml/badge.svg)](https://josiahbull.github.io/festival-api/index.html)
-# Festival to Mp3 API
+[![OAS Docs](https://github.com/JosiahBull/festival-api/actions/workflows/redoc.yml/badge.svg)](https://josiahbull.github.io/festival-api/)
+# Festival to WAV API
 A simple REST api which takes a request body of the form:
 ```json
 {
@@ -11,7 +11,39 @@ A simple REST api which takes a request body of the form:
     "speed": 0.7
 }
 ```
-and returns a `.mp3` file which may be streamed or played for a user.
+and returns a `.wav` file which may be streamed or played for a user.
+
+Detailed documentation on how to use the API can be found [here](https://josiahbull.github.io/festival-api/).
+
+## Progress to Beta Release
+- [x] Write OAS Spec
+- [x] Create db schema
+- [x] Setup Gh actions
+    - [x] Code Coverage
+    - [x] Automatic Formatting + Clippy
+    - [x] Running Tests
+    - [x] Generation of docs + oas for gh-pages.
+- [x] Write Rust/Rocket boilerplate + macros
+- [ ] Student creation/login endpoints 
+    - [x] Login Endpoint
+    - [x] Account Creation Endpoint
+    - [x] JWT Tokens + Validation
+    - [ ] Tests 
+- [ ] Conversion endpoint
+    - [x] Validation of Requests from user
+    - [x] Generation of wav files
+    - [x] Account Rate Limiting
+    - [ ] Conversion from .wav to .mp3 or any other fileformat
+    - [ ] Caching Layer
+    - [ ] IP Rate Limiting
+    - [ ] Tests
+- [ ] e2e Tests
+- [ ] Configuration
+    - [x] Language Configuration `/config/langs.toml`
+    - [ ] File Format Configuration `/config/formats.toml`
+    - [ ] General Configuration `/config/general.toml`
+- [ ] Setup docker-compose
+- [ ] Code Comments/Documentation
 
 ## Getting Started
 
