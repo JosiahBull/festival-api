@@ -35,6 +35,12 @@ pub struct PhrasePackage {
     pub speed: f64,
 }
 
+pub struct Language {
+    pub display_name: String,
+    pub iso_691_code: String,
+    pub festival_code: String,
+    pub enabled: bool,
+}
 /// The claims held by the JWT used for authentication
 #[derive(Serialize, Deserialize)]
 pub struct Claims {

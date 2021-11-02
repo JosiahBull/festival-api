@@ -10,7 +10,7 @@ extern crate rocket;
 #[macro_use]
 extern crate diesel;
 
-use std::{env::var, path::Path, process::Command};
+use std::{collections::HashMap, env::var, path::Path, process::Command};
 
 use diesel::prelude::*;
 use lazy_static::lazy_static;
@@ -30,7 +30,7 @@ const API_NAME: &str = "Jo";
 const CACHE_PATH: &str = "./cache/";
 const WORD_LENGTH_LIMIT: usize = 100;
 const SPEED_MAX_VAL: f64 = 3.0;
-const SPEED_MIN_VAL: f64 = 2.5;
+const SPEED_MIN_VAL: f64 = 0.5;
 
 lazy_static! {
     /// The secret used for fast-hashing JWT's for validation.
@@ -43,11 +43,57 @@ lazy_static! {
         .unwrap();
 
     /// A list of supported speech languages by this api.
-    static ref SUPPORTED_LANGS: Vec<String> = {
-        vec![]
+    static ref SUPPORTED_LANGS: HashMap<String, models::Language> = {
+        let path = "./config/langs.toml";
+        let data = std::fs::read_to_string(path).expect(&format!("Unable to find {}", path));
+        let f = data.parse::<toml::Value>().expect(&format!("Unable to parse `{}`", path));
+
+        let languages: &toml::value::Table = f.get("lang")
+            .expect(&format!("Unable to parse {}, no langs provided!", path))
+            .as_table()
+            .expect(&format!("lang tag is not a table in {}", path));
+
+        let mut map: HashMap<String, models::Language> = HashMap::default();
+        let keys: Vec<&String> = languages.keys().into_iter().collect();
+        for key in keys {
+            let lang = languages
+                .get(key)
+                .expect(&format!("Unable to parse lang {} from {}, is it correctly formatted?", key, path))
+                .as_table()
+                .expect(&format!("Unable to prase {} as table from {}", key, path));
+
+            let enabled = lang
+                .get("enabled")
+                .expect(&format!("Unable to parse enabled on {} from {}", key, path))
+                .as_bool()
+                .expect(&format!("{}'s enabled is not a boolean in {}", key, path));
+
+            let festival_code = lang
+                .get("festival_code")
+                .expect(&format!("Unable to parse festival_code on {} from {}", key, path))
+                .as_str()
+                .expect(&format!("{}'s festival_code is not a string in {}", key, path))
+                .to_owned();
+
+            let iso_691_code = lang
+                .get("iso_691-1_code")            
+                .expect(&format!("Unable to parse iso-691-1_code on {} from {}", key, path))
+                .as_str()
+                .expect(&format!("{}'s iso_691-1_code is not a string in {}", key, path))
+                .to_owned();
+
+            map.insert(iso_691_code.clone(), models::Language {
+                display_name: key.clone(),
+                enabled,
+                festival_code,
+                iso_691_code,
+            });
+        }
+
+        return map;
     };
 
-    /// The list of supported file-formats, note that mp3 is the preferred format due to lower bandwidth usage.
+    /// The list of supported file-formats, note that wav is the preferred format due to lower cpu usage.
     static ref SUPPORTED_FORMATS: Vec<String> = {
         vec![]
     };
@@ -168,8 +214,10 @@ async fn convert(token: Result<models::Claims, Response>, conn: DbConn, phrase_p
     }
     if phrase_package.speed < SPEED_MIN_VAL {
         reject!("Speed values lower than {} are not allowed.", SPEED_MIN_VAL)
+    }    
+    if !SUPPORTED_LANGS.contains_key(&phrase_package.lang) {
+        reject!("Provided lang ({}) is not supported by this api!", &phrase_package.lang)
     }
-    //TODO validate langs
 
     // Validate that this user hasn't been timed out, and log this request.
     //TODO
@@ -178,8 +226,9 @@ async fn convert(token: Result<models::Claims, Response>, conn: DbConn, phrase_p
     let file_name = format!("{}_{}.wav", Path::new(CACHE_PATH).join(&phrase_package.word).to_string_lossy(), &phrase_package.speed);
     if !Path::new(&file_name).exists() {
         // Generate a wav file if this file does not already exist.
-        let command = format!("echo \"{}\" | text2wave -eval \"()\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o {}",
+        let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o {}",
             &phrase_package.word,
+            &SUPPORTED_LANGS.get(&phrase_package.lang).unwrap().iso_691_code,
             &phrase_package.speed,
             &file_name
         );
