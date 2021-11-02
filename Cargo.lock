@@ -295,6 +295,7 @@ dependencies = [
  "diesel",
  "jsonwebtoken",
  "lazy_static",
+ "rand",
  "rand_core",
  "rocket",
  "rocket_sync_db_pools",

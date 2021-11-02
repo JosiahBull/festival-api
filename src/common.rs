@@ -5,6 +5,7 @@ use argon2::{
 use chrono::Utc;
 use diesel::prelude::*;
 use rocket::http::Status;
+use rand::{thread_rng, Rng};
 
 use crate::macros::failure;
 use crate::response::{Data, Response};
@@ -40,19 +41,31 @@ pub fn compare_hashed_strings(orignal: String, hashed: String) -> Result<bool, R
         .is_ok())
 }
 
+pub enum SearchItem {
+    Name(String),
+    #[allow(dead_code)]
+    Id(i32),
+}
+
 /// Attempt to find a user in the database, returns None if the user is unable to be found.
 /// Note that the provided name is assumed unique. If multiple results exist, the first will be returned.
 pub async fn find_user_in_db(
     conn: &DbConn,
-    name: String,
+    name: SearchItem,
 ) -> Result<Option<crate::models::User>, Response> {
     use crate::schema::users::dsl::*;
-    let r = conn
+    let r: Result<Vec<crate::models::User>, diesel::result::Error> = conn
         .run(move |c| {
-            users
-                .filter(usr.eq(name))
-                .limit(1)
-                .load::<crate::models::User>(c)
+            return match name {
+                SearchItem::Name(s) => users
+                    .filter(usr.eq(s))
+                    .limit(1)
+                    .load::<crate::models::User>(c),
+                SearchItem::Id(n) => users
+                    .filter(id.eq(n))
+                    .limit(1)
+                    .load::<crate::models::User>(c),
+            };
         })
         .await;
 
@@ -82,4 +95,45 @@ pub async fn update_user_last_seen(
         Ok(_) => Ok(()),
         Err(e) => failure!("Unable to update user due to error {}", e),
     };
+}
+
+/// Load a users most recent requests, limited based on 
+pub async fn load_recent_requests(
+    conn: &DbConn,
+    search_id: i32,
+    limit: usize,
+) -> Result<Vec<crate::models::GenerationRequest>, Response> {
+    if limit == 0 {
+        return Ok(vec![]);
+    }
+
+    use crate::schema::reqs::dsl::*;
+    let r = conn
+        .run(move |c| {
+            reqs.filter(usr_id.eq(search_id))
+                .order(crt.desc())
+                .limit(limit as i64)
+                .load::<crate::models::GenerationRequest>(c)
+        })
+        .await;
+
+    return match r {
+        Ok(f) => Ok(f),
+        Err(e) => failure!("Unable to collect recent requests due to error {}", e),
+    };
+}
+
+/// Get the time (in seconds) since a chrono datetime. Returns a duration which can be negative if the time is in the future.
+pub fn get_time_since(time: chrono::DateTime<Utc>) -> chrono::Duration {
+    let now = Utc::now();
+    now.signed_duration_since(time)
+}
+
+/// Generate a randomised alphanumeric (base 62) string of a requested length.
+pub fn generate_random_alphanumeric(length: usize) -> String {
+    thread_rng()
+        .sample_iter(rand::distributions::Alphanumeric)
+        .take(length)
+        .map(char::from)
+        .collect()
 }

@@ -27,10 +27,13 @@ compile_error!("Unable to compile for your platform! This API is only available 
 pub struct DbConn(diesel::PgConnection);
 
 const API_NAME: &str = "Jo";
-const CACHE_PATH: &str = "./cache/";
+const CACHE_PATH: &str = "./cache";
 const WORD_LENGTH_LIMIT: usize = 100;
-const SPEED_MAX_VAL: f64 = 3.0;
-const SPEED_MIN_VAL: f64 = 0.5;
+const SPEED_MAX_VAL: f32 = 3.0;
+const SPEED_MIN_VAL: f32 = 0.5;
+// const MAX_REQUESTS_IP_TRHESHOLD: usize = 10;
+const MAX_REQUESTS_ACC_THRESHOLD: usize = 2;
+const MAX_REQUEST_TIME_PERIOD_MINUTES: usize = 5;
 
 lazy_static! {
     /// The secret used for fast-hashing JWT's for validation.
@@ -125,7 +128,8 @@ async fn login(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, R
     let creds = creds.into_inner();
 
     //Locate the user that is attempting to login
-    let user = common::find_user_in_db(&conn, creds.usr).await?;
+    let user: Option<models::User> =
+        common::find_user_in_db(&conn, common::SearchItem::Name(creds.usr)).await?;
     if user.is_none() {
         reject!("Incorrect Password or Username")
     }
@@ -160,7 +164,7 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
     }
 
     //Validate the username isn't taken
-    if common::find_user_in_db(&conn, creds.usr.clone())
+    if common::find_user_in_db(&conn, common::SearchItem::Name(creds.usr.clone()))
         .await?
         .is_some()
     {
@@ -226,21 +230,27 @@ async fn convert(
     }
 
     // Validate that this user hasn't been timed out, and log this request.
-    //TODO
+    let reqs: Vec<models::GenerationRequest> = common::load_recent_requests(&conn, token.sub, MAX_REQUESTS_ACC_THRESHOLD).await?;
+    if reqs.len() == MAX_REQUESTS_ACC_THRESHOLD {
+        //Validate that this user hasn't made too many requests
+        let earliest_req_time = common::get_time_since(reqs.last().unwrap().crt);
+        let max_req_time_duration = chrono::Duration::minutes(MAX_REQUEST_TIME_PERIOD_MINUTES as i64);
+
+        if earliest_req_time < max_req_time_duration {
+            return Err(Response::TextErr(Data {
+                data: format!("Too many requests! You will be able to make another request in {} seconds.", (earliest_req_time - max_req_time_duration).num_seconds()),
+                status: Status::TooManyRequests,
+            }))
+        }
+    }
 
     // Generate the phrase if it isn't in the cache.
-    let file_name = format!(
-        "{}_{}.wav",
-        Path::new(CACHE_PATH)
-            .join(&phrase_package.word)
-            .to_string_lossy(),
-        &phrase_package.speed
-    );
+    let file_name = format!("{}/{}.wav", CACHE_PATH, common::generate_random_alphanumeric(10));
     if !Path::new(&file_name).exists() {
         // Generate a wav file if this file does not already exist.
         let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o {}",
             &phrase_package.word,
-            &SUPPORTED_LANGS.get(&phrase_package.lang).unwrap().iso_691_code,
+            &SUPPORTED_LANGS.get(&phrase_package.lang).unwrap().festival_code,
             &phrase_package.speed,
             &file_name
         );
@@ -258,9 +268,16 @@ async fn convert(
     //Format the file to the desired output
     //TODO
 
-    let resp_file = match NamedFile::open(file_name).await {
+    let resp_file = match NamedFile::open(&file_name).await {
         Ok(f) => f,
         Err(e) => failure!("Unable to open processed file {}", e),
+    };
+
+    //Remove the link on the filesystem, note that as we have an opened NamedFile, that should persist.
+    //See https://github.com/SergioBenitez/Rocket/issues/610 for more info.
+    //This is temporary pending development of a proper caching system.
+    if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&file_name)).await {
+        failure!("Unable to temporary file from system prior to response {}", e)
     };
 
     //Return the response

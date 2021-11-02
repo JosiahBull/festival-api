@@ -27,12 +27,24 @@ pub struct User {
     pub last_accessed: chrono::DateTime<Utc>,
 }
 
+#[derive(Queryable, QueryableByName)]
+#[table_name = "reqs"]
+pub struct GenerationRequest {
+    pub id: i32,
+    pub usr_id: i32,
+    pub crt: chrono::DateTime<Utc>,
+    pub word: String,
+    pub lang: String,
+    pub speed: f32,
+    pub ip_addr: Vec<u8>,
+}
+
 /// A phrase package which the user is requesting a .mp3 for
 #[derive(Deserialize)]
 pub struct PhrasePackage {
     pub word: String,
     pub lang: String,
-    pub speed: f64,
+    pub speed: f32,
 }
 
 pub struct Language {
