@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["festival_api"] = [{"text":"impl&lt;'r&gt; <a class=\"trait\" href=\"https://api.rocket.rs/v0.5-rc/rocket/response/responder/trait.Responder.html\" title=\"trait rocket::response::responder::Responder\">Responder</a>&lt;'r, 'static&gt; for <a class=\"enum\" href=\"festival_api/response/enum.Response.html\" title=\"enum festival_api::response::Response\">Response</a>","synthetic":false,"types":["festival_api::response::Response"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["festival_api"] = [{"text":"impl <a class=\"trait\" href=\"https://api.rocket.rs/v0.5-rc/rocket/sentinel/trait.Sentinel.html\" title=\"trait rocket::sentinel::Sentinel\">Sentinel</a> for <a class=\"struct\" href=\"festival_api/struct.DbConn.html\" title=\"struct festival_api::DbConn\">DbConn</a>","synthetic":false,"types":["festival_api::DbConn"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
