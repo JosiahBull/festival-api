@@ -1,7 +1,8 @@
 [![codecov](https://codecov.io/gh/JosiahBull/festival-api/branch/main/graph/badge.svg?token=ISOL8A7QVA)](https://codecov.io/gh/JosiahBull/festival-api)
 ![Build](https://github.com/JosiahBull/festival-api/actions/workflows/test.yml/badge.svg)
-[![Docs](https://github.com/JosiahBull/festival-api/actions/workflows/docs.yml/badge.svg)](https://josiahbull.github.io/festival-api/)
-# Festival to Wav API
+[![Docs](https://github.com/JosiahBull/festival-api/actions/workflows/docs.yml/badge.svg)](https://josiahbull.github.io/festival-api/festival_api/index.html)
+[![OAS Docs](https://github.com/JosiahBull/festival-api/actions/workflows/redoc.yml/badge.svg)](https://josiahbull.github.io/festival-api/index.html)
+# Festival to Mp3 API
 A simple REST api which takes a request body of the form:
 ```json
 {
@@ -14,7 +15,7 @@ and returns a `.mp3` file which may be streamed or played for a user.
 
 ## Getting Started
 
-Currently this api is not setup with a service such as docker, so you must have [Rust](https://www.rust-lang.org/tools/install) installed to use this api.
+Currently this api is not setup with a service such as docker, so you must have [Rust](https://www.rust-lang.org/tools/install) installed.
 
 This api depends on Rust, Rocket, Diesel and Postgres.
 

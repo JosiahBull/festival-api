@@ -1,7 +1,7 @@
 table! {
     cache (id) {
         id -> Int4,
-        crt -> Nullable<Timestamptz>,
+        crt -> Timestamptz,
         nme -> Text,
         word -> Text,
         lang -> Text,
@@ -12,7 +12,7 @@ table! {
     reqs (id) {
         id -> Int4,
         usr_id -> Int4,
-        crt -> Nullable<Timestamptz>,
+        crt -> Timestamptz,
         word -> Text,
         lang -> Text,
         speed -> Float4,
@@ -25,9 +25,9 @@ table! {
         id -> Int4,
         usr -> Text,
         pwd -> Text,
-        lckdwn -> Nullable<Timestamptz>,
-        crt -> Nullable<Timestamptz>,
-        last_accessed -> Nullable<Timestamptz>,
+        lckdwn -> Timestamptz,
+        crt -> Timestamptz,
+        last_accessed -> Timestamptz,
     }
 }
 

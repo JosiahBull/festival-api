@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 rocket = {version = "0.5.0-rc.1", features=["json"]}
-diesel = { version = "1.0.0", features = ["postgres", "r2d2"] } 
+diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono"] } 
 rocket_sync_db_pools = { version = "0.1.0-rc.1", default-features = false, features = ["diesel_postgres_pool"] }
 serde = { version = "1.0.126", features = ["derive"] }
 serde_json = "1.0.64"
@@ -16,3 +16,5 @@ rand_core = { version = "0.6", features = ["std"] }
 jsonwebtoken = { version = "7.2.0" }
 lazy_static = "1.4.0"
 toml = "0.5.8"
+chrono = { version = "0.4.19", features = ["serde"] }
+rand = { version = "0.8.4" }

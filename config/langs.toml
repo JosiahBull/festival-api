@@ -1,0 +1,18 @@
+# This file is for specifying available language files on the api.
+# Please ensure that the relevant support is configured on festival with lang packs.
+#
+# Example
+# [lang.spanish]
+# iso_691-1_code = "es" #The code expected to be provided by the users to the api
+# festival_code = "es" #The code the api will use with festival to produce the sound file
+# enabled = false #Whether this Lang should currently be functional.
+
+[lang.english]
+iso_691-1_code = "en"
+festival_code = "voice_cmu_us_slt_cg"
+enabled = true
+
+[lang.maori]
+iso_691-1_code = "mi"
+festival_code = "voice_akl_mi_pk06_cg"
+enabled = false

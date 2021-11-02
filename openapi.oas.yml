@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
-  description: An api to collect .mp3 files generated from festival.
+  description: An api to collect .wav files generated from festival.
   version: "0.1.0"
   license:
     name: "GPL v3"
     url: https://www.gnu.org/licenses/gpl-3.0.en.html
-  title: Jo's Festival Api
+  title: Text2Wave Festival Api
   contact:
     name: Josiah Bull
     email: josiah.bull7@gmail.com
