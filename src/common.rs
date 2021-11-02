@@ -6,8 +6,9 @@ use chrono::Utc;
 use diesel::prelude::*;
 use rocket::http::Status;
 
-use crate::response::{Response, ResponseBuilder};
+use crate::response::{Data, Response};
 use crate::DbConn;
+use crate::macros::failure;
 
 /// Hash a string with a random salt to be stored in the database.
 /// Utilizes the argon2id algorithm
@@ -18,14 +19,12 @@ pub fn hash_string_with_salt(s: String) -> Result<String, Response> {
     let hash = argon2
         .hash_password(s.as_bytes(), &salt)
         .map_err(|e| {
-            ResponseBuilder {
+            Response::TextErr(Data {
                 data: format!("Failed to create hash {}", e),
                 status: Status::InternalServerError,
-            }
-            .build()
-        })?
-        .to_string();
-    Ok(hash)
+            })
+        })?;
+    Ok(hash.to_string())
 }
 
 /// A function which checks whether the first string can be hashed into the second string.
@@ -33,11 +32,10 @@ pub fn hash_string_with_salt(s: String) -> Result<String, Response> {
 pub fn compare_hashed_strings(orignal: String, hashed: String) -> Result<bool, Response> {
     let argon2 = Argon2::default();
     let parsed_hash = PasswordHash::new(&hashed).map_err(|e| {
-        ResponseBuilder {
+        Response::TextErr(Data {
             data: format!("Failed to compare hashes {}", e),
             status: Status::InternalServerError,
-        }
-        .build()
+        })
     })?;
     Ok(argon2
         .verify_password(orignal.as_bytes(), &parsed_hash)
@@ -63,11 +61,7 @@ pub async fn find_user_in_db(
     return match r {
         Ok(mut f) if !f.is_empty() => Ok(Some(f.remove(0))),
         Ok(_) => Ok(None),
-        Err(e) => Err(ResponseBuilder {
-            data: format!("Failed to find user due to error {}", e),
-            status: Status::InternalServerError,
-        }
-        .build()),
+        Err(e) => failure!("Failed to find user due to error {}", e),
     };
 }
 
@@ -88,10 +82,6 @@ pub async fn update_user_last_seen(
 
     return match r {
         Ok(_) => Ok(()),
-        Err(e) => Err(ResponseBuilder {
-            data: format!("Unable to update user due to error {}", e),
-            status: Status::InternalServerError,
-        }
-        .build()),
+        Err(e) => failure!("Unable to update user due to error {}", e),
     };
 }

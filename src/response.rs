@@ -1,171 +1,68 @@
-//! This module handles the generation of responses for the api.
-//!
-//!
-//! Intended usage is to create a ResponseBuilder, then call.build on it
-//!
-//! **Example:**
-//! ```rust
-//!
-//! #[get("/")]
-//! fn my_endpoint<'a>() -> Response<'a> {
-//!     //...processing...//
-//!     
-//!     ResponseBuilder {
-//!         data: "A very well thought out, and meaningful response."
-//!         status: rocket::http::Status::Ok
-//!     }.build()
-//! }
-//!
-//! ```
-//!
-//! This is a very helpful way to easily return responses to the user. Note that any type which implements Respondable
-//! may be passed into the ResponseBuilder. This trait may also be implemented for your own types.
-//!
-//! The trait must take a reference to your type, and then return a reference to a string which will be returned in
-//! the body of the request to the user.
-//!
-//! **Example:**
-//! ```rust
-//! impl Respondable for String {
-//!     fn transform_body<'b>(&'b self) -> &'b str {
-//!         self
-//!     }
-//!     fn transform_ct<'b>(&'b self) -> ContentType {
-//!         ContentType::TextPlain
-//!     }
-//! }
-//! ```
+use rocket::{Request, fs::NamedFile, http::Status, response::Responder};
 
-use rocket::http::Status;
-use rocket::request::Request;
-use std::io::Cursor;
-
-/// The different content-types which may be returned from this api. If providing an AudioMpeg filetype, you must also provide a filename.
-#[derive(Debug, PartialEq)]
-pub enum ContentType {
-    JsonApplication,
-    TextPlain,
-    #[allow(dead_code)]
-    AudioMpeg(String),
+#[derive(Debug)]
+pub struct Data<T> 
+where
+    T: Responder<'static, 'static>
+{
+    pub data: T,
+    pub status: Status,
 }
 
 /// Represents a response from the api, the content-type and content-disposition headers are automatically generated.
 /// This is automatically generated from calling `.build()` on a `ResponseBuilder`. Do not attempt to generate this
 /// manually.
 #[derive(Debug)]
-pub struct Response {
-    body: String,
-    status: Status,
-    c_type: ContentType,
-}
-
-/// Used to construct a `Response` to be returned by the api. Any type implementing `Respondable` may be passed into it.
-/// Respondable is implemented for many default types, but you may implement it for your own types too.
-pub struct ResponseBuilder<T>
-where
-    T: Respondable,
-{
-    pub data: T,
-    pub status: Status,
-}
-
-impl<T> ResponseBuilder<T>
-where
-    T: Respondable,
-{
-    pub fn build(self) -> Response {
-        let c_type = self.data.transform_ct();
-        match self.data.transform_body() {
-            Ok(body) => Response {
-                c_type,
-                body,
-                status: self.status,
-            },
-            Err(body) => Response {
-                c_type: ContentType::TextPlain,
-                body,
-                status: Status::InternalServerError,
-            },
-        }
-    }
-}
-
-impl<T> Default for ResponseBuilder<T>
-where
-    T: Respondable + Default,
-{
-    fn default() -> ResponseBuilder<T> {
-        ResponseBuilder {
-            data: T::default(),
-            status: Status::Ok,
-        }
-    }
+pub enum Response {
+    TextErr(Data<String>),
+    TextOk(Data<String>),
+    #[allow(dead_code)]
+    JsonOk(Data<String>),
+    FileDownload(Data<NamedFile>),
 }
 
 #[rocket::async_trait]
 impl<'r> rocket::response::Responder<'r, 'static> for Response {
-    fn respond_to(self, _: &'r Request<'_>) -> rocket::response::Result<'static> {
-        let body = self.body.to_owned(); //TODO find a way to avoid this alloc.
-
+    fn respond_to(self, req: &'r Request<'_>) -> rocket::response::Result<'static> {
         //Generate content type header
-        let c_type = match self.c_type {
-            ContentType::JsonApplication => rocket::http::ContentType::new("application", "json"),
-            ContentType::TextPlain => rocket::http::ContentType::new("text", "plain"),
-            ContentType::AudioMpeg(_) => rocket::http::ContentType::new("audio", "mpeg"),
+        let c_type = match self {
+            Response::TextErr(_) | Response::TextOk(_)  => rocket::http::ContentType::new("text", "plain"),
+            Response::JsonOk(_) => rocket::http::ContentType::new("application", "json"),
+            Response::FileDownload(_) => rocket::http::ContentType::new("audio", "mpeg"),
         };
 
         //Generate content disposition header
-        let c_disp = match self.c_type {
-            ContentType::AudioMpeg(s) => rocket::http::Header::new(
+        let c_disp = match self {
+            Response::FileDownload(ref d) => rocket::http::Header::new(
                 "Content-Disposition",
-                format!("attachment; filename=\"{}\"", s),
+                format!("attachment; filename=\"{}\"", d.data.path().to_string_lossy()),
             ),
             _ => rocket::http::Header::new("Content-Disposition", "inline"),
         };
 
+        //TODO write a macro to make this prettier
+        let status: Status = match self {
+            Response::TextErr(ref d) => d.status,
+            Response::TextOk(ref d) => d.status,
+            Response::JsonOk(ref d) => d.status,
+            Response::FileDownload(ref d) => d.status,
+        };
+
         //Construct and return response
-        rocket::response::Response::build()
-            .header(c_type)
-            .header(c_disp)
-            .status(self.status)
-            .sized_body(body.len(), Cursor::new(body))
-            .ok()
-    }
-}
+        //TODO write a macro to make this prettier
+        let response = match self {
+            Response::TextErr(d) => d.data.respond_to(req),
+            Response::TextOk(d) => d.data.respond_to(req),
+            Response::JsonOk(d) => d.data.respond_to(req),
+            Response::FileDownload(d) => d.data.respond_to(req),
+        };
 
-/// A trait indicating that this datatype can be serialized into a response from this api.
-pub trait Respondable {
-    /// Generate the body of this response
-    fn transform_body(self) -> Result<String, String>;
-    /// Generate the content-type of this response.
-    fn transform_ct(&self) -> ContentType;
-}
+        let mut response = response.unwrap(); //HACK
 
-impl<'a> Respondable for &'a str {
-    fn transform_body(self) -> Result<String, String> {
-        Ok(self.to_string())
-    }
-    fn transform_ct(&self) -> ContentType {
-        ContentType::TextPlain
-    }
-}
-
-impl Respondable for String {
-    fn transform_body(self) -> Result<String, String> {
-        Ok(self)
-    }
-    fn transform_ct(&self) -> ContentType {
-        ContentType::TextPlain
-    }
-}
-
-impl Respondable for crate::models::User {
-    fn transform_body(self) -> Result<String, String> {
-        serde_json::to_string(&self).map_err(|e| e.to_string())
-    }
-
-    fn transform_ct(&self) -> ContentType {
-        ContentType::JsonApplication
+        response.set_header(c_type);
+        response.set_header(c_disp);
+        response.set_status(status);
+        Ok(response)
     }
 }
 

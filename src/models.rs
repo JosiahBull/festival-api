@@ -1,4 +1,4 @@
-use crate::response::{Response, ResponseBuilder};
+use crate::response::{Response, Data};
 use crate::schema::*;
 use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET};
 use chrono::Utc;
@@ -7,7 +7,6 @@ use rocket::http::Status;
 use rocket::request::{self, FromRequest, Request};
 use rocket::serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-
 /// User credentials, to be used when logging in or creating a new account
 #[derive(Deserialize, Insertable)]
 #[table_name = "users"]
@@ -26,6 +25,14 @@ pub struct User {
     pub lckdwn: chrono::DateTime<Utc>,
     pub crt: chrono::DateTime<Utc>,
     pub last_accessed: chrono::DateTime<Utc>,
+}
+
+/// A phrase package which the user is requesting a .mp3 for 
+#[derive(Deserialize)]
+pub struct PhrasePackage {
+    pub word: String,
+    pub lang: String,
+    pub speed: f64,
 }
 
 /// The claims held by the JWT used for authentication
@@ -61,7 +68,7 @@ impl Claims {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for Claims {
+impl<'r> FromRequest<'r> for Claims{
     type Error = Response;
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Response> {
         //TODO improve the headers here, so we will check for Authorization along with Authorisation.
@@ -70,11 +77,10 @@ impl<'r> FromRequest<'r> for Claims {
         if auth_header.is_none() {
             return request::Outcome::Failure((
                 Status::Unauthorized,
-                ResponseBuilder {
-                    data: "Authorisation Header Not Present",
+                Response::TextErr(Data {
+                    data: String::from("Authorisation Header Not Present"),
                     status: Status::Unauthorized,
-                }
-                .build(),
+                }),
             ));
         }
 
@@ -89,11 +95,10 @@ impl<'r> FromRequest<'r> for Claims {
             }
             Err(_) => request::Outcome::Failure((
                 Status::Unauthorized,
-                ResponseBuilder {
-                    data: "Invalid Auth Token",
+                Response::TextErr(Data {
+                    data: String::from("Invalid Auth Token"),
                     status: Status::Unauthorized,
-                }
-                .build(),
+                }),
             )),
         }
     }
