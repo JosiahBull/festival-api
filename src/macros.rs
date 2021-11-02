@@ -48,4 +48,4 @@ macro_rules! failure {
     };
 }
 
-pub(crate) use {reject, failure};
+pub(crate) use {failure, reject};

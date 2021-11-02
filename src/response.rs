@@ -1,9 +1,9 @@
-use rocket::{Request, fs::NamedFile, http::Status, response::Responder};
+use rocket::{fs::NamedFile, http::Status, response::Responder, Request};
 
 #[derive(Debug)]
-pub struct Data<T> 
+pub struct Data<T>
 where
-    T: Responder<'static, 'static>
+    T: Responder<'static, 'static>,
 {
     pub data: T,
     pub status: Status,
@@ -26,7 +26,9 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
     fn respond_to(self, req: &'r Request<'_>) -> rocket::response::Result<'static> {
         //Generate content type header
         let c_type = match self {
-            Response::TextErr(_) | Response::TextOk(_)  => rocket::http::ContentType::new("text", "plain"),
+            Response::TextErr(_) | Response::TextOk(_) => {
+                rocket::http::ContentType::new("text", "plain")
+            }
             Response::JsonOk(_) => rocket::http::ContentType::new("application", "json"),
             Response::FileDownload(_) => rocket::http::ContentType::new("audio", "mpeg"),
         };
@@ -35,7 +37,10 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
         let c_disp = match self {
             Response::FileDownload(ref d) => rocket::http::Header::new(
                 "Content-Disposition",
-                format!("attachment; filename=\"{}\"", d.data.path().to_string_lossy()),
+                format!(
+                    "attachment; filename=\"{}\"",
+                    d.data.path().to_string_lossy()
+                ),
             ),
             _ => rocket::http::Header::new("Content-Disposition", "inline"),
         };

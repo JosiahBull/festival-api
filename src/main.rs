@@ -1,9 +1,9 @@
 #[rustfmt::skip]
 mod schema;
 mod common;
+mod macros;
 mod models;
 mod response;
-mod macros;
 
 #[macro_use]
 extern crate rocket;
@@ -14,12 +14,12 @@ use std::{collections::HashMap, env::var, path::Path, process::Command};
 
 use diesel::prelude::*;
 use lazy_static::lazy_static;
+use macros::{failure, reject};
 use models::UserCredentials;
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
-use macros::{reject, failure};
 
-#[cfg(not(target_os="linux"))]
+#[cfg(not(target_os = "linux"))]
 compile_error!("Unable to compile for your platform! This API is only available for Linux due to dependence on Bash commands.");
 
 /// Database connection
@@ -35,7 +35,7 @@ const SPEED_MIN_VAL: f64 = 0.5;
 lazy_static! {
     /// The secret used for fast-hashing JWT's for validation.
     static ref JWT_SECRET: String = var("JWT_SECRET").expect("Env var JWT_SECRET not set!");
-    
+
     /// The number of hours that a JWT may be used before expiring and forcing the user to re-validate.
     static ref JWT_EXPIRY_TIME_HOURS: usize = var("JWT_EXPIRY_TIME_HOURS")
         .expect("Env var JWT_EXPIRY_TIME_HOURS not set!")
@@ -76,7 +76,7 @@ lazy_static! {
                 .to_owned();
 
             let iso_691_code = lang
-                .get("iso_691-1_code")            
+                .get("iso_691-1_code")
                 .expect(&format!("Unable to parse iso-691-1_code on {} from {}", key, path))
                 .as_str()
                 .expect(&format!("{}'s iso_691-1_code is not a string in {}", key, path))
@@ -191,12 +191,12 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
 }
 
 /// Expects a phrase package, attempts to convert it to a .mp3 to be returned to the user. Requires authentication to access.
-#[post(
-    "/convert",
-    data = "<phrase_package>",
-    format = "application/json"
-)]
-async fn convert(token: Result<models::Claims, Response>, conn: DbConn, phrase_package: Json<models::PhrasePackage>) -> Result<Response, Response> {
+#[post("/convert", data = "<phrase_package>", format = "application/json")]
+async fn convert(
+    token: Result<models::Claims, Response>,
+    conn: DbConn,
+    phrase_package: Json<models::PhrasePackage>,
+) -> Result<Response, Response> {
     let token = token?;
 
     // Validate PhrasePackage
@@ -210,20 +210,32 @@ async fn convert(token: Result<models::Claims, Response>, conn: DbConn, phrase_p
         reject!("Cannot have numbers in phrase!")
     }
     if phrase_package.speed > SPEED_MAX_VAL {
-        reject!("Speed values greater than {} are not allowed.", SPEED_MAX_VAL)
+        reject!(
+            "Speed values greater than {} are not allowed.",
+            SPEED_MAX_VAL
+        )
     }
     if phrase_package.speed < SPEED_MIN_VAL {
         reject!("Speed values lower than {} are not allowed.", SPEED_MIN_VAL)
-    }    
+    }
     if !SUPPORTED_LANGS.contains_key(&phrase_package.lang) {
-        reject!("Provided lang ({}) is not supported by this api!", &phrase_package.lang)
+        reject!(
+            "Provided lang ({}) is not supported by this api!",
+            &phrase_package.lang
+        )
     }
 
     // Validate that this user hasn't been timed out, and log this request.
     //TODO
 
     // Generate the phrase if it isn't in the cache.
-    let file_name = format!("{}_{}.wav", Path::new(CACHE_PATH).join(&phrase_package.word).to_string_lossy(), &phrase_package.speed);
+    let file_name = format!(
+        "{}_{}.wav",
+        Path::new(CACHE_PATH)
+            .join(&phrase_package.word)
+            .to_string_lossy(),
+        &phrase_package.speed
+    );
     if !Path::new(&file_name).exists() {
         // Generate a wav file if this file does not already exist.
         let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o {}",

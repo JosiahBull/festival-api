@@ -6,9 +6,9 @@ use chrono::Utc;
 use diesel::prelude::*;
 use rocket::http::Status;
 
+use crate::macros::failure;
 use crate::response::{Data, Response};
 use crate::DbConn;
-use crate::macros::failure;
 
 /// Hash a string with a random salt to be stored in the database.
 /// Utilizes the argon2id algorithm
@@ -16,14 +16,12 @@ use crate::macros::failure;
 pub fn hash_string_with_salt(s: String) -> Result<String, Response> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    let hash = argon2
-        .hash_password(s.as_bytes(), &salt)
-        .map_err(|e| {
-            Response::TextErr(Data {
-                data: format!("Failed to create hash {}", e),
-                status: Status::InternalServerError,
-            })
-        })?;
+    let hash = argon2.hash_password(s.as_bytes(), &salt).map_err(|e| {
+        Response::TextErr(Data {
+            data: format!("Failed to create hash {}", e),
+            status: Status::InternalServerError,
+        })
+    })?;
     Ok(hash.to_string())
 }
 

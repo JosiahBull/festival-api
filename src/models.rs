@@ -1,4 +1,4 @@
-use crate::response::{Response, Data};
+use crate::response::{Data, Response};
 use crate::schema::*;
 use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET};
 use chrono::Utc;
@@ -27,7 +27,7 @@ pub struct User {
     pub last_accessed: chrono::DateTime<Utc>,
 }
 
-/// A phrase package which the user is requesting a .mp3 for 
+/// A phrase package which the user is requesting a .mp3 for
 #[derive(Deserialize)]
 pub struct PhrasePackage {
     pub word: String,
@@ -74,7 +74,7 @@ impl Claims {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for Claims{
+impl<'r> FromRequest<'r> for Claims {
     type Error = Response;
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Response> {
         //TODO improve the headers here, so we will check for Authorization along with Authorisation.
