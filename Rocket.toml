@@ -1,0 +1,2 @@
+[global.databases]
+postgres_database= { url = "postgres://postgres:hunter42@localhost/fest_api" }

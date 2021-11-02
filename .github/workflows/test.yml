@@ -7,12 +7,36 @@ env:
 
 jobs:
   build:
-
+    name: Rust propject
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          -p 5432:5432
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Setup Database
+      run: | 
+        cargo install diesel_cli --no-default-features --features postgres
+        diesel setup
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost/fest_api
+
     - name: Build
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+      env:
+        ROCKET_DATABASES: '{postgres_database={url=postgres://postgres:postgres@localhost/fest_api}}'
+        JWT_SECRET: nevergonnagiveyouup
+        JWT_EXPIRY_TIME_HOURS: 200

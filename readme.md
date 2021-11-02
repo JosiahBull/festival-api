@@ -24,11 +24,11 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
     - [x] Running Tests
     - [x] Generation of docs + oas for gh-pages.
 - [x] Write Rust/Rocket boilerplate + macros
-- [ ] Student creation/login endpoints 
+- [x] Student creation/login endpoints 
     - [x] Login Endpoint
     - [x] Account Creation Endpoint
     - [x] JWT Tokens + Validation
-    - [ ] Tests 
+    - [x] Tests 
 - [ ] Conversion endpoint
     - [x] Validation of Requests from user
     - [x] Generation of wav files

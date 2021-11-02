@@ -2,13 +2,13 @@ use crate::response::{Data, Response};
 use crate::schema::*;
 use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET};
 use chrono::Utc;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest, Request};
 use rocket::serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 /// User credentials, to be used when logging in or creating a new account
-#[derive(Deserialize, Insertable)]
+#[derive(Deserialize, Serialize, Insertable)]
 #[table_name = "users"]
 pub struct UserCredentials {
     pub usr: String,
@@ -81,7 +81,16 @@ impl Claims {
             &c,
             &EncodingKey::from_secret((*JWT_SECRET).as_ref()),
         )
-        .unwrap() // HACK this secret should be loaded in from env
+        .unwrap() //TODO fix unwraps
+    }
+
+    ///Attempt to parse claims from a token
+    pub fn parse_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+        decode::<Claims>(
+            token,
+            &DecodingKey::from_secret((*JWT_SECRET).as_ref()),
+            &Validation::default(),
+        ).map(|o| o.claims)
     }
 }
 
@@ -102,14 +111,10 @@ impl<'r> FromRequest<'r> for Claims {
             ));
         }
 
-        match decode::<Claims>(
-            auth_header.unwrap(),
-            &DecodingKey::from_secret((*JWT_SECRET).as_ref()),
-            &Validation::default(),
-        ) {
+        match Claims::parse_token(auth_header.unwrap()) {
             Ok(t) => {
                 //TODO validate the user hasn't been deleted (check db)
-                request::Outcome::Success(t.claims)
+                request::Outcome::Success(t)
             }
             Err(_) => request::Outcome::Failure((
                 Status::Unauthorized,
@@ -119,5 +124,22 @@ impl<'r> FromRequest<'r> for Claims {
                 }),
             )),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Claims;
+
+    #[test]
+    fn create_new_token() {
+        let _time_tolerance_seconds = 2;
+
+        let usr_id = 459;
+        let token = Claims::new_token(usr_id);
+        let claims = Claims::parse_token(&token).expect("a valid token");
+
+        assert_eq!(claims.sub, usr_id);
+        //TODO validate time claims on the token
     }
 }

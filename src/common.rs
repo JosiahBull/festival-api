@@ -137,3 +137,65 @@ pub fn generate_random_alphanumeric(length: usize) -> String {
         .map(char::from)
         .collect()
 }
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashSet;
+    use chrono::Utc;
+    use super::{generate_random_alphanumeric, get_time_since, hash_string_with_salt, compare_hashed_strings};
+
+    #[test]
+    fn test_create_hash_password() {
+        //To ensure salt is working
+        //Don't set too high, hashing is expensive + time consuming
+        let loop_count = 5; 
+
+        let pwd = generate_random_alphanumeric(10);
+
+        let mut set: HashSet<String> = HashSet::default();
+        for _ in 0..loop_count {
+            let hashed_pwd = hash_string_with_salt(pwd.clone()).expect("Failed to hash password ");
+            if set.contains(&hashed_pwd) {
+                panic!("Duplicate key found in set - password not being salted");
+            }
+            set.insert(hashed_pwd);
+        }
+    }
+
+    #[test]
+    fn test_compare_password() {
+        //Ensure that we can compare the hash still!
+        let pwd = generate_random_alphanumeric(4);
+        let hashed_pwd = hash_string_with_salt(pwd.clone()).expect("Failed to hash password ");
+        assert!(compare_hashed_strings(pwd.clone(), hashed_pwd.clone()).expect("Failed to compare hashes "));
+        assert!(!compare_hashed_strings(String::from("hello"), hashed_pwd.clone()).expect("Failed to compare hashes "));
+    }
+
+    #[test]
+    fn test_get_time_since() {
+        let tolerance = 1;
+
+        let time_first = Utc::now();
+        let time_future = time_first + chrono::Duration::days(100);
+        let time_past = time_first - chrono::Duration::days(100);
+
+        assert!((get_time_since(time_future).num_days() + 100).abs() <= tolerance);
+        assert!((get_time_since(time_past).num_days() - 100).abs() <= tolerance);
+    }
+
+    #[test]
+    fn test_generate_random_alphanumeric() {
+        //Note, there is a chance that we *could* get a string which has been generated before.
+        //But that chance is infinitesimally small as to be negligible.
+        let sample_size = 1000;
+        let mut set: HashSet<String> = HashSet::default(); 
+        for _ in 0..sample_size {
+            let s = generate_random_alphanumeric(32);
+            if set.contains(&s) {
+                panic!("Duplicate key found in set");
+            }
+            set.insert(s);
+        }
+    } 
+
+}

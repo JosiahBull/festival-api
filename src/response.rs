@@ -27,9 +27,9 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
         //Generate content type header
         let c_type = match self {
             Response::TextErr(_) | Response::TextOk(_) => {
-                rocket::http::ContentType::new("text", "plain")
+                rocket::http::ContentType::new("text", "plain; charset=utf-8")
             }
-            Response::JsonOk(_) => rocket::http::ContentType::new("application", "json"),
+            Response::JsonOk(_) => rocket::http::ContentType::new("application", "json; charset=utf-8"),
             Response::FileDownload(_) => rocket::http::ContentType::new("audio", "mpeg"),
         };
 
