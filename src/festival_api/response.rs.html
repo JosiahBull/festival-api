@@ -107,9 +107,9 @@
         <span class="comment">//Generate content type header</span>
         <span class="kw">let</span> <span class="ident">c_type</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">Response::TextErr</span>(<span class="kw">_</span>) <span class="op">|</span> <span class="ident">Response::TextOk</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">rocket::http::ContentType::new</span>(<span class="string">&quot;text&quot;</span>, <span class="string">&quot;plain&quot;</span>)
+                <span class="ident">rocket::http::ContentType::new</span>(<span class="string">&quot;text&quot;</span>, <span class="string">&quot;plain; charset=utf-8&quot;</span>)
             }
-            <span class="ident">Response::JsonOk</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">rocket::http::ContentType::new</span>(<span class="string">&quot;application&quot;</span>, <span class="string">&quot;json&quot;</span>),
+            <span class="ident">Response::JsonOk</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">rocket::http::ContentType::new</span>(<span class="string">&quot;application&quot;</span>, <span class="string">&quot;json; charset=utf-8&quot;</span>),
             <span class="ident">Response::FileDownload</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">rocket::http::ContentType::new</span>(<span class="string">&quot;audio&quot;</span>, <span class="string">&quot;mpeg&quot;</span>),
         };
 
