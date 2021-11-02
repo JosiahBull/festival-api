@@ -230,22 +230,31 @@ async fn convert(
     }
 
     // Validate that this user hasn't been timed out, and log this request.
-    let reqs: Vec<models::GenerationRequest> = common::load_recent_requests(&conn, token.sub, MAX_REQUESTS_ACC_THRESHOLD).await?;
+    let reqs: Vec<models::GenerationRequest> =
+        common::load_recent_requests(&conn, token.sub, MAX_REQUESTS_ACC_THRESHOLD).await?;
     if reqs.len() == MAX_REQUESTS_ACC_THRESHOLD {
         //Validate that this user hasn't made too many requests
         let earliest_req_time = common::get_time_since(reqs.last().unwrap().crt);
-        let max_req_time_duration = chrono::Duration::minutes(MAX_REQUEST_TIME_PERIOD_MINUTES as i64);
+        let max_req_time_duration =
+            chrono::Duration::minutes(MAX_REQUEST_TIME_PERIOD_MINUTES as i64);
 
         if earliest_req_time < max_req_time_duration {
             return Err(Response::TextErr(Data {
-                data: format!("Too many requests! You will be able to make another request in {} seconds.", (earliest_req_time - max_req_time_duration).num_seconds()),
+                data: format!(
+                    "Too many requests! You will be able to make another request in {} seconds.",
+                    (earliest_req_time - max_req_time_duration).num_seconds()
+                ),
                 status: Status::TooManyRequests,
-            }))
+            }));
         }
     }
 
     // Generate the phrase if it isn't in the cache.
-    let file_name = format!("{}/{}.wav", CACHE_PATH, common::generate_random_alphanumeric(10));
+    let file_name = format!(
+        "{}/{}.wav",
+        CACHE_PATH,
+        common::generate_random_alphanumeric(10)
+    );
     if !Path::new(&file_name).exists() {
         // Generate a wav file if this file does not already exist.
         let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o {}",
@@ -277,7 +286,10 @@ async fn convert(
     //See https://github.com/SergioBenitez/Rocket/issues/610 for more info.
     //This is temporary pending development of a proper caching system.
     if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&file_name)).await {
-        failure!("Unable to temporary file from system prior to response {}", e)
+        failure!(
+            "Unable to temporary file from system prior to response {}",
+            e
+        )
     };
 
     //Return the response

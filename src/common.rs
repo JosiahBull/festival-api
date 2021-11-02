@@ -4,8 +4,8 @@ use argon2::{
 };
 use chrono::Utc;
 use diesel::prelude::*;
-use rocket::http::Status;
 use rand::{thread_rng, Rng};
+use rocket::http::Status;
 
 use crate::macros::failure;
 use crate::response::{Data, Response};
@@ -97,7 +97,7 @@ pub async fn update_user_last_seen(
     };
 }
 
-/// Load a users most recent requests, limited based on 
+/// Load a users most recent requests, limited based on
 pub async fn load_recent_requests(
     conn: &DbConn,
     search_id: i32,
