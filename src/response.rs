@@ -29,7 +29,9 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
             Response::TextErr(_) | Response::TextOk(_) => {
                 rocket::http::ContentType::new("text", "plain; charset=utf-8")
             }
-            Response::JsonOk(_) => rocket::http::ContentType::new("application", "json; charset=utf-8"),
+            Response::JsonOk(_) => {
+                rocket::http::ContentType::new("application", "json; charset=utf-8")
+            }
             Response::FileDownload(_) => rocket::http::ContentType::new("audio", "mpeg"),
         };
 

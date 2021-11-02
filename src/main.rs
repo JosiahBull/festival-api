@@ -318,11 +318,11 @@ fn rocket() -> _ {
 mod tests {
     use crate::models::UserCredentials;
 
-    use super::rocket;
-    use super::common::{generate_random_alphanumeric};
+    use super::common::generate_random_alphanumeric;
     use super::models::Claims;
-    use rocket::local::blocking::Client;
+    use super::rocket;
     use rocket::http::{ContentType, Status};
+    use rocket::local::blocking::Client;
 
     //***** Helper Methods *****//
     fn create_test_account(client: &Client) -> (UserCredentials, String) {
@@ -350,7 +350,13 @@ mod tests {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let response = client.get(uri!(super::index)).dispatch();
         assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
         assert!(!response.into_string().unwrap().is_empty());
     }
 
@@ -359,7 +365,13 @@ mod tests {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let response = client.get(uri!(super::docs)).dispatch();
         assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
         assert!(!response.into_string().unwrap().is_empty());
     }
 
@@ -376,7 +388,13 @@ mod tests {
             .dispatch();
 
         assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
 
         let token = response.into_string().unwrap();
         let _ = Claims::parse_token(&token).expect("a valid token");
@@ -396,11 +414,20 @@ mod tests {
             .header(ContentType::new("application", "json"))
             .body(&wrong_username_body)
             .dispatch();
-        
+
         assert_eq!(response.status(), Status::BadRequest);
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
-        assert_eq!(response.into_string().unwrap(), "Incorrect Password or Username");
-       
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
+        assert_eq!(
+            response.into_string().unwrap(),
+            "Incorrect Password or Username"
+        );
+
         let response = client
             .post(uri!("/api/v1/login"))
             .header(ContentType::new("application", "json"))
@@ -408,9 +435,18 @@ mod tests {
             .dispatch();
 
         assert_eq!(response.status(), Status::BadRequest);
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
-        assert_eq!(response.into_string().unwrap(), "Incorrect Password or Username");
-    }   
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
+        assert_eq!(
+            response.into_string().unwrap(),
+            "Incorrect Password or Username"
+        );
+    }
 
     #[test]
     fn create_success() {
@@ -435,7 +471,13 @@ mod tests {
             .dispatch();
 
         assert_eq!(response.status(), Status::BadRequest);
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
         assert_eq!(response.into_string().unwrap(), "Password Too Short");
     }
 
@@ -456,7 +498,13 @@ mod tests {
             .dispatch();
 
         assert_eq!(response.status(), Status::BadRequest);
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
         assert_eq!(response.into_string().unwrap(), "Password Too Long");
     }
 
@@ -477,8 +525,20 @@ mod tests {
             .dispatch();
 
         assert_eq!(response.status(), Status::Created);
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
 
         let token = response.into_string().unwrap();
         let _ = Claims::parse_token(&token).expect("a valid token");
@@ -489,9 +549,15 @@ mod tests {
             .header(ContentType::new("application", "json"))
             .body(&body_json)
             .dispatch();
-        
+
         assert_eq!(response.status(), Status::BadRequest);
-        assert_eq!(response.headers().get_one("Content-Type").expect("a content type header"), "text/plain; charset=utf-8");
+        assert_eq!(
+            response
+                .headers()
+                .get_one("Content-Type")
+                .expect("a content type header"),
+            "text/plain; charset=utf-8"
+        );
         assert_eq!(response.into_string().unwrap(), "Username Taken");
     }
 }

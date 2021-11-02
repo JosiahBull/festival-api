@@ -2,7 +2,7 @@ use crate::response::{Data, Response};
 use crate::schema::*;
 use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET};
 use chrono::Utc;
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest, Request};
 use rocket::serde::{Deserialize, Serialize};
@@ -90,7 +90,8 @@ impl Claims {
             token,
             &DecodingKey::from_secret((*JWT_SECRET).as_ref()),
             &Validation::default(),
-        ).map(|o| o.claims)
+        )
+        .map(|o| o.claims)
     }
 }
 

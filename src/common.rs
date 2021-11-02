@@ -140,15 +140,17 @@ pub fn generate_random_alphanumeric(length: usize) -> String {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
+    use super::{
+        compare_hashed_strings, generate_random_alphanumeric, get_time_since, hash_string_with_salt,
+    };
     use chrono::Utc;
-    use super::{generate_random_alphanumeric, get_time_since, hash_string_with_salt, compare_hashed_strings};
+    use std::collections::HashSet;
 
     #[test]
     fn test_create_hash_password() {
         //To ensure salt is working
         //Don't set too high, hashing is expensive + time consuming
-        let loop_count = 5; 
+        let loop_count = 5;
 
         let pwd = generate_random_alphanumeric(10);
 
@@ -167,8 +169,12 @@ mod test {
         //Ensure that we can compare the hash still!
         let pwd = generate_random_alphanumeric(4);
         let hashed_pwd = hash_string_with_salt(pwd.clone()).expect("Failed to hash password ");
-        assert!(compare_hashed_strings(pwd.clone(), hashed_pwd.clone()).expect("Failed to compare hashes "));
-        assert!(!compare_hashed_strings(String::from("hello"), hashed_pwd.clone()).expect("Failed to compare hashes "));
+        assert!(compare_hashed_strings(pwd.clone(), hashed_pwd.clone())
+            .expect("Failed to compare hashes "));
+        assert!(
+            !compare_hashed_strings(String::from("hello"), hashed_pwd.clone())
+                .expect("Failed to compare hashes ")
+        );
     }
 
     #[test]
@@ -188,7 +194,7 @@ mod test {
         //Note, there is a chance that we *could* get a string which has been generated before.
         //But that chance is infinitesimally small as to be negligible.
         let sample_size = 1000;
-        let mut set: HashSet<String> = HashSet::default(); 
+        let mut set: HashSet<String> = HashSet::default();
         for _ in 0..sample_size {
             let s = generate_random_alphanumeric(32);
             if set.contains(&s) {
@@ -196,6 +202,5 @@ mod test {
             }
             set.insert(s);
         }
-    } 
-
+    }
 }
