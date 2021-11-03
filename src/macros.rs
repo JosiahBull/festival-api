@@ -1,11 +1,11 @@
-//! This module contains ease-of-use macros for the Festival-Api. 
-//! 
+//! This module contains ease-of-use macros for the Festival-Api.
+//!
 //! Each aims to simplify code throughout the project - usually in `main.rs`.
 
 /// A macro to shorthand the rejection from an endpoint due to a bad request.
 /// Should be used when you want a quick 400 response to the user.
 /// Note that a string must be provided (or used like `format!()`).
-/// 
+///
 /// **Examples**
 /// ```rust
 ///     fn main() {
@@ -15,7 +15,7 @@
 ///         }
 ///     }
 /// ```
-/// 
+///
 /// /// ```rust
 ///     fn main() {
 ///         #[get("/")]
@@ -25,8 +25,8 @@
 ///         }
 ///     }
 /// ```
-/// 
-/// If you need more detail in your rejection, you should construct a Response 
+///
+/// If you need more detail in your rejection, you should construct a Response
 /// manually for the user. This returns with `ContentType: Plain/Text;`.
 macro_rules! reject {
     () => {
@@ -55,7 +55,7 @@ macro_rules! reject {
 /// A macro to shorthand the rejection from an endpoint due to a server error.
 /// /// Should be used when you want a quick 500 response to the user.
 /// Note that a string must be provided (or used like `format!()`).
-/// 
+///
 /// **Examples**
 /// ```rust
 ///     fn main() {
@@ -65,7 +65,7 @@ macro_rules! reject {
 ///         }
 ///     }
 /// ```
-/// 
+///
 /// /// ```rust
 ///     fn main() {
 ///         #[get("/")]
@@ -75,7 +75,7 @@ macro_rules! reject {
 ///         }
 ///     }
 /// ```
-/// 
+///
 /// If you need a more detailed failure response other htan 500 + a message
 /// please construct the response manually.
 macro_rules! failure {
@@ -103,30 +103,30 @@ macro_rules! failure {
 }
 
 /// A macro to load configuration from the environment.
-/// 
+///
 /// Attempts to load from multiple sources falling back in this order:
 /// 1. Load from environment
 /// 2. Load from `./config/general.toml`
 /// 3. panic!
-/// 
+///
 /// This macro recommend for use in conjunction with lazy static, as these variables like to be loaded/parsed
 /// at runtime, not at compile-time.
-/// 
+///
 /// **Example**
 /// ```rust
 ///     lazy_static! {
 ///         static ref NUMBER_SHOES: usize = load_env!("NUMBER_SHOES");
 ///     }
-/// 
+///
 ///     fn main() {
 ///         lazy_static::initialize(&NUMBER_SHOES);
 ///         println!("The number of shoes is {}", *NUMBER_SHOES);
 ///     }
 /// ```
 /// A variety of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.
-/// 
+///
 /// Internally this macro relies on `toml::value::Value.try_into()` for type conversion.
-/// 
+///
 macro_rules! load_env {
     () => {
         compile_error!("String must be provided to load_env macro!");
@@ -190,4 +190,4 @@ macro_rules! load_env {
     };
 }
 
-pub(crate) use {failure, reject, load_env};
+pub(crate) use {failure, load_env, reject};

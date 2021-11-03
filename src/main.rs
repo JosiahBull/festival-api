@@ -15,7 +15,7 @@ use std::{collections::HashMap, path::Path, process::Command};
 
 use diesel::prelude::*;
 use lazy_static::lazy_static;
-use macros::{failure, reject, load_env};
+use macros::{failure, load_env, reject};
 use models::UserCredentials;
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
@@ -205,7 +205,10 @@ async fn convert(
 
     // Validate PhrasePackage
     if phrase_package.word.len() > *WORD_LENGTH_LIMIT {
-        reject!("Word is too long! Greater than {} chars", *WORD_LENGTH_LIMIT)
+        reject!(
+            "Word is too long! Greater than {} chars",
+            *WORD_LENGTH_LIMIT
+        )
     }
     if phrase_package.word.len() < 1 {
         reject!("No word provided!")
@@ -220,7 +223,10 @@ async fn convert(
         )
     }
     if phrase_package.speed < *SPEED_MIN_VAL {
-        reject!("Speed values lower than {} are not allowed.", *SPEED_MIN_VAL)
+        reject!(
+            "Speed values lower than {} are not allowed.",
+            *SPEED_MIN_VAL
+        )
     }
     if !SUPPORTED_LANGS.contains_key(&phrase_package.lang) {
         reject!(
