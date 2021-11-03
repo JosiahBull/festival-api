@@ -41,7 +41,7 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
 - [ ] Configuration
     - [x] Language Configuration `/config/langs.toml`
     - [ ] File Format Configuration `/config/formats.toml`
-    - [ ] General Configuration `/config/general.toml`
+    - [x] General Configuration `/config/general.toml`
 - [ ] Setup docker-compose
 - [ ] Code Comments/Documentation
 
@@ -53,16 +53,17 @@ This api depends on Rust, Rocket, Diesel and Postgres.
 
 ```sh
 # Spawn a postgres backing db
-docker run --name fest-db -p 5432:5432 -e POSTGRES_PASSWORD=hunter42 -d postgres
-echo DATABASE_URL=postgres://postgres:hunter42@localhost/fest_api > .env
+docker run --name fest-db -p 5432:5432 -e POSTGRES_PASSWORD=postgres -d postgres
+echo DATABASE_URL=postgres://postgres:postgres@localhost/fest_api > .env
 
 # Install the diesel cli utility
 cargo install diesel_cli --no-default-features --features postgres
 
 # Run migration to configure db ready for api
-diesel migration run
+diesel setup
 
 # Start the api, initial compilation may take some time so get a cup of tea
+export JWT_SECRET=<Your_Token_Here>
 cargo run --release
 ```
 

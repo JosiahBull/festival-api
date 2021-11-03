@@ -11,11 +11,11 @@ extern crate rocket;
 #[macro_use]
 extern crate diesel;
 
-use std::{collections::HashMap, env::var, path::Path, process::Command};
+use std::{collections::HashMap, path::Path, process::Command};
 
 use diesel::prelude::*;
 use lazy_static::lazy_static;
-use macros::{failure, reject};
+use macros::{failure, reject, load_env};
 use models::UserCredentials;
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
@@ -27,25 +27,29 @@ compile_error!("Unable to compile for your platform! This API is only available 
 #[rocket_sync_db_pools::database("postgres_database")]
 pub struct DbConn(diesel::PgConnection);
 
-const API_NAME: &str = "Jo";
-const CACHE_PATH: &str = "./cache";
-const WORD_LENGTH_LIMIT: usize = 100;
-const SPEED_MAX_VAL: f32 = 3.0;
-const SPEED_MIN_VAL: f32 = 0.5;
-// const MAX_REQUESTS_IP_TRHESHOLD: usize = 10;
-const MAX_REQUESTS_ACC_THRESHOLD: usize = 2;
-const MAX_REQUEST_TIME_PERIOD_MINUTES: usize = 5;
-
 lazy_static! {
     /// The secret used for fast-hashing JWT's for validation.
-    static ref JWT_SECRET: String = var("JWT_SECRET").expect("Env var JWT_SECRET not set!");
-
-    /// The number of hours that a JWT may be used before expiring and forcing the user to re-validate.
-    static ref JWT_EXPIRY_TIME_HOURS: usize = var("JWT_EXPIRY_TIME_HOURS")
-        .expect("Env var JWT_EXPIRY_TIME_HOURS not set!")
-        .parse()
-        .unwrap();
-
+    static ref JWT_SECRET: String = load_env!("JWT_SECRET");
+    /// The number of hours that a JWT may be used before expiring and forcing the user to revalidate.
+    static ref JWT_EXPIRY_TIME_HOURS: usize = load_env!("JWT_EXPIRY_TIME_HOURS");
+    /// The name of the api which is sent with certain requests.
+    static ref API_NAME: String = load_env!("API_NAME");
+    /// The path to the cache for storing .wav files
+    static ref CACHE_PATH: String = load_env!("CACHE_PATH");
+    /// The maximum length of a phrase that the api will process.
+    static ref WORD_LENGTH_LIMIT: usize = load_env!("WORD_LENGTH_LIMIT");
+    /// The maximum speed at which a phrase can be read.
+    static ref SPEED_MAX_VAL: f32 = load_env!("SPEED_MAX_VAL");
+    /// The lowerest speed at which a phrase can be read.
+    static ref SPEED_MIN_VAL: f32 = load_env!("SPEED_MIN_VAL");
+    /// The maximum requests that an account can make in a given time period established by
+    /// `MAX_REQUESTS_TIME_PERIOD_MINUTES`
+    static ref MAX_REQUESTS_ACC_THRESHOLD: usize = load_env!("MAX_REQUESTS_ACC_THRESHOLD");
+    /// The maximum requests that an ip address can make in a given time period established
+    /// by `MAX_REQUESTS_TIME_PERIOD_MINUTES`
+    static ref MAX_REQUESTS_IP_THRESHOLD: usize= load_env!("MAX_REQUESTS_IP_THRESHOLD");
+    /// The time period for timing out users who make too many requests.
+    static ref MAX_REQUESTS_TIME_PERIOD_MINUTES:usize = load_env!("MAX_REQUESTS_TIME_PERIOD_MINUTES");
     /// A list of supported speech languages by this api.
     static ref SUPPORTED_LANGS: HashMap<String, models::Language> = {
         let path = "./config/langs.toml";
@@ -96,7 +100,6 @@ lazy_static! {
 
         return map;
     };
-
     /// The list of supported file-formats, note that wav is the preferred format due to lower cpu usage.
     static ref SUPPORTED_FORMATS: Vec<String> = {
         vec![]
@@ -106,16 +109,12 @@ lazy_static! {
 // General Todos
 // TODO Implement rate limiting for account creation/login based on ip address. This is especially relevant due to how
 // expensive hashing passwords is compute-wise.
-// TODO have another crack at implementing a response api which doesn't require owned values.
 // TODO if not found in the global env, static refs should fall back to looking for .env, or Rocket.toml.
-// TODO write tests for all endpoints. Research is required as to how to test with the database solution required.
-// Given we are using GH actions, something like: https://docs.github.com/en/actions/using-containerized-services/creating-postgresql-service-containers
-// could be relevant?
 // TODO create macro to automatically fill in boilerplate for jwt tokens to help reduce clutter.
 
 #[get("/")]
 fn index() -> String {
-    format!("Welcome to {}'s API for converting text into downloadable wav files! Please make a request to /docs for documentation.", API_NAME)
+    format!("Welcome to {} API for converting text into downloadable wav files! Please make a request to /docs for documentation.", *API_NAME)
 }
 
 #[get("/docs")]
@@ -205,8 +204,8 @@ async fn convert(
     let token = token?;
 
     // Validate PhrasePackage
-    if phrase_package.word.len() > WORD_LENGTH_LIMIT {
-        reject!("Word is too long! Greater than {} chars", WORD_LENGTH_LIMIT)
+    if phrase_package.word.len() > *WORD_LENGTH_LIMIT {
+        reject!("Word is too long! Greater than {} chars", *WORD_LENGTH_LIMIT)
     }
     if phrase_package.word.len() < 1 {
         reject!("No word provided!")
@@ -214,14 +213,14 @@ async fn convert(
     if !phrase_package.word.bytes().all(|c| !c.is_ascii_digit()) {
         reject!("Cannot have numbers in phrase!")
     }
-    if phrase_package.speed > SPEED_MAX_VAL {
+    if phrase_package.speed > *SPEED_MAX_VAL {
         reject!(
             "Speed values greater than {} are not allowed.",
-            SPEED_MAX_VAL
+            *SPEED_MAX_VAL
         )
     }
-    if phrase_package.speed < SPEED_MIN_VAL {
-        reject!("Speed values lower than {} are not allowed.", SPEED_MIN_VAL)
+    if phrase_package.speed < *SPEED_MIN_VAL {
+        reject!("Speed values lower than {} are not allowed.", *SPEED_MIN_VAL)
     }
     if !SUPPORTED_LANGS.contains_key(&phrase_package.lang) {
         reject!(
@@ -232,12 +231,12 @@ async fn convert(
 
     // Validate that this user hasn't been timed out, and log this request.
     let reqs: Vec<models::GenerationRequest> =
-        common::load_recent_requests(&conn, token.sub, MAX_REQUESTS_ACC_THRESHOLD).await?;
-    if reqs.len() == MAX_REQUESTS_ACC_THRESHOLD {
+        common::load_recent_requests(&conn, token.sub, *MAX_REQUESTS_ACC_THRESHOLD).await?;
+    if reqs.len() == *MAX_REQUESTS_ACC_THRESHOLD {
         //Validate that this user hasn't made too many requests
         let earliest_req_time = common::get_time_since(reqs.last().unwrap().crt);
         let max_req_time_duration =
-            chrono::Duration::minutes(MAX_REQUEST_TIME_PERIOD_MINUTES as i64);
+            chrono::Duration::minutes(*MAX_REQUESTS_TIME_PERIOD_MINUTES as i64);
 
         if earliest_req_time < max_req_time_duration {
             return Err(Response::TextErr(Data {
@@ -253,7 +252,7 @@ async fn convert(
     // Generate the phrase if it isn't in the cache.
     let file_name = format!(
         "{}/{}.wav",
-        CACHE_PATH,
+        *CACHE_PATH,
         common::generate_random_alphanumeric(10)
     );
     if !Path::new(&file_name).exists() {
@@ -305,6 +304,13 @@ fn rocket() -> _ {
     //Initalize all globals
     lazy_static::initialize(&JWT_SECRET);
     lazy_static::initialize(&JWT_EXPIRY_TIME_HOURS);
+    lazy_static::initialize(&API_NAME);
+    lazy_static::initialize(&CACHE_PATH);
+    lazy_static::initialize(&SPEED_MAX_VAL);
+    lazy_static::initialize(&SPEED_MIN_VAL);
+    lazy_static::initialize(&MAX_REQUESTS_ACC_THRESHOLD);
+    lazy_static::initialize(&MAX_REQUESTS_IP_THRESHOLD);
+    lazy_static::initialize(&MAX_REQUESTS_TIME_PERIOD_MINUTES);
     lazy_static::initialize(&SUPPORTED_LANGS);
     lazy_static::initialize(&SUPPORTED_FORMATS);
 
@@ -315,6 +321,7 @@ fn rocket() -> _ {
 }
 
 #[cfg(test)]
+#[cfg(not(tarpaulin_include))]
 mod tests {
     use crate::models::UserCredentials;
 

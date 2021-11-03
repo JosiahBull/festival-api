@@ -139,6 +139,7 @@ pub fn generate_random_alphanumeric(length: usize) -> String {
 }
 
 #[cfg(test)]
+#[cfg(not(tarpaulin_include))]
 mod test {
     use super::{
         compare_hashed_strings, generate_random_alphanumeric, get_time_since, hash_string_with_salt,
