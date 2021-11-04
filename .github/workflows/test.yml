@@ -35,7 +35,7 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test -- --test-threads 1 --verbose
+      run: cargo test -- --test-threads 1
       env:
         ROCKET_DATABASES: '{postgres_database={url=postgres://postgres:postgres@localhost/fest_api}}'
         JWT_SECRET: nevergonnagiveyouup
