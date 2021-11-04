@@ -5,6 +5,7 @@ mod common;
 mod macros;
 mod models;
 mod response;
+mod cache;
 
 #[macro_use]
 extern crate rocket;
@@ -109,8 +110,9 @@ lazy_static! {
 // General Todos
 // TODO Implement rate limiting for account creation/login based on ip address. This is especially relevant due to how
 // expensive hashing passwords is compute-wise.
-// TODO if not found in the global env, static refs should fall back to looking for .env, or Rocket.toml.
-// TODO create macro to automatically fill in boilerplate for jwt tokens to help reduce clutter.
+// TODO the api shouldn't charge for serving files from the cache. If we also provide an endpoint for finding out which
+// words are cached, we could allow users to more smartly choose which phrases they wish to display.
+// This should also reduce load on the api significant as it'll encourage users to pull common words!
 
 #[get("/")]
 fn index() -> String {
@@ -235,7 +237,7 @@ async fn convert(
         )
     }
 
-    // Validate that this user hasn't been timed out, and log this request.
+    // Validate that this user hasn't been timed out
     let reqs: Vec<models::GenerationRequest> =
         common::load_recent_requests(&conn, token.sub, *MAX_REQUESTS_ACC_THRESHOLD).await?;
     if reqs.len() == *MAX_REQUESTS_ACC_THRESHOLD {
@@ -254,6 +256,10 @@ async fn convert(
             }));
         }
     }
+
+    // Log this request
+    //TODO
+    // common::log_request(&conn,)?;
 
     // Generate the phrase if it isn't in the cache.
     let file_name = format!(
@@ -280,8 +286,7 @@ async fn convert(
         }
     }
 
-    //Format the file to the desired output
-    //TODO
+    //Format the file to the desired outputSoi
 
     let resp_file = match NamedFile::open(&file_name).await {
         Ok(f) => f,
@@ -334,11 +339,11 @@ mod tests {
     use super::common::generate_random_alphanumeric;
     use super::models::Claims;
     use super::rocket;
-    use rocket::http::{ContentType, Status};
+    use rocket::http::{ContentType, Header, Status};
     use rocket::local::blocking::Client;
 
     //***** Helper Methods *****//
-    fn create_test_account(client: &Client) -> (UserCredentials, String) {
+    fn create_test_account(client: &Client) -> (UserCredentials, String, String) {
         let body = UserCredentials {
             usr: generate_random_alphanumeric(20),
             pwd: String::from("User12356789"),
@@ -353,7 +358,7 @@ mod tests {
             .dispatch();
         assert_eq!(create_response.status(), Status::Created);
 
-        return (body, body_json);
+        return (body, body_json, create_response.into_string().unwrap());
     }
 
     //***** Test Methods *****//
@@ -391,7 +396,7 @@ mod tests {
     #[test]
     fn login_success() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let (_, body_json) = create_test_account(&client);
+        let (_, body_json, _) = create_test_account(&client);
 
         //Attempt to login
         let response = client
@@ -416,7 +421,7 @@ mod tests {
     #[test]
     fn login_failures() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let (body, body_json) = create_test_account(&client);
+        let (body, body_json, _) = create_test_account(&client);
 
         let wrong_password_body = body_json.replace(&body.pwd, "incorrect");
         let wrong_username_body = body_json.replace(&body.usr, "incorrect");
@@ -572,5 +577,32 @@ mod tests {
             "text/plain; charset=utf-8"
         );
         assert_eq!(response.into_string().unwrap(), "Username Taken");
+    }
+
+    #[test]
+    fn success_conversion() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let (_, _, token) = create_test_account(&client);
+
+        let body = "{
+            \"word\": \"The University of Auckland\",
+            \"lang\": \"en\",
+            \"speed\": 1.0
+        }";
+
+        //Test the generation of the .wav file
+        let response = client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token))
+            .body(&body)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.headers().get_one("content-type").unwrap(), "audio/mpeg");
+        //TODO once filename generation is fixed, actually test for that.
+        assert!(response.headers().get_one("content-disposition").unwrap().contains("attachment; filename=\""));
+
+        assert_eq!(response.into_bytes().unwrap().len(), 58428);
     }
 }

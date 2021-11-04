@@ -16,7 +16,7 @@ pub struct UserCredentials {
 }
 
 /// Represents a user of this api.
-#[derive(Queryable, QueryableByName, Serialize)]
+#[derive(Debug, Queryable, QueryableByName, Serialize)]
 #[table_name = "users"]
 pub struct User {
     pub id: i32,
@@ -145,3 +145,63 @@ mod tests {
         //TODO validate time claims on the token
     }
 }
+
+///// Test Implementation of the cache as a fairing /////
+// struct TestCache {
+// data: usize,
+// db: Option<DbConn>,
+// }
+
+// impl TestCache {
+// async fn make_request(&self) -> Option<models::User> {
+//     if let Some(f) = &self.db {
+//         return common::find_user_in_db(f, common::SearchItem::Id(1)).await.unwrap()
+//     }
+//     None
+// }
+// }
+
+// #[rocket::async_trait]
+// impl rocket::fairing::Fairing for TestCache {
+// fn info(&self) -> rocket::fairing::Info {
+//     rocket::fairing::Info {
+//         name: "Test Cache Implementation",
+//         kind: Kind::Ignite
+//     }
+// }
+
+// async fn on_ignite(&self, rocket: rocket::Rocket<rocket::Build>) -> rocket::fairing::Result {
+//     //Get a db instance
+//     let db = DbConn::get_one(&rocket).await.unwrap();
+
+//     //Initialize our test friend
+//     let cache = TestCache {
+//         data: 5,
+//         db: Some(db)
+//     };
+
+//     //Save him to a local state
+//     let new_rocket = rocket.manage(cache);
+
+//     //Return our succesfully attached fairing!
+//     rocket::fairing::Result::Ok(new_rocket)
+// }
+// }
+
+// impl Default for TestCache {
+// fn default() -> Self {
+//     TestCache {
+//         data: 5,
+//         db: None,
+//     }
+// }
+// }
+
+/////fairing cache implemntation tests/////
+        // .attach(testcache)
+        // .manage(friend)
+        // .attach(rocket::fairing::AdHoc::on_liftoff("Freds", |rocket| {
+        //     Box::pin(async move {
+        //         friend.fetch_update(std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed, |_| Some(4));
+        //     })
+        // }))
