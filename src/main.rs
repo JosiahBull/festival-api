@@ -1,11 +1,11 @@
 #[cfg(not(tarpaulin_include))]
 #[rustfmt::skip]
 mod schema;
+mod cache;
 mod common;
 mod macros;
 mod models;
 mod response;
-mod cache;
 
 #[macro_use]
 extern crate rocket;
@@ -310,6 +310,9 @@ async fn convert(
     }))
 }
 
+// struct CacheFairing(crate::cache::Cache<String, models::GenerationRequest, NamedFile>);
+
+
 #[launch]
 fn rocket() -> _ {
     //Initalize all globals
@@ -598,10 +601,21 @@ mod tests {
             .body(&body)
             .dispatch();
 
-        assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.headers().get_one("content-type").unwrap(), "audio/mpeg");
+        let status = response.status();
+        if status != Status::Ok {
+            panic!("Failed with status {} Body: {}", status, response.into_string().unwrap());
+        }
+
+        assert_eq!(
+            response.headers().get_one("content-type").unwrap(),
+            "audio/mpeg"
+        );
         //TODO once filename generation is fixed, actually test for that.
-        assert!(response.headers().get_one("content-disposition").unwrap().contains("attachment; filename=\""));
+        assert!(response
+            .headers()
+            .get_one("content-disposition")
+            .unwrap()
+            .contains("attachment; filename=\""));
 
         assert_eq!(response.into_bytes().unwrap().len(), 58428);
     }

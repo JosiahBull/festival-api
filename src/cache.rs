@@ -8,25 +8,27 @@
 //!         -> if no space in cache, check if our score is greater (10pts?) than the lowest popularity score
 //!             -> if greater, bump that item, update the lowest popularity score number, cache this item
 //!             -> else, do nothing.
-//! 
+//!
 //! The API for this cache is designed to be flexible and reusable, so it makes extensive use of generics.
 //! This means that to use it expect to have to implement functions to pass into the api.
 
-use std::{collections::HashMap, hash::Hash, marker::PhantomData};
+// General TODOs
+// TODO Improve Error handling with a custom error type that implements Into<Response>.
+
+use std::{collections::HashMap, hash::Hash, io::ErrorKind, marker::PhantomData};
 
 const BYTES_IN_MB: usize = 1048576;
-
 //TODO update error types to something more usuable?
 #[rocket::async_trait]
-trait Cachable<U> 
-{
+trait Cachable<U> {
     async fn load_underlying(&self) -> Result<U, std::io::Error>;
     async fn size_on_disk(&self) -> Result<usize, std::io::Error>;
     async fn save_on_disk(&self) -> Result<(), std::io::Error>;
     async fn remove_from_disk(&self) -> Result<(), std::io::Error>;
 }
 
-struct Info<G, U> 
+#[derive(Debug, Clone)]
+struct Info<G, U>
 where
     G: Cachable<U> + Send + Sync,
 {
@@ -36,7 +38,7 @@ where
     _return_type: PhantomData<U>,
 }
 
-struct Cache<T, G, U> 
+struct Cache<T, G, U>
 where
     T: Hash,
     G: Cachable<U> + Send + Sync,
@@ -53,11 +55,18 @@ where
     cache: HashMap<T, Info<G, U>>,
 }
 
-impl<T, G, U> Cache<T, G, U> 
+impl<T, G, U> Cache<T, G, U>
 where
     T: Hash + Eq,
-    G: Cachable<U> + Send + Sync,
+    G: Cachable<U> + std::cmp::PartialEq + Send + Sync,
 {
+    fn new(max_items: usize, max_size: usize) -> Cache<T, G, U> {
+        let mut def = Self::default();
+        def.max_to_cache = max_items;
+        def.max_size_of_cache_bytes = max_size;
+        def
+    }
+
     /// Get the raw item, without running the function which actually gets the data it contains internally.
     fn get_raw(&self, key: &T) -> Option<&G> {
         if let Some(i) = self.cache.get(&key) {
@@ -78,7 +87,6 @@ where
             let data = item.wrapped.load_underlying().await?;
 
             Ok(Some(data))
-
         } else {
             Ok(None)
         }
@@ -88,22 +96,26 @@ where
     /// Will automatically save this to the disk if space is available.
     async fn insert(&mut self, key: T, value: G) -> Result<(), std::io::Error> {
         // Check if item already in the cache
-        // If it's there, update it 
+        // If it's there, update it
         // If not insert it
         if self.contains_item(&key) {
             //This item has been seen before
             //Lets update it's uses and popularity
             let item: &mut Info<G, U> = self.cache.get_mut(&key).unwrap();
-            item.uses += 1;        
+
+            if value != item.wrapped {
+                return Err(std::io::Error::new(ErrorKind::AlreadyExists, "Unable to insert due to existing item with this key!"))
+            }
+
+            item.uses += 1;
             let uses = item.uses;
 
             if uses > self.min_uses {
                 self.min_uses = uses + self.uses_threshold;
 
                 //Decache the current item with the minimum uses
-                //Note that this could be improved to just statically store this
-                //Rather than needing to always relocate the lowest item.
-                //As this is a very poorly-optimised process
+                //Note that this could be improved to just statically store an array of items to be decached
+                //Rather than needing to always locate the lowest item. As this is a very poorly-optimised process
                 //TODO: Optimise + test the crap out of this
                 let mut item: Option<&mut Info<G, U>> = None;
                 let mut lowest_uses: usize = 0;
@@ -114,7 +126,7 @@ where
                     }
                 }
                 if item.is_none() {
-                    panic!("Caching of item failed due to unknown error!");
+                    panic!("Caching of item failed du()e to unknown error!");
                 }
                 let item = item.unwrap();
 
@@ -122,17 +134,16 @@ where
                 item.cached = false;
                 self.size_on_disk -= item.wrapped.size_on_disk().await?;
                 item.wrapped.remove_from_disk().await?;
-                
+
                 //Cache our new item as it's more popular
                 let item: &mut Info<G, U> = self.cache.get_mut(&key).unwrap();
                 item.cached = true;
                 item.wrapped.save_on_disk().await?;
                 self.size_on_disk += item.wrapped.size_on_disk().await?;
             }
-
         } else {
             let mut cached = false;
-            
+
             //Save the data if we can!
             if self.space_available() {
                 cached = true;
@@ -148,12 +159,11 @@ where
                 wrapped: value,
                 _return_type: PhantomData,
             };
-            
+
             self.cache.insert(key, data);
         }
         Ok(())
     }
-
 
     fn get_underlying<'a>(&'a mut self) -> &'a mut HashMap<T, Info<G, U>> {
         &mut self.cache
@@ -169,11 +179,11 @@ where
 
     /// Check if there is space available in the cache
     fn space_available(&self) -> bool {
-        self.max_to_cache < self.count && self.size_on_disk < self.max_size_of_cache_bytes
+        self.count < self.max_to_cache && self.size_on_disk < self.max_size_of_cache_bytes
     }
 }
 
-impl<T, G, U> Default for Cache<T, G, U> 
+impl<T, G, U> Default for Cache<T, G, U>
 where
     T: Hash,
     G: Cachable<U> + Send + Sync,
@@ -193,12 +203,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use super::{Cachable, Cache};
+    use super::{Cachable, Cache, Info};
     use crate::rocket::tokio;
+    use std::{collections::HashMap};
 
-    #[derive(Debug, PartialEq)]
-    struct Item { data: String }
+    #[derive(Debug, PartialEq, Clone)]
+    struct Item {
+        data: String,
+    }
 
     #[rocket::async_trait]
     impl Cachable<i64> for Item {
@@ -219,6 +231,58 @@ mod tests {
         }
     }
 
+    /// Ensure cache size limits work correctly, both for number and size of files.
+    /// Will create a cache that can store 5 files, of up to 100 bytes total.
+    /// Files are cleaned up at the conclusion (or failure) of the test.
+    #[rocket::tokio::test]
+    async fn test_size_limits_num_items() {
+        let mut cache: Cache<String, Item, i64> = Cache::new(5, 100);
+
+        //We should be able to insert 100 items, but only the first 5 should be cached.
+        //Cache 100 items
+        for i in 0..100 {
+            let item = Item { data: format!("Number {} is alive!", i) };
+            cache.insert(format!("Number{}", i), item).await.unwrap();
+        }
+
+        assert!(!cache.space_available());
+
+        //Check how many are cached
+        let mut total = 0;
+        for i in cache.get_underlying().clone().into_values() {
+            if i.cached {
+                total += 1;
+            }
+        };
+        assert_eq!(total, 5);
+    }
+
+    /// Validate that we will not store too great a size of files.
+    #[rocket::tokio::test]
+    async fn test_size_limits_total_size() {
+        let mut cache: Cache<String, Item, i64> = Cache::new(1000, 5);
+
+        //We should be able to insert 100 items, but only the first 5 should be cached.
+        //Cache 100 items
+        for i in 0..100 {
+            let item = Item { data: format!("Number {} is alive!", i) };
+            cache.insert(format!("Number{}", i), item).await.unwrap();
+        }
+
+        assert!(!cache.space_available());
+
+        //Check how many are cached
+        let mut total = 0;
+        for i in cache.get_underlying().clone().into_values() {
+            if i.cached {
+                total += 1;
+            }
+        };
+        assert_eq!(total, 5);
+    }
+
+    /// Ensures the basic functionality of the caching system.
+    /// Inserting items, checking that those items exist, and so on.
     #[rocket::tokio::test]
     async fn basic_functionality() {
         let mut cache: Cache<String, Item, i64> = Cache::default();
@@ -226,7 +290,15 @@ mod tests {
         assert_eq!(cache.size(), 100);
 
         //Check that we can insert items
-        cache.insert(String::from("Item1"), Item { data: String::from("Hello, world!") }).await.unwrap();
+        cache
+            .insert(
+                String::from("Item1"),
+                Item {
+                    data: String::from("Hello, world!"),
+                },
+            )
+            .await
+            .unwrap();
 
         //Check for an item that exists and one that doesn't exist
         let exists: bool = cache.contains_item(&String::from("Item1"));
@@ -244,33 +316,34 @@ mod tests {
         assert_eq!(true_data.unwrap(), 42);
     }
 
-    #[test]
-    fn test_duplicate_key() {
-        // let mut cache: Cache<String, Item, i64> = Cache::default();
+    /// Ensure that inserting a duplicate key into the cache causes a failure.
+    #[rocket::tokio::test]
+    async fn test_duplicate_key() {
+        let mut cache: Cache<String, Item, i64> = Cache::default();
 
-        // let result: Option<Item> = cache.insert(String::from("Item2"), Item { data: String::from("Things!") });
-        // assert!(result.is_none());
+        //Should be fine
+        cache.insert(String::from("Item2"), Item { data: String::from("Things!") }).await.unwrap();
 
-        // //Check that inserting a duplicate item works as intended
-        // let result: Option<Item> = cache.insert(String::from("Item2"), Item { data: String::from("Things!") });
-        // assert!(result.is_some());
-        // assert_eq!(result.unwrap(), Item { data: String::from("Things!") });
+        //Check that inserting a duplicate item works as intended
+        cache.insert(String::from("Item2"), Item { data: String::from("Things2!") }).await.unwrap_err();
+        
+        assert_eq!(cache.get_raw(&String::from("Item2")).unwrap(), &Item { data: String::from("Things!") });
     }
 
-    #[test]
-    fn test_underlying() {
-        // let mut cache: Cache<String, Item, i64> = Cache::default();
+    /// Test getting the backing HashMap. 
+    #[rocket::tokio::test]
+    async fn test_underlying() {
+        let mut cache: Cache<String, Item, i64> = Cache::default();
 
-        // let result: Option<Item> = cache.insert(String::from("Item2"), Item { data: String::from("Things!") });
-        // assert!(result.is_none());
+        cache.insert(String::from("Item2"), Item { data: String::from("Things!") }).await.unwrap();
 
-        // let underlying: &mut HashMap<String, Item> = cache.get_underlying();
+        let underlying: &mut HashMap<String, Info<Item, i64>> = cache.get_underlying();
 
-        // let keys = underlying.into_keys();
-        // let vals = underlying.into_values();
+        let keys = underlying.clone().into_keys();
+        let vals = underlying.clone().into_values();
 
-        // assert_eq!(underlying.into_keys().len(), 1);
-        // assert_eq!(underlying.into_keys().nth(0).unwrap(), String::from("Item2"));
-        // assert_eq!(underlying.into_values().nth(0).unwrap(), Item { data: String::from("Things!") });
+        assert_eq!(keys.len(), 1);
+        assert_eq!(keys.last().unwrap(), String::from("Item2"));
+        assert_eq!(vals.last().unwrap().wrapped, Item { data: String::from("Things!") });
     }
 }

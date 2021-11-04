@@ -198,10 +198,10 @@ mod tests {
 // }
 
 /////fairing cache implemntation tests/////
-        // .attach(testcache)
-        // .manage(friend)
-        // .attach(rocket::fairing::AdHoc::on_liftoff("Freds", |rocket| {
-        //     Box::pin(async move {
-        //         friend.fetch_update(std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed, |_| Some(4));
-        //     })
-        // }))
+// .attach(testcache)
+// .manage(friend)
+// .attach(rocket::fairing::AdHoc::on_liftoff("Freds", |rocket| {
+//     Box::pin(async move {
+//         friend.fetch_update(std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed, |_| Some(4));
+//     })
+// }))
