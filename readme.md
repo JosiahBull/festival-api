@@ -54,7 +54,7 @@ This api depends on Rust, Rocket, Diesel and Postgres.
 ```sh
 # Spawn a postgres backing db
 docker run --name fest-db -p 5432:5432 -e POSTGRES_PASSWORD=postgres -d postgres
-echo DATABASE_URL=postgres://postgres:postgres@localhost/fest_api > .env
+export DATABASE_URL=postgres://postgres:postgres@localhost/fest_api
 
 # Install the diesel cli utility
 cargo install diesel_cli --no-default-features --features postgres
@@ -64,6 +64,7 @@ diesel setup
 
 # Start the api, initial compilation may take some time so get a cup of tea
 export JWT_SECRET=<Your_Token_Here>
+cargo test -- --test-threads 1
 cargo run --release
 ```
 

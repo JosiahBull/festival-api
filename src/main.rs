@@ -282,7 +282,7 @@ async fn convert(
             .output();
 
         if let Err(e) = word_gen {
-            error!("Failed to generate wav from provided string. {}", e)
+            failure!("Failed to generate wav from provided string. {}", e)
         }
     }
 
@@ -312,7 +312,6 @@ async fn convert(
 
 // struct CacheFairing(crate::cache::Cache<String, models::GenerationRequest, NamedFile>);
 
-
 #[launch]
 fn rocket() -> _ {
     //Initalize all globals
@@ -336,7 +335,7 @@ fn rocket() -> _ {
 
 #[cfg(test)]
 #[cfg(not(tarpaulin_include))]
-mod tests {
+mod rocket_tests {
     use crate::models::UserCredentials;
 
     use super::common::generate_random_alphanumeric;
@@ -582,6 +581,31 @@ mod tests {
         assert_eq!(response.into_string().unwrap(), "Username Taken");
     }
 
+    // use rocket::tokio;
+
+    // #[rocket::tokio::test(flavor = "multi_thread", worker_threads = 16)]
+    // async fn be_friends() {
+    //     let mut handles = vec![];
+    //     for i in 0..200 {
+    //         let t = tokio::spawn(async move {
+    //             let command = format!("echo \"{}\" | text2wave -o {}",
+    //                 "The university of auckland is cool!",
+    //                 &format!("./cache/file-{}.wav", i)
+    //             );
+
+    //             let word_gen = Command::new("bash")
+    //                 .args(["-c", &command])
+    //                 .stdout(std::process::Stdio::piped())
+    //                 .output();
+
+    //             word_gen.unwrap();
+    //         });
+    //         handles.push(t);
+    //     }
+
+    //     futures::future::join_all(handles).await;
+    // }
+
     #[test]
     fn success_conversion() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
@@ -603,7 +627,11 @@ mod tests {
 
         let status = response.status();
         if status != Status::Ok {
-            panic!("Failed with status {} Body: {}", status, response.into_string().unwrap());
+            panic!(
+                "Failed with status {} Body: {}",
+                status,
+                response.into_string().unwrap()
+            );
         }
 
         assert_eq!(
