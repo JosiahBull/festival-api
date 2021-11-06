@@ -1,7 +1,10 @@
 use crate::macros::reject;
 use crate::response::{Data, Response};
 use crate::schema::*;
-use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET, SUPPORTED_LANGS, WORD_LENGTH_LIMIT, SPEED_MAX_VAL, SPEED_MIN_VAL};
+use crate::{
+    JWT_EXPIRY_TIME_HOURS, JWT_SECRET, SPEED_MAX_VAL, SPEED_MIN_VAL, SUPPORTED_LANGS,
+    WORD_LENGTH_LIMIT,
+};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rocket::http::Status;
@@ -64,7 +67,7 @@ impl PhrasePackage {
     /// Attempts to correct:
     /// - Speed values larger or smaller than the allowd values
     /// - Speed values that are not divisible by 0.5
-    /// 
+    ///
     /// Fails on:
     /// - Invalid language selection
     /// - Invalid file format selection
@@ -92,7 +95,7 @@ impl PhrasePackage {
                 &self.lang
             )
         }
-        
+
         //Validate fild format selection
         //TODO
 
@@ -199,7 +202,7 @@ impl<'r> FromRequest<'r> for Claims {
 #[cfg(not(tarpaulin_include))]
 mod tests {
     use super::{Claims, PhrasePackage};
-    use super::{WORD_LENGTH_LIMIT, SPEED_MAX_VAL, SPEED_MIN_VAL};
+    use super::{SPEED_MAX_VAL, SPEED_MIN_VAL, WORD_LENGTH_LIMIT};
     use crate::common::generate_random_alphanumeric;
 
     #[test]
@@ -219,33 +222,36 @@ mod tests {
         let mut pack = PhrasePackage {
             word: String::from("Hello, world!"),
             lang: String::from("en"),
-            speed: *SPEED_MAX_VAL
+            speed: *SPEED_MAX_VAL,
         };
         pack.validated().expect("a valid package");
 
         let mut pack = PhrasePackage {
             word: String::from("Hello, world!"),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL
+            speed: *SPEED_MIN_VAL,
         };
         pack.validated().expect("a valid package");
 
         let mut pack = PhrasePackage {
             word: String::from("H"),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL
+            speed: *SPEED_MIN_VAL,
         };
         pack.validated().expect("a valid package");
 
         let mut pack = PhrasePackage {
-            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT).chars().filter_map(|x| {
-                if !x.is_numeric() {
-                    return Some(x)
-                }
-                Some('a')
-            }).collect(),
+            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT)
+                .chars()
+                .filter_map(|x| {
+                    if !x.is_numeric() {
+                        return Some(x);
+                    }
+                    Some('a')
+                })
+                .collect(),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL
+            speed: *SPEED_MIN_VAL,
         };
         pack.validated().expect("a valid package");
     }
@@ -264,8 +270,7 @@ mod tests {
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL - 0.1,
         };
-        
-        
+
         // Validate the max value correct is in place!
         pack.validated().expect("a valid package");
         assert_eq!(pack.speed, *SPEED_MIN_VAL);
@@ -278,7 +283,6 @@ mod tests {
 
         pack.validated().expect("a valid package");
         assert_eq!(pack.speed, *SPEED_MAX_VAL);
-
 
         // Validate the 0.5 rounding is in place!
         for i in 0..100 {
@@ -300,42 +304,42 @@ mod tests {
         let mut pack = PhrasePackage {
             word: String::from(""),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL
+            speed: *SPEED_MIN_VAL,
         };
 
         pack.validated().expect_err("should be too short");
 
-     
         //Test string too long
         let mut pack = PhrasePackage {
-            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT + 1).chars().filter_map(|x| {
-                if !x.is_numeric() {
-                    return Some(x)
-                }
-                Some('a')
-            }).collect(),
+            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT + 1)
+                .chars()
+                .filter_map(|x| {
+                    if !x.is_numeric() {
+                        return Some(x);
+                    }
+                    Some('a')
+                })
+                .collect(),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL
+            speed: *SPEED_MIN_VAL,
         };
 
         pack.validated().expect_err("should be too long");
-
 
         //Test unsupported lang
         let mut pack = PhrasePackage {
             word: String::from(""),
             lang: String::from("adfadlfjalk"),
-            speed: *SPEED_MIN_VAL
+            speed: *SPEED_MIN_VAL,
         };
 
         pack.validated().expect_err("should be invalid lang");
-
 
         //Check that numbers in phrase fails
         let mut pack = PhrasePackage {
             word: String::from("adfae12312"),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL
+            speed: *SPEED_MIN_VAL,
         };
 
         pack.validated().expect_err("should be too short");

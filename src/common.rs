@@ -97,16 +97,16 @@ pub async fn update_user_last_seen(
     };
 }
 
-pub async fn log_request(conn: &DbConn, req: crate::models::NewGenerationRequest) -> Result<(), Response> {
+pub async fn log_request(
+    conn: &DbConn,
+    req: crate::models::NewGenerationRequest,
+) -> Result<(), Response> {
     use crate::schema::reqs::dsl::*;
 
     let r: Result<usize, diesel::result::Error> = conn
-        .run(move |c| {
-            diesel::insert_into(reqs)
-                .values(req)
-                .execute(c)
-        }).await;
-    
+        .run(move |c| diesel::insert_into(reqs).values(req).execute(c))
+        .await;
+
     if let Err(e) = r {
         failure!("Unable to log request to database: {}", e);
     }

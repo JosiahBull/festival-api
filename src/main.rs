@@ -267,9 +267,10 @@ async fn convert(
         let word_gen = word_gen.unwrap();
 
         if !word_gen.status.success() {
-
-            let stdout = String::from_utf8(word_gen.stdout).unwrap_or("Unable to parse stdout!".into());
-            let stderr = String::from_utf8(word_gen.stderr).unwrap_or("Unable to parse stderr!".into());
+            let stdout =
+                String::from_utf8(word_gen.stdout).unwrap_or("Unable to parse stdout!".into());
+            let stderr =
+                String::from_utf8(word_gen.stderr).unwrap_or("Unable to parse stderr!".into());
 
             failure!("Failed to generate wav from provided string due to error.\nStdout: \n{}\nStderr: \n{}", stdout, stderr)
         }
@@ -277,7 +278,6 @@ async fn convert(
 
     //Format the file to the desired output
     //TODO
-
 
     let resp_file = match NamedFile::open(&file_name).await {
         Ok(f) => f,
@@ -629,7 +629,7 @@ mod rocket_tests {
             response.headers().get_one("content-type").unwrap(),
             "audio/mpeg"
         );
-        
+
         //TODO once filename generation is fixed, actually test for that.
         assert!(response
             .headers()
@@ -646,7 +646,7 @@ mod rocket_tests {
     fn test_limits() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let (_, _, token) = create_test_account(&client);
-        
+
         let body = "{
             \"word\": \"The University of Auckland\",
             \"lang\": \"en\",
@@ -688,6 +688,9 @@ mod rocket_tests {
         }
 
         //TODO this could check for a tolerance on the seconds number?
-        assert!(response.into_string().unwrap().contains("Too many requests! You will be able to make another request in"));
+        assert!(response
+            .into_string()
+            .unwrap()
+            .contains("Too many requests! You will be able to make another request in"));
     }
 }

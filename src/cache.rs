@@ -12,8 +12,8 @@
 //! The API for this cache is designed to be flexible and reusable, so it makes extensive use of generics.
 //! This means that to use it expect to have to implement functions to pass into the api.
 
+use priority_queue::DoublePriorityQueue;
 use std::{collections::HashMap, hash::Hash, io::ErrorKind, marker::PhantomData};
-use priority_queue::{DoublePriorityQueue};
 
 const BYTES_IN_MB: usize = 1048576;
 #[rocket::async_trait]
@@ -111,7 +111,8 @@ where
                 item.cached = true;
                 item.wrapped.save_on_disk().await?;
                 self.size_on_disk += item.wrapped.size_on_disk().await?;
-                self.priority.push(key.clone(), item.uses + self.uses_threshold);
+                self.priority
+                    .push(key.clone(), item.uses + self.uses_threshold);
 
                 //Decache existing lowest item
                 let decache_key = self.priority.pop_min().unwrap().0;
@@ -134,10 +135,19 @@ where
             if self.check_popularity(&key).await? {
                 //Item already cached, lets just increase it's popularity
                 //TODO Small bug here where a recently cached item will get an extra "use"... it's fairly harmless though so is it worth fixing?
-                self.priority.change_priority_by(&key, |x| { *x = *x + 1; });
-            } 
+                self.priority.change_priority_by(&key, |x| {
+                    *x = *x + 1;
+                });
+            }
 
-            Ok(Some(self.cache.get(&key).unwrap().wrapped.load_underlying().await?))
+            Ok(Some(
+                self.cache
+                    .get(&key)
+                    .unwrap()
+                    .wrapped
+                    .load_underlying()
+                    .await?,
+            ))
         } else {
             Ok(None)
         }
@@ -151,19 +161,25 @@ where
         // If not insert it
         if !self.contains_item(&key) {
             //Not in cache, lets add it.
-            self.cache.insert(key.clone(), Info {
-                wrapped: value,
-                uses: 0,
-                cached: false,
-                _return_type: PhantomData,
-            });
+            self.cache.insert(
+                key.clone(),
+                Info {
+                    wrapped: value,
+                    uses: 0,
+                    cached: false,
+                    _return_type: PhantomData,
+                },
+            );
 
             //Check if we should cache this item!
             self.check_popularity(&key).await?;
 
             Ok(())
         } else {
-            Err(std::io::Error::new(ErrorKind::AlreadyExists, "Key already exists in cache"))
+            Err(std::io::Error::new(
+                ErrorKind::AlreadyExists,
+                "Key already exists in cache",
+            ))
         }
     }
 
@@ -237,7 +253,10 @@ mod test {
 
         cache.set_threshold(2); //Needs at least 2 uses more than the minimum item to become most popular!
 
-        cache.insert(format!("Item1"), Item { data: 5 }).await.unwrap();
+        cache
+            .insert(format!("Item1"), Item { data: 5 })
+            .await
+            .unwrap();
 
         //Assert that the item has been cached
         assert!(cache.get_info(&String::from("Item1")).unwrap().cached);
@@ -247,19 +266,24 @@ mod test {
             let item = cache.load(String::from("Item1")).await.unwrap().unwrap();
             assert_eq!(item, 5);
             assert!(cache.get_info(&String::from("Item1")).unwrap().cached); //Still cached!
-            assert_eq!(cache.get_info(&String::from("Item1")).unwrap().uses, i+1); //Check uses match
+            assert_eq!(cache.get_info(&String::from("Item1")).unwrap().uses, i + 1);
+            //Check uses match
         }
 
         //Assert that the minimum number required is now 5
         assert_eq!(*cache.priority.peek_min().unwrap().1, 5);
 
         //Create a new item, use it 7 times (which should make it become cached)
-        cache.insert(format!("Item2"), Item { data: 3 }).await.unwrap();
+        cache
+            .insert(format!("Item2"), Item { data: 3 })
+            .await
+            .unwrap();
         for i in 0..5 {
             let item = cache.load(String::from("Item2")).await.unwrap().unwrap();
             assert_eq!(item, 3);
             assert!(!cache.get_info(&String::from("Item2")).unwrap().cached); //Not cached!
-            assert_eq!(cache.get_info(&String::from("Item2")).unwrap().uses, i+1); //Check uses match
+            assert_eq!(cache.get_info(&String::from("Item2")).unwrap().uses, i + 1);
+            //Check uses match
         }
 
         //Using 1 more time should make this item become cached, and decache the other item
@@ -286,9 +310,7 @@ mod test {
         //We should be able to insert 100 items, but only the first 5 should be cached.
         //Cache 100 items
         for i in 0..100 {
-            let item = Item {
-                data: i,
-            };
+            let item = Item { data: i };
             cache.insert(format!("Number{}", i), item).await.unwrap();
         }
 
@@ -312,9 +334,7 @@ mod test {
         //We should be able to insert 100 items, but only the first 5 should be cached.
         //Cache 100 items
         for i in 0..100 {
-            let item = Item {
-                data: i,
-            };
+            let item = Item { data: i };
             cache.insert(format!("Number{}", i), item).await.unwrap();
         }
 
@@ -335,15 +355,10 @@ mod test {
     #[rocket::tokio::test]
     async fn basic_functionality() {
         let mut cache: Cache<String, Item, i64> = Cache::default();
-        
+
         //Check that we can insert items
         cache
-            .insert(
-                String::from("Item1"),
-                Item {
-                    data: 6,
-                },
-            )
+            .insert(String::from("Item1"), Item { data: 6 })
             .await
             .unwrap();
 
@@ -370,30 +385,17 @@ mod test {
 
         //Should be fine
         cache
-            .insert(
-                String::from("Item2"),
-                Item {
-                    data: 8,
-                },
-            )
+            .insert(String::from("Item2"), Item { data: 8 })
             .await
             .unwrap();
 
         //Check that inserting a duplicate item works as intended
         cache
-            .insert(
-                String::from("Item2"),
-                Item {
-                    data: 9,
-                },
-            )
+            .insert(String::from("Item2"), Item { data: 9 })
             .await
             .unwrap_err();
 
-        assert_eq!(
-            cache.load(String::from("Item2")).await.unwrap().unwrap(),
-            8
-        );
+        assert_eq!(cache.load(String::from("Item2")).await.unwrap().unwrap(), 8);
     }
 
     /// Test getting the backing HashMap.
@@ -402,12 +404,7 @@ mod test {
         let mut cache: Cache<String, Item, i64> = Cache::default();
 
         cache
-            .insert(
-                String::from("Item2"),
-                Item {
-                    data: 92,
-                },
-            )
+            .insert(String::from("Item2"), Item { data: 92 })
             .await
             .unwrap();
 
@@ -418,10 +415,7 @@ mod test {
 
         assert_eq!(keys.len(), 1);
         assert_eq!(keys.last().unwrap(), String::from("Item2"));
-        assert_eq!(
-            vals.last().unwrap().wrapped.data,
-            92
-        );
+        assert_eq!(vals.last().unwrap().wrapped.data, 92);
     }
 }
 
