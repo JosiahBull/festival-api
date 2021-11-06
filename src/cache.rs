@@ -58,10 +58,11 @@ where
     G: Cachable<U> + std::cmp::PartialEq + Send + Sync,
 {
     fn new(max_items: usize, max_size: usize) -> Cache<T, G, U> {
-        let mut def = Self::default();
-        def.max_to_cache = max_items;
-        def.max_size_of_cache_bytes = max_size;
-        def
+        Cache::<T, G, U> {
+            max_to_cache: max_items,
+            max_size_of_cache_bytes: max_size,
+            ..Default::default()
+        }
     }
 
     fn set_threshold(&mut self, threshold: usize) {
@@ -89,7 +90,7 @@ where
     /// If the item was cached returns true, if not returns false.
     async fn check_popularity(&mut self, key: &T) -> Result<bool, std::io::Error> {
         let space_available = self.space_available();
-        let item = self.cache.get_mut(&key).unwrap();
+        let item = self.cache.get_mut(key).unwrap();
         if item.cached {
             //Already cached!
             return Ok(true);
@@ -136,7 +137,7 @@ where
                 //Item already cached, lets just increase it's popularity
                 //TODO Small bug here where a recently cached item will get an extra "use"... it's fairly harmless though so is it worth fixing?
                 self.priority.change_priority_by(&key, |x| {
-                    *x = *x + 1;
+                    *x += 1;
                 });
             }
 
@@ -183,7 +184,7 @@ where
         }
     }
 
-    fn get_underlying<'b>(&'b mut self) -> &'b mut HashMap<T, Info<G, U>> {
+    fn get_underlying(&mut self) -> &mut HashMap<T, Info<G, U>> {
         &mut self.cache
     }
 
@@ -254,7 +255,7 @@ mod test {
         cache.set_threshold(2); //Needs at least 2 uses more than the minimum item to become most popular!
 
         cache
-            .insert(format!("Item1"), Item { data: 5 })
+            .insert("Item1".to_string(), Item { data: 5 })
             .await
             .unwrap();
 
@@ -275,7 +276,7 @@ mod test {
 
         //Create a new item, use it 7 times (which should make it become cached)
         cache
-            .insert(format!("Item2"), Item { data: 3 })
+            .insert("Item2".to_string(), Item { data: 3 })
             .await
             .unwrap();
         for i in 0..5 {

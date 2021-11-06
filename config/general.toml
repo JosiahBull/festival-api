@@ -29,21 +29,12 @@ SPEED_MAX_VAL = 3.0
 # Default: 0.5
 SPEED_MIN_VAL = 0.5
 
-# The maximum number of requests that can be received from an IP address
-# over a time period of MAX_REQUESTS_TIME_PERIOD_MINUTES before we return
-# 429 responses to requests from that IP address.
-# We recommend setting this value fairly high to avoid weird issues.
-# //TODO The API will eventually support whitelisting IP's from this rate limit.
-# //TODO Setting this to -1 will disable IP rate limiting. 
-# Default: 10
-MAX_REQUESTS_IP_THRESHOLD = 10
-
 # The maximum number of requests that can be recieved from a given user
 # over a time period of MAX_REQUESTS_TIME_PERIOD_MINUTES before we return
 # 429 responses to requests from that user.
 # This can be set fairly aggressively.
 # //TODO The API will eventually support whitelisting User's from this rate limit.
-# //TODO Setting this to -1 will disable IP rate limiting.
+# //TODO Setting this to -1 will disable ACC rate limiting.
 # Default: 2
 MAX_REQUESTS_ACC_THRESHOLD = 2
 

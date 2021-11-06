@@ -55,17 +55,15 @@ pub async fn find_user_in_db(
 ) -> Result<Option<crate::models::User>, Response> {
     use crate::schema::users::dsl::*;
     let r: Result<Vec<crate::models::User>, diesel::result::Error> = conn
-        .run(move |c| {
-            return match name {
-                SearchItem::Name(s) => users
-                    .filter(usr.eq(s))
-                    .limit(1)
-                    .load::<crate::models::User>(c),
-                SearchItem::Id(n) => users
-                    .filter(id.eq(n))
-                    .limit(1)
-                    .load::<crate::models::User>(c),
-            };
+        .run(move |c| match name {
+            SearchItem::Name(s) => users
+                .filter(usr.eq(s))
+                .limit(1)
+                .load::<crate::models::User>(c),
+            SearchItem::Id(n) => users
+                .filter(id.eq(n))
+                .limit(1)
+                .load::<crate::models::User>(c),
         })
         .await;
 
@@ -187,12 +185,9 @@ mod test {
         //Ensure that we can compare the hash still!
         let pwd = generate_random_alphanumeric(4);
         let hashed_pwd = hash_string_with_salt(pwd.clone()).expect("Failed to hash password ");
-        assert!(compare_hashed_strings(pwd.clone(), hashed_pwd.clone())
+        assert!(compare_hashed_strings(pwd, hashed_pwd.clone()).expect("Failed to compare hashes "));
+        assert!(!compare_hashed_strings(String::from("hello"), hashed_pwd)
             .expect("Failed to compare hashes "));
-        assert!(
-            !compare_hashed_strings(String::from("hello"), hashed_pwd.clone())
-                .expect("Failed to compare hashes ")
-        );
     }
 
     #[test]

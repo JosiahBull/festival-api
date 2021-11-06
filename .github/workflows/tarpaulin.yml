@@ -38,6 +38,10 @@ jobs:
         run: | 
           sudo apt-get update
           sudo apt-get install festival -y
+          wget http://www.festvox.org/packed/festival/2.5/voices/festvox_cmu_us_aew_cg.tar.gz
+          tar -xf festvox_cmu_us_aew_cg.tar.gz
+          mkdir -p /usr/share/festival/voices/us/
+          sudo cp -r festival/lib/voices/us/cmu_us_aew_cg/ /usr/share/festival/voices/us/
 
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1

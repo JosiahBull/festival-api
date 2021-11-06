@@ -40,7 +40,6 @@ pub struct GenerationRequest {
     pub word: String,
     pub lang: String,
     pub speed: f32,
-    pub ip_addr: Vec<u8>,
 }
 
 #[derive(Insertable)]
@@ -50,7 +49,6 @@ pub struct NewGenerationRequest {
     pub word: String,
     pub lang: String,
     pub speed: f32,
-    pub ip_addr: Vec<u8>,
 }
 
 /// A phrase package which the user is requesting a .mp3 for
@@ -106,7 +104,7 @@ impl PhrasePackage {
                 *WORD_LENGTH_LIMIT
             )
         }
-        if self.word.len() < 1 {
+        if self.word.is_empty() {
             reject!("No word provided!")
         }
         if !self.word.bytes().all(|c| !c.is_ascii_digit()) {
@@ -243,11 +241,11 @@ mod tests {
         let mut pack = PhrasePackage {
             word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT)
                 .chars()
-                .filter_map(|x| {
+                .map(|x| {
                     if !x.is_numeric() {
-                        return Some(x);
+                        return x;
                     }
-                    Some('a')
+                    'a'
                 })
                 .collect(),
             lang: String::from("en"),
@@ -257,6 +255,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::float_cmp)]
     fn validate_correction_package() {
         // Validate the min value correct is in place!
 
@@ -313,11 +312,11 @@ mod tests {
         let mut pack = PhrasePackage {
             word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT + 1)
                 .chars()
-                .filter_map(|x| {
+                .map(|x| {
                     if !x.is_numeric() {
-                        return Some(x);
+                        return x;
                     }
-                    Some('a')
+                    'a'
                 })
                 .collect(),
             lang: String::from("en"),

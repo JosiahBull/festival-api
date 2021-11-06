@@ -1,3 +1,5 @@
+#![allow(clippy::needless_doctest_main)]
+
 #[cfg(not(tarpaulin_include))]
 #[rustfmt::skip]
 mod schema;
@@ -50,49 +52,46 @@ lazy_static! {
     /// The maximum requests that an account can make in a given time period established by
     /// `MAX_REQUESTS_TIME_PERIOD_MINUTES`
     static ref MAX_REQUESTS_ACC_THRESHOLD: usize = load_env!("MAX_REQUESTS_ACC_THRESHOLD");
-    /// The maximum requests that an ip address can make in a given time period established
-    /// by `MAX_REQUESTS_TIME_PERIOD_MINUTES`
-    static ref MAX_REQUESTS_IP_THRESHOLD: usize= load_env!("MAX_REQUESTS_IP_THRESHOLD");
     /// The time period for timing out users who make too many requests.
     static ref MAX_REQUESTS_TIME_PERIOD_MINUTES:usize = load_env!("MAX_REQUESTS_TIME_PERIOD_MINUTES");
     /// A list of supported speech languages by this api.
     static ref SUPPORTED_LANGS: HashMap<String, models::Language> = {
         let path = "./config/langs.toml";
-        let data = std::fs::read_to_string(path).expect(&format!("Unable to find {}", path));
-        let f = data.parse::<toml::Value>().expect(&format!("Unable to parse `{}`", path));
+        let data = std::fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to find {}", path));
+        let f = data.parse::<toml::Value>().unwrap_or_else(|_| panic!("Unable to parse `{}`", path));
 
         let languages: &toml::value::Table = f.get("lang")
-            .expect(&format!("Unable to parse {}, no langs provided!", path))
+            .unwrap_or_else(|| panic!("Unable to parse {}, no langs provided!", path))
             .as_table()
-            .expect(&format!("lang tag is not a table in {}", path));
+            .unwrap_or_else(|| panic!("lang tag is not a table in {}", path));
 
         let mut map: HashMap<String, models::Language> = HashMap::default();
         let keys: Vec<&String> = languages.keys().into_iter().collect();
         for key in keys {
             let lang = languages
                 .get(key)
-                .expect(&format!("Unable to parse lang {} from {}, is it correctly formatted?", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse lang {} from {}, is it correctly formatted?", key, path))
                 .as_table()
-                .expect(&format!("Unable to prase {} as table from {}", key, path));
+                .unwrap_or_else(|| panic!("Unable to prase {} as table from {}", key, path));
 
             let enabled = lang
                 .get("enabled")
-                .expect(&format!("Unable to parse enabled on {} from {}", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse enabled on {} from {}", key, path))
                 .as_bool()
-                .expect(&format!("{}'s enabled is not a boolean in {}", key, path));
+                .unwrap_or_else(|| panic!("{}'s enabled is not a boolean in {}", key, path));
 
             let festival_code = lang
                 .get("festival_code")
-                .expect(&format!("Unable to parse festival_code on {} from {}", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse festival_code on {} from {}", key, path))
                 .as_str()
-                .expect(&format!("{}'s festival_code is not a string in {}", key, path))
+                .unwrap_or_else(|| panic!("{}'s festival_code is not a string in {}", key, path))
                 .to_owned();
 
             let iso_691_code = lang
                 .get("iso_691-1_code")
-                .expect(&format!("Unable to parse iso-691-1_code on {} from {}", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse iso-691-1_code on {} from {}", key, path))
                 .as_str()
-                .expect(&format!("{}'s iso_691-1_code is not a string in {}", key, path))
+                .unwrap_or_else(|| panic!("{}'s iso_691-1_code is not a string in {}", key, path))
                 .to_owned();
 
             map.insert(iso_691_code.clone(), models::Language {
@@ -103,7 +102,7 @@ lazy_static! {
             });
         }
 
-        return map;
+        map
     };
     /// The list of supported file-formats, note that wav is the preferred format due to lower cpu usage.
     static ref SUPPORTED_FORMATS: Vec<String> = {
@@ -236,7 +235,6 @@ async fn convert(
         word: phrase_package.word.clone(),
         lang: phrase_package.lang.clone(),
         speed: phrase_package.speed,
-        ip_addr: vec![], //TODO
     };
 
     // Log this request
@@ -250,6 +248,7 @@ async fn convert(
     );
     if !Path::new(&file_name).exists() {
         // Generate a wav file if this file does not already exist.
+        // TODO make this secure!
         let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o '{}'",
             &phrase_package.word,
             &SUPPORTED_LANGS.get(&phrase_package.lang).unwrap().festival_code,
@@ -267,10 +266,10 @@ async fn convert(
         let word_gen = word_gen.unwrap();
 
         if !word_gen.status.success() {
-            let stdout =
-                String::from_utf8(word_gen.stdout).unwrap_or("Unable to parse stdout!".into());
-            let stderr =
-                String::from_utf8(word_gen.stderr).unwrap_or("Unable to parse stderr!".into());
+            let stdout = String::from_utf8(word_gen.stdout)
+                .unwrap_or_else(|_| "Unable to parse stdout!".into());
+            let stderr = String::from_utf8(word_gen.stderr)
+                .unwrap_or_else(|_| "Unable to parse stderr!".into());
 
             failure!("Failed to generate wav from provided string due to error.\nStdout: \n{}\nStderr: \n{}", stdout, stderr)
         }
@@ -313,7 +312,6 @@ fn rocket() -> _ {
     lazy_static::initialize(&SPEED_MAX_VAL);
     lazy_static::initialize(&SPEED_MIN_VAL);
     lazy_static::initialize(&MAX_REQUESTS_ACC_THRESHOLD);
-    lazy_static::initialize(&MAX_REQUESTS_IP_THRESHOLD);
     lazy_static::initialize(&MAX_REQUESTS_TIME_PERIOD_MINUTES);
     lazy_static::initialize(&SUPPORTED_LANGS);
     lazy_static::initialize(&SUPPORTED_FORMATS);
@@ -351,7 +349,7 @@ mod rocket_tests {
             .dispatch();
         assert_eq!(create_response.status(), Status::Created);
 
-        return (body, body_json, create_response.into_string().unwrap());
+        (body, body_json, create_response.into_string().unwrap())
     }
 
     //***** Test Methods *****//
@@ -637,9 +635,7 @@ mod rocket_tests {
             .unwrap()
             .contains("attachment; filename=\""));
 
-        let body = response.into_bytes().unwrap().len();
-        assert!(body > 55_000);
-        assert!(body < 60_000);
+        assert_eq!(response.into_bytes().unwrap().len(), 63840);
     }
 
     #[test]

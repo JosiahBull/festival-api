@@ -34,9 +34,7 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
     - [x] Generation of wav files
     - [x] Account Rate Limiting
     - [ ] Conversion from .wav to .mp3 or any other fileformat
-    - [ ] IP Rate Limiting
     - [ ] Tests
-- [ ] e2e Tests
 - [ ] Configuration
     - [x] Language Configuration `/config/langs.toml`
     - [ ] File Format Configuration `/config/formats.toml`
