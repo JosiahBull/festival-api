@@ -9,7 +9,7 @@
 
 [lang.english]
 iso_691-1_code = "en"
-festival_code = "voice_cmu_us_slt_cg"
+festival_code = "voice_kal_diphone"
 enabled = true
 
 [lang.maori]

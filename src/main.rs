@@ -1,11 +1,15 @@
 #[cfg(not(tarpaulin_include))]
 #[rustfmt::skip]
 mod schema;
-mod cache;
+
 mod common;
 mod macros;
 mod models;
 mod response;
+
+//Cache is a WIP, so it's not used currently.
+#[allow(dead_code)]
+mod cache;
 
 #[macro_use]
 extern crate rocket;
@@ -17,7 +21,7 @@ use std::{collections::HashMap, path::Path, process::Command};
 use diesel::prelude::*;
 use lazy_static::lazy_static;
 use macros::{failure, load_env, reject};
-use models::UserCredentials;
+use models::{NewGenerationRequest, UserCredentials};
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
 
@@ -108,8 +112,7 @@ lazy_static! {
 }
 
 // General Todos
-// TODO Implement rate limiting for account creation/login based on ip address. This is especially relevant due to how
-// expensive hashing passwords is compute-wise.
+// TODO Implement timeouts for repeated failed login attempts.
 // TODO the api shouldn't charge for serving files from the cache. If we also provide an endpoint for finding out which
 // words are cached, we could allow users to more smartly choose which phrases they wish to display.
 // This should also reduce load on the api significant as it'll encourage users to pull common words!
@@ -257,9 +260,16 @@ async fn convert(
         }
     }
 
+    let req = NewGenerationRequest {
+        usr_id: token.sub,
+        word: phrase_package.word.clone(),
+        lang: phrase_package.lang.clone(),
+        speed: phrase_package.speed,
+        ip_addr: vec![], //TODO
+    };
+
     // Log this request
-    //TODO
-    // common::log_request(&conn,)?;
+    common::log_request(&conn, req).await?;
 
     // Generate the phrase if it isn't in the cache.
     let file_name = format!(
@@ -286,7 +296,9 @@ async fn convert(
         }
     }
 
-    //Format the file to the desired outputSoi
+    //Format the file to the desired output
+    //TODO
+
 
     let resp_file = match NamedFile::open(&file_name).await {
         Ok(f) => f,
@@ -638,6 +650,7 @@ mod rocket_tests {
             response.headers().get_one("content-type").unwrap(),
             "audio/mpeg"
         );
+        
         //TODO once filename generation is fixed, actually test for that.
         assert!(response
             .headers()
@@ -645,6 +658,40 @@ mod rocket_tests {
             .unwrap()
             .contains("attachment; filename=\""));
 
-        assert_eq!(response.into_bytes().unwrap().len(), 58428);
+        assert_eq!(response.into_bytes().unwrap().len(), 58930);
+    }
+
+    #[test]
+    fn test_limits() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let (_, _, token) = create_test_account(&client);
+        
+        let body = "{
+            \"word\": \"The University of Auckland\",
+            \"lang\": \"en\",
+            \"speed\": 1.0
+        }";
+
+        for _ in 0..2 {
+            //Test the generation of the .wav file
+            let response = client
+                .post(uri!("/api/v1/convert"))
+                .header(ContentType::new("application", "json"))
+                .header(Header::new("Authorisation", token.clone()))
+                .body(&body)
+                .dispatch();
+            assert_eq!(response.status(), Status::Ok);
+        }
+
+        let response = client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token))
+            .body(&body)
+            .dispatch();
+        assert_eq!(response.status(), Status::TooManyRequests);
+
+        //TODO this could check for a tolerance on the seconds number?
+        assert!(response.into_string().unwrap().contains("Too many requests! You will be able to make another request in"));
     }
 }

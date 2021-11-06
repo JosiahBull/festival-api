@@ -12,14 +12,10 @@
 //! The API for this cache is designed to be flexible and reusable, so it makes extensive use of generics.
 //! This means that to use it expect to have to implement functions to pass into the api.
 
-// General TODOs
-// TODO Improve Error handling with a custom error type that implements Into<Response>.
-
 use std::{collections::HashMap, hash::Hash, io::ErrorKind, marker::PhantomData};
 use priority_queue::{DoublePriorityQueue};
 
 const BYTES_IN_MB: usize = 1048576;
-//TODO update error types to something more usuable?
 #[rocket::async_trait]
 trait Cachable<U> {
     async fn load_underlying(&self) -> Result<U, std::io::Error>;
@@ -117,9 +113,6 @@ where
                 self.size_on_disk += item.wrapped.size_on_disk().await?;
                 self.priority.push(key.clone(), item.uses + self.uses_threshold);
 
-                //Update the min users
-
-
                 //Decache existing lowest item
                 let decache_key = self.priority.pop_min().unwrap().0;
                 let decache_item = self.cache.get_mut(&decache_key).unwrap();
@@ -207,6 +200,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(not(tarpaulin_include))]
 mod test {
     use super::{Cachable, Cache, Info};
     use crate::rocket::tokio;
@@ -430,3 +424,63 @@ mod test {
         );
     }
 }
+
+///// Test Implementation of the cache as a fairing /////
+// struct TestCache {
+// data: usize,
+// db: Option<DbConn>,
+// }
+
+// impl TestCache {
+// async fn make_request(&self) -> Option<models::User> {
+//     if let Some(f) = &self.db {
+//         return common::find_user_in_db(f, common::SearchItem::Id(1)).await.unwrap()
+//     }
+//     None
+// }
+// }
+
+// #[rocket::async_trait]
+// impl rocket::fairing::Fairing for TestCache {
+// fn info(&self) -> rocket::fairing::Info {
+//     rocket::fairing::Info {
+//         name: "Test Cache Implementation",
+//         kind: Kind::Ignite
+//     }
+// }
+
+// async fn on_ignite(&self, rocket: rocket::Rocket<rocket::Build>) -> rocket::fairing::Result {
+//     //Get a db instance
+//     let db = DbConn::get_one(&rocket).await.unwrap();
+
+//     //Initialize our test friend
+//     let cache = TestCache {
+//         data: 5,
+//         db: Some(db)
+//     };
+
+//     //Save him to a local state
+//     let new_rocket = rocket.manage(cache);
+
+//     //Return our succesfully attached fairing!
+//     rocket::fairing::Result::Ok(new_rocket)
+// }
+// }
+
+// impl Default for TestCache {
+// fn default() -> Self {
+//     TestCache {
+//         data: 5,
+//         db: None,
+//     }
+// }
+// }
+
+/////fairing cache implemntation tests/////
+// .attach(testcache)
+// .manage(friend)
+// .attach(rocket::fairing::AdHoc::on_liftoff("Freds", |rocket| {
+//     Box::pin(async move {
+//         friend.fetch_update(std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed, |_| Some(4));
+//     })
+// }))

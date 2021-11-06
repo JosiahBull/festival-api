@@ -1,6 +1,7 @@
+use crate::macros::reject;
 use crate::response::{Data, Response};
 use crate::schema::*;
-use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET};
+use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET, SUPPORTED_LANGS, WORD_LENGTH_LIMIT, SPEED_MAX_VAL, SPEED_MIN_VAL};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rocket::http::Status;
@@ -39,12 +40,67 @@ pub struct GenerationRequest {
     pub ip_addr: Vec<u8>,
 }
 
+#[derive(Insertable)]
+#[table_name = "reqs"]
+pub struct NewGenerationRequest {
+    pub usr_id: i32,
+    pub word: String,
+    pub lang: String,
+    pub speed: f32,
+    pub ip_addr: Vec<u8>,
+}
+
 /// A phrase package which the user is requesting a .mp3 for
 #[derive(Deserialize)]
 pub struct PhrasePackage {
     pub word: String,
     pub lang: String,
     pub speed: f32,
+}
+
+impl PhrasePackage {
+    /// Validates (and attempts to fix) a phrase package.
+    /// Returns Ok() if the package is valid, and Err otherwise.
+    /// Attempts to correct:
+    /// - Speed values larger or smaller than the allowd values
+    /// - Speed values that are not divisible by 0.5
+    /// 
+    /// Fails on:
+    /// - Invalid language selection
+    /// - Invalid file format selection
+    /// - Phrase too long
+    /// - Phrase contains invalid chars (TBD) //TODO
+    /// - Phrase contains invalid phrases
+    pub fn validated(&mut self) -> Result<(), Response> {
+        //Attempt to correct speed values
+        if self.speed > *SPEED_MAX_VAL {
+            self.speed = *SPEED_MAX_VAL;
+        }
+        if self.speed < *SPEED_MIN_VAL {
+            self.speed = *SPEED_MIN_VAL;
+        }
+        if self.speed % 0.5 != 0.0 {
+            self.speed *= 2.0;
+            self.speed = self.speed.floor();
+            self.speed /= 2.0;
+        }
+
+        //Check language selection is valid
+        if !SUPPORTED_LANGS.contains_key(&self.lang) {
+            reject!(
+                "Provided lang ({}) is not supported by this api!",
+                &self.lang
+            )
+        }
+
+        //Validate fild format selection
+        //TODO
+
+        //Check that provided phrase is valid
+        
+
+        Ok(())
+    }
 }
 
 pub struct Language {
@@ -145,63 +201,3 @@ mod tests {
         //TODO validate time claims on the token
     }
 }
-
-///// Test Implementation of the cache as a fairing /////
-// struct TestCache {
-// data: usize,
-// db: Option<DbConn>,
-// }
-
-// impl TestCache {
-// async fn make_request(&self) -> Option<models::User> {
-//     if let Some(f) = &self.db {
-//         return common::find_user_in_db(f, common::SearchItem::Id(1)).await.unwrap()
-//     }
-//     None
-// }
-// }
-
-// #[rocket::async_trait]
-// impl rocket::fairing::Fairing for TestCache {
-// fn info(&self) -> rocket::fairing::Info {
-//     rocket::fairing::Info {
-//         name: "Test Cache Implementation",
-//         kind: Kind::Ignite
-//     }
-// }
-
-// async fn on_ignite(&self, rocket: rocket::Rocket<rocket::Build>) -> rocket::fairing::Result {
-//     //Get a db instance
-//     let db = DbConn::get_one(&rocket).await.unwrap();
-
-//     //Initialize our test friend
-//     let cache = TestCache {
-//         data: 5,
-//         db: Some(db)
-//     };
-
-//     //Save him to a local state
-//     let new_rocket = rocket.manage(cache);
-
-//     //Return our succesfully attached fairing!
-//     rocket::fairing::Result::Ok(new_rocket)
-// }
-// }
-
-// impl Default for TestCache {
-// fn default() -> Self {
-//     TestCache {
-//         data: 5,
-//         db: None,
-//     }
-// }
-// }
-
-/////fairing cache implemntation tests/////
-// .attach(testcache)
-// .manage(friend)
-// .attach(rocket::fairing::AdHoc::on_liftoff("Freds", |rocket| {
-//     Box::pin(async move {
-//         friend.fetch_update(std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed, |_| Some(4));
-//     })
-// }))

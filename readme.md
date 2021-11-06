@@ -15,7 +15,7 @@ and returns a `.wav` file which may be streamed or played for a user.
 
 Detailed documentation on how to use the API can be found [here](https://josiahbull.github.io/festival-api/).
 
-## Progress to Beta Release
+## Progress to 0.1-Beta Release
 - [x] Write OAS Spec
 - [x] Create db schema
 - [x] Setup Gh actions
@@ -34,7 +34,6 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
     - [x] Generation of wav files
     - [x] Account Rate Limiting
     - [ ] Conversion from .wav to .mp3 or any other fileformat
-    - [ ] Caching Layer
     - [ ] IP Rate Limiting
     - [ ] Tests
 - [ ] e2e Tests

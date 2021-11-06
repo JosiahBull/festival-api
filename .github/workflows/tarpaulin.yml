@@ -34,6 +34,11 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost/fest_api
 
+      - name: Setup Festival
+        run: | 
+          sudo apt-get update
+          sudo apt-get install festival -y
+
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
         with:
