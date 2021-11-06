@@ -495,25 +495,227 @@
 <span id="495">495</span>
 <span id="496">496</span>
 <span id="497">497</span>
-</pre><pre class="rust"><code><span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">tarpaulin_include</span>))]</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
+<span id="659">659</span>
+<span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
+<span id="663">663</span>
+<span id="664">664</span>
+<span id="665">665</span>
+<span id="666">666</span>
+<span id="667">667</span>
+<span id="668">668</span>
+<span id="669">669</span>
+<span id="670">670</span>
+<span id="671">671</span>
+<span id="672">672</span>
+<span id="673">673</span>
+<span id="674">674</span>
+<span id="675">675</span>
+<span id="676">676</span>
+<span id="677">677</span>
+<span id="678">678</span>
+<span id="679">679</span>
+<span id="680">680</span>
+<span id="681">681</span>
+<span id="682">682</span>
+<span id="683">683</span>
+<span id="684">684</span>
+<span id="685">685</span>
+<span id="686">686</span>
+<span id="687">687</span>
+<span id="688">688</span>
+<span id="689">689</span>
+<span id="690">690</span>
+<span id="691">691</span>
+<span id="692">692</span>
+</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::needless_doctest_main</span>)]</span>
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">tarpaulin_include</span>))]</span>
 <span class="attribute">#[<span class="ident">rustfmt::skip</span>]</span>
 <span class="kw">mod</span> <span class="ident">schema</span>;
+
 <span class="kw">mod</span> <span class="ident">common</span>;
 <span class="kw">mod</span> <span class="ident">macros</span>;
 <span class="kw">mod</span> <span class="ident">models</span>;
 <span class="kw">mod</span> <span class="ident">response</span>;
+
+<span class="comment">//Cache is a WIP, so it&#39;s not used currently.</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
+<span class="kw">mod</span> <span class="ident">cache</span>;
 
 <span class="attribute">#[<span class="ident">macro_use</span>]</span>
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">rocket</span>;
 <span class="attribute">#[<span class="ident">macro_use</span>]</span>
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">diesel</span>;
 
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections::HashMap</span>, <span class="ident">env::var</span>, <span class="ident">path::Path</span>, <span class="ident">process::Command</span>};
+<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections::HashMap</span>, <span class="ident">path::Path</span>, <span class="ident">process::Command</span>};
 
 <span class="kw">use</span> <span class="ident">diesel::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">lazy_static::lazy_static</span>;
-<span class="kw">use</span> <span class="ident">macros</span>::{<span class="ident">failure</span>, <span class="ident">reject</span>};
-<span class="kw">use</span> <span class="ident">models::UserCredentials</span>;
+<span class="kw">use</span> <span class="ident">macros</span>::{<span class="ident">failure</span>, <span class="ident">load_env</span>, <span class="ident">reject</span>};
+<span class="kw">use</span> <span class="ident">models</span>::{<span class="ident">NewGenerationRequest</span>, <span class="ident">UserCredentials</span>};
 <span class="kw">use</span> <span class="ident">response</span>::{<span class="ident">Data</span>, <span class="ident">Response</span>};
 <span class="kw">use</span> <span class="ident">rocket</span>::{<span class="ident">fs::NamedFile</span>, <span class="ident">http::Status</span>, <span class="ident">serde::json::Json</span>};
 
@@ -524,63 +726,64 @@
 <span class="attribute">#[<span class="ident">rocket_sync_db_pools::database</span>(<span class="string">&quot;postgres_database&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">DbConn</span>(<span class="ident">diesel::PgConnection</span>);
 
-<span class="kw">const</span> <span class="ident">API_NAME</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;Jo&quot;</span>;
-<span class="kw">const</span> <span class="ident">CACHE_PATH</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;./cache&quot;</span>;
-<span class="kw">const</span> <span class="ident">WORD_LENGTH_LIMIT</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">100</span>;
-<span class="kw">const</span> <span class="ident">SPEED_MAX_VAL</span>: <span class="ident">f32</span> <span class="op">=</span> <span class="number">3.0</span>;
-<span class="kw">const</span> <span class="ident">SPEED_MIN_VAL</span>: <span class="ident">f32</span> <span class="op">=</span> <span class="number">0.5</span>;
-<span class="comment">// const MAX_REQUESTS_IP_TRHESHOLD: usize = 10;</span>
-<span class="kw">const</span> <span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">2</span>;
-<span class="kw">const</span> <span class="ident">MAX_REQUEST_TIME_PERIOD_MINUTES</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">5</span>;
-
 <span class="macro">lazy_static!</span> {
     <span class="doccomment">/// The secret used for fast-hashing JWT&#39;s for validation.</span>
-    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">JWT_SECRET</span>: <span class="ident">String</span> <span class="op">=</span> <span class="ident">var</span>(<span class="string">&quot;JWT_SECRET&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;Env var JWT_SECRET not set!&quot;</span>);
-
-    <span class="doccomment">/// The number of hours that a JWT may be used before expiring and forcing the user to re-validate.</span>
-    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">JWT_EXPIRY_TIME_HOURS</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">var</span>(<span class="string">&quot;JWT_EXPIRY_TIME_HOURS&quot;</span>)
-        .<span class="ident">expect</span>(<span class="string">&quot;Env var JWT_EXPIRY_TIME_HOURS not set!&quot;</span>)
-        .<span class="ident">parse</span>()
-        .<span class="ident">unwrap</span>();
-
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">JWT_SECRET</span>: <span class="ident">String</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;JWT_SECRET&quot;</span>);
+    <span class="doccomment">/// The number of hours that a JWT may be used before expiring and forcing the user to revalidate.</span>
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">JWT_EXPIRY_TIME_HOURS</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;JWT_EXPIRY_TIME_HOURS&quot;</span>);
+    <span class="doccomment">/// The name of the api which is sent with certain requests.</span>
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">API_NAME</span>: <span class="ident">String</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;API_NAME&quot;</span>);
+    <span class="doccomment">/// The path to the cache for storing .wav files</span>
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">CACHE_PATH</span>: <span class="ident">String</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;CACHE_PATH&quot;</span>);
+    <span class="doccomment">/// The maximum length of a phrase that the api will process.</span>
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">WORD_LENGTH_LIMIT</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;WORD_LENGTH_LIMIT&quot;</span>);
+    <span class="doccomment">/// The maximum speed at which a phrase can be read.</span>
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">SPEED_MAX_VAL</span>: <span class="ident">f32</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;SPEED_MAX_VAL&quot;</span>);
+    <span class="doccomment">/// The lowerest speed at which a phrase can be read.</span>
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">SPEED_MIN_VAL</span>: <span class="ident">f32</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;SPEED_MIN_VAL&quot;</span>);
+    <span class="doccomment">/// The maximum requests that an account can make in a given time period established by</span>
+    <span class="doccomment">/// `MAX_REQUESTS_TIME_PERIOD_MINUTES`</span>
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;MAX_REQUESTS_ACC_THRESHOLD&quot;</span>);
+    <span class="doccomment">/// The time period for timing out users who make too many requests.</span>
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">MAX_REQUESTS_TIME_PERIOD_MINUTES</span>:<span class="ident">usize</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;MAX_REQUESTS_TIME_PERIOD_MINUTES&quot;</span>);
     <span class="doccomment">/// A list of supported speech languages by this api.</span>
     <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">SUPPORTED_LANGS</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">models::Language</span><span class="op">&gt;</span> <span class="op">=</span> {
         <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="string">&quot;./config/langs.toml&quot;</span>;
-        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="ident">path</span>).<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Unable to find {}&quot;</span>, <span class="ident">path</span>));
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>().<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Unable to parse `{}`&quot;</span>, <span class="ident">path</span>));
+        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="ident">path</span>).<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find {}&quot;</span>, <span class="ident">path</span>));
+        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse `{}`&quot;</span>, <span class="ident">path</span>));
 
         <span class="kw">let</span> <span class="ident">languages</span>: <span class="kw-2">&amp;</span><span class="ident">toml::value::Table</span> <span class="op">=</span> <span class="ident">f</span>.<span class="ident">get</span>(<span class="string">&quot;lang&quot;</span>)
-            .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Unable to parse {}, no langs provided!&quot;</span>, <span class="ident">path</span>))
+            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse {}, no langs provided!&quot;</span>, <span class="ident">path</span>))
             .<span class="ident">as_table</span>()
-            .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;lang tag is not a table in {}&quot;</span>, <span class="ident">path</span>));
+            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;lang tag is not a table in {}&quot;</span>, <span class="ident">path</span>));
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">map</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">models::Language</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::default</span>();
         <span class="kw">let</span> <span class="ident">keys</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">languages</span>.<span class="ident">keys</span>().<span class="ident">into_iter</span>().<span class="ident">collect</span>();
         <span class="kw">for</span> <span class="ident">key</span> <span class="kw">in</span> <span class="ident">keys</span> {
             <span class="kw">let</span> <span class="ident">lang</span> <span class="op">=</span> <span class="ident">languages</span>
                 .<span class="ident">get</span>(<span class="ident">key</span>)
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Unable to parse lang {} from {}, is it correctly formatted?&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse lang {} from {}, is it correctly formatted?&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
                 .<span class="ident">as_table</span>()
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Unable to prase {} as table from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>));
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to prase {} as table from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>));
 
             <span class="kw">let</span> <span class="ident">enabled</span> <span class="op">=</span> <span class="ident">lang</span>
                 .<span class="ident">get</span>(<span class="string">&quot;enabled&quot;</span>)
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Unable to parse enabled on {} from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse enabled on {} from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
                 .<span class="ident">as_bool</span>()
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&#39;s enabled is not a boolean in {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>));
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;{}&#39;s enabled is not a boolean in {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>));
 
             <span class="kw">let</span> <span class="ident">festival_code</span> <span class="op">=</span> <span class="ident">lang</span>
                 .<span class="ident">get</span>(<span class="string">&quot;festival_code&quot;</span>)
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Unable to parse festival_code on {} from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse festival_code on {} from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
                 .<span class="ident">as_str</span>()
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&#39;s festival_code is not a string in {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;{}&#39;s festival_code is not a string in {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
                 .<span class="ident">to_owned</span>();
 
             <span class="kw">let</span> <span class="ident">iso_691_code</span> <span class="op">=</span> <span class="ident">lang</span>
                 .<span class="ident">get</span>(<span class="string">&quot;iso_691-1_code&quot;</span>)
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Unable to parse iso-691-1_code on {} from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse iso-691-1_code on {} from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
                 .<span class="ident">as_str</span>()
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&#39;s iso_691-1_code is not a string in {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;{}&#39;s iso_691-1_code is not a string in {}&quot;</span>, <span class="ident">key</span>, <span class="ident">path</span>))
                 .<span class="ident">to_owned</span>();
 
             <span class="ident">map</span>.<span class="ident">insert</span>(<span class="ident">iso_691_code</span>.<span class="ident">clone</span>(), <span class="ident">models::Language</span> {
@@ -591,9 +794,8 @@
             });
         }
 
-        <span class="kw">return</span> <span class="ident">map</span>;
+        <span class="ident">map</span>
     };
-
     <span class="doccomment">/// The list of supported file-formats, note that wav is the preferred format due to lower cpu usage.</span>
     <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">SUPPORTED_FORMATS</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> {
         <span class="macro">vec!</span>[]
@@ -601,18 +803,14 @@
 }
 
 <span class="comment">// General Todos</span>
-<span class="comment">// TODO Implement rate limiting for account creation/login based on ip address. This is especially relevant due to how</span>
-<span class="comment">// expensive hashing passwords is compute-wise.</span>
-<span class="comment">// TODO have another crack at implementing a response api which doesn&#39;t require owned values.</span>
-<span class="comment">// TODO if not found in the global env, static refs should fall back to looking for .env, or Rocket.toml.</span>
-<span class="comment">// TODO write tests for all endpoints. Research is required as to how to test with the database solution required.</span>
-<span class="comment">// Given we are using GH actions, something like: https://docs.github.com/en/actions/using-containerized-services/creating-postgresql-service-containers</span>
-<span class="comment">// could be relevant?</span>
-<span class="comment">// TODO create macro to automatically fill in boilerplate for jwt tokens to help reduce clutter.</span>
+<span class="comment">// TODO Implement timeouts for repeated failed login attempts.</span>
+<span class="comment">// TODO the api shouldn&#39;t charge for serving files from the cache. If we also provide an endpoint for finding out which</span>
+<span class="comment">// words are cached, we could allow users to more smartly choose which phrases they wish to display.</span>
+<span class="comment">// This should also reduce load on the api significant as it&#39;ll encourage users to pull common words!</span>
 
 <span class="attribute">#[<span class="ident">get</span>(<span class="string">&quot;/&quot;</span>)]</span>
 <span class="kw">fn</span> <span class="ident">index</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
-    <span class="macro">format!</span>(<span class="string">&quot;Welcome to {}&#39;s API for converting text into downloadable wav files! Please make a request to /docs for documentation.&quot;</span>, <span class="ident">API_NAME</span>)
+    <span class="macro">format!</span>(<span class="string">&quot;Welcome to {} API for converting text into downloadable wav files! Please make a request to /docs for documentation.&quot;</span>, <span class="kw-2">*</span><span class="ident">API_NAME</span>)
 }
 
 <span class="attribute">#[<span class="ident">get</span>(<span class="string">&quot;/docs&quot;</span>)]</span>
@@ -697,44 +895,21 @@
 <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">convert</span>(
     <span class="ident">token</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">models::Claims</span>, <span class="ident">Response</span><span class="op">&gt;</span>,
     <span class="ident">conn</span>: <span class="ident">DbConn</span>,
-    <span class="ident">phrase_package</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">models::PhrasePackage</span><span class="op">&gt;</span>,
+    <span class="kw-2">mut</span> <span class="ident">phrase_package</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">models::PhrasePackage</span><span class="op">&gt;</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span>, <span class="ident">Response</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">token</span> <span class="op">=</span> <span class="ident">token</span><span class="question-mark">?</span>;
 
     <span class="comment">// Validate PhrasePackage</span>
-    <span class="kw">if</span> <span class="ident">phrase_package</span>.<span class="ident">word</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="ident">WORD_LENGTH_LIMIT</span> {
-        <span class="macro">reject!</span>(<span class="string">&quot;Word is too long! Greater than {} chars&quot;</span>, <span class="ident">WORD_LENGTH_LIMIT</span>)
-    }
-    <span class="kw">if</span> <span class="ident">phrase_package</span>.<span class="ident">word</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="number">1</span> {
-        <span class="macro">reject!</span>(<span class="string">&quot;No word provided!&quot;</span>)
-    }
-    <span class="kw">if</span> <span class="op">!</span><span class="ident">phrase_package</span>.<span class="ident">word</span>.<span class="ident">bytes</span>().<span class="ident">all</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="op">!</span><span class="ident">c</span>.<span class="ident">is_ascii_digit</span>()) {
-        <span class="macro">reject!</span>(<span class="string">&quot;Cannot have numbers in phrase!&quot;</span>)
-    }
-    <span class="kw">if</span> <span class="ident">phrase_package</span>.<span class="ident">speed</span> <span class="op">&gt;</span> <span class="ident">SPEED_MAX_VAL</span> {
-        <span class="macro">reject!</span>(
-            <span class="string">&quot;Speed values greater than {} are not allowed.&quot;</span>,
-            <span class="ident">SPEED_MAX_VAL</span>
-        )
-    }
-    <span class="kw">if</span> <span class="ident">phrase_package</span>.<span class="ident">speed</span> <span class="op">&lt;</span> <span class="ident">SPEED_MIN_VAL</span> {
-        <span class="macro">reject!</span>(<span class="string">&quot;Speed values lower than {} are not allowed.&quot;</span>, <span class="ident">SPEED_MIN_VAL</span>)
-    }
-    <span class="kw">if</span> <span class="op">!</span><span class="ident">SUPPORTED_LANGS</span>.<span class="ident">contains_key</span>(<span class="kw-2">&amp;</span><span class="ident">phrase_package</span>.<span class="ident">lang</span>) {
-        <span class="macro">reject!</span>(
-            <span class="string">&quot;Provided lang ({}) is not supported by this api!&quot;</span>,
-            <span class="kw-2">&amp;</span><span class="ident">phrase_package</span>.<span class="ident">lang</span>
-        )
-    }
+    <span class="ident">phrase_package</span>.<span class="ident">validated</span>()<span class="question-mark">?</span>;
 
-    <span class="comment">// Validate that this user hasn&#39;t been timed out, and log this request.</span>
+    <span class="comment">// Validate that this user hasn&#39;t been timed out</span>
     <span class="kw">let</span> <span class="ident">reqs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">models::GenerationRequest</span><span class="op">&gt;</span> <span class="op">=</span>
-        <span class="ident">common::load_recent_requests</span>(<span class="kw-2">&amp;</span><span class="ident">conn</span>, <span class="ident">token</span>.<span class="ident">sub</span>, <span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">if</span> <span class="ident">reqs</span>.<span class="ident">len</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span> {
+        <span class="ident">common::load_recent_requests</span>(<span class="kw-2">&amp;</span><span class="ident">conn</span>, <span class="ident">token</span>.<span class="ident">sub</span>, <span class="kw-2">*</span><span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">if</span> <span class="ident">reqs</span>.<span class="ident">len</span>() <span class="op">=</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span> {
         <span class="comment">//Validate that this user hasn&#39;t made too many requests</span>
         <span class="kw">let</span> <span class="ident">earliest_req_time</span> <span class="op">=</span> <span class="ident">common::get_time_since</span>(<span class="ident">reqs</span>.<span class="ident">last</span>().<span class="ident">unwrap</span>().<span class="ident">crt</span>);
         <span class="kw">let</span> <span class="ident">max_req_time_duration</span> <span class="op">=</span>
-            <span class="ident">chrono::Duration::minutes</span>(<span class="ident">MAX_REQUEST_TIME_PERIOD_MINUTES</span> <span class="kw">as</span> <span class="ident">i64</span>);
+            <span class="ident">chrono::Duration::minutes</span>(<span class="kw-2">*</span><span class="ident">MAX_REQUESTS_TIME_PERIOD_MINUTES</span> <span class="kw">as</span> <span class="ident">i64</span>);
 
         <span class="kw">if</span> <span class="ident">earliest_req_time</span> <span class="op">&lt;</span> <span class="ident">max_req_time_duration</span> {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Response::TextErr</span>(<span class="ident">Data</span> {
@@ -747,28 +922,48 @@
         }
     }
 
+    <span class="kw">let</span> <span class="ident">req</span> <span class="op">=</span> <span class="ident">NewGenerationRequest</span> {
+        <span class="ident">usr_id</span>: <span class="ident">token</span>.<span class="ident">sub</span>,
+        <span class="ident">word</span>: <span class="ident">phrase_package</span>.<span class="ident">word</span>.<span class="ident">clone</span>(),
+        <span class="ident">lang</span>: <span class="ident">phrase_package</span>.<span class="ident">lang</span>.<span class="ident">clone</span>(),
+        <span class="ident">speed</span>: <span class="ident">phrase_package</span>.<span class="ident">speed</span>,
+    };
+
+    <span class="comment">// Log this request</span>
+    <span class="ident">common::log_request</span>(<span class="kw-2">&amp;</span><span class="ident">conn</span>, <span class="ident">req</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+
     <span class="comment">// Generate the phrase if it isn&#39;t in the cache.</span>
     <span class="kw">let</span> <span class="ident">file_name</span> <span class="op">=</span> <span class="macro">format!</span>(
         <span class="string">&quot;{}/{}.wav&quot;</span>,
-        <span class="ident">CACHE_PATH</span>,
+        <span class="kw-2">*</span><span class="ident">CACHE_PATH</span>,
         <span class="ident">common::generate_random_alphanumeric</span>(<span class="number">10</span>)
     );
     <span class="kw">if</span> <span class="op">!</span><span class="ident">Path::new</span>(<span class="kw-2">&amp;</span><span class="ident">file_name</span>).<span class="ident">exists</span>() {
         <span class="comment">// Generate a wav file if this file does not already exist.</span>
-        <span class="kw">let</span> <span class="ident">command</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;echo \&quot;{}\&quot; | text2wave -eval \&quot;({})\&quot; -eval \&quot;(Parameter.set &#39;Duration_Stretch {})\&quot; -o {}&quot;</span>,
+        <span class="comment">// TODO make this secure!</span>
+        <span class="kw">let</span> <span class="ident">command</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;echo \&quot;{}\&quot; | text2wave -eval \&quot;({})\&quot; -eval \&quot;(Parameter.set &#39;Duration_Stretch {})\&quot; -o &#39;{}&#39;&quot;</span>,
             <span class="kw-2">&amp;</span><span class="ident">phrase_package</span>.<span class="ident">word</span>,
             <span class="kw-2">&amp;</span><span class="ident">SUPPORTED_LANGS</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">phrase_package</span>.<span class="ident">lang</span>).<span class="ident">unwrap</span>().<span class="ident">festival_code</span>,
             <span class="kw-2">&amp;</span><span class="ident">phrase_package</span>.<span class="ident">speed</span>,
             <span class="kw-2">&amp;</span><span class="ident">file_name</span>
         );
-
         <span class="kw">let</span> <span class="ident">word_gen</span> <span class="op">=</span> <span class="ident">Command::new</span>(<span class="string">&quot;bash&quot;</span>)
             .<span class="ident">args</span>([<span class="string">&quot;-c&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">command</span>])
             .<span class="ident">stdout</span>(<span class="ident">std::process::Stdio::piped</span>())
             .<span class="ident">output</span>();
 
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">word_gen</span> {
-            <span class="macro">error!</span>(<span class="string">&quot;Failed to generate wav from provided string. {}&quot;</span>, <span class="ident">e</span>)
+            <span class="macro">failure!</span>(<span class="string">&quot;Failed to generate wav from provided string. {}&quot;</span>, <span class="ident">e</span>)
+        }
+        <span class="kw">let</span> <span class="ident">word_gen</span> <span class="op">=</span> <span class="ident">word_gen</span>.<span class="ident">unwrap</span>();
+
+        <span class="kw">if</span> <span class="op">!</span><span class="ident">word_gen</span>.<span class="ident">status</span>.<span class="ident">success</span>() {
+            <span class="kw">let</span> <span class="ident">stdout</span> <span class="op">=</span> <span class="ident">String::from_utf8</span>(<span class="ident">word_gen</span>.<span class="ident">stdout</span>)
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="string">&quot;Unable to parse stdout!&quot;</span>.<span class="ident">into</span>());
+            <span class="kw">let</span> <span class="ident">stderr</span> <span class="op">=</span> <span class="ident">String::from_utf8</span>(<span class="ident">word_gen</span>.<span class="ident">stderr</span>)
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="string">&quot;Unable to parse stderr!&quot;</span>.<span class="ident">into</span>());
+
+            <span class="macro">failure!</span>(<span class="string">&quot;Failed to generate wav from provided string due to error.\nStdout: \n{}\nStderr: \n{}&quot;</span>, <span class="ident">stdout</span>, <span class="ident">stderr</span>)
         }
     }
 
@@ -797,11 +992,19 @@
     }))
 }
 
+<span class="comment">// struct CacheFairing(crate::cache::Cache&lt;String, models::GenerationRequest, NamedFile&gt;);</span>
+
 <span class="attribute">#[<span class="ident">launch</span>]</span>
 <span class="kw">fn</span> <span class="ident">rocket</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="kw">_</span> {
     <span class="comment">//Initalize all globals</span>
     <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">JWT_SECRET</span>);
     <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">JWT_EXPIRY_TIME_HOURS</span>);
+    <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">API_NAME</span>);
+    <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">CACHE_PATH</span>);
+    <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">SPEED_MAX_VAL</span>);
+    <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">SPEED_MIN_VAL</span>);
+    <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>);
+    <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">MAX_REQUESTS_TIME_PERIOD_MINUTES</span>);
     <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">SUPPORTED_LANGS</span>);
     <span class="ident">lazy_static::initialize</span>(<span class="kw-2">&amp;</span><span class="ident">SUPPORTED_FORMATS</span>);
 
@@ -812,17 +1015,18 @@
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">tarpaulin_include</span>))]</span>
+<span class="kw">mod</span> <span class="ident">rocket_tests</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::UserCredentials</span>;
 
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::rocket</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::common</span>::{<span class="ident">generate_random_alphanumeric</span>};
+    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::common::generate_random_alphanumeric</span>;
     <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::models::Claims</span>;
+    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::rocket</span>;
+    <span class="kw">use</span> <span class="ident">rocket::http</span>::{<span class="ident">ContentType</span>, <span class="ident">Header</span>, <span class="ident">Status</span>};
     <span class="kw">use</span> <span class="ident">rocket::local::blocking::Client</span>;
-    <span class="kw">use</span> <span class="ident">rocket::http</span>::{<span class="ident">ContentType</span>, <span class="ident">Status</span>};
 
     <span class="comment">//***** Helper Methods *****//</span>
-    <span class="kw">fn</span> <span class="ident">create_test_account</span>(<span class="ident">client</span>: <span class="kw-2">&amp;</span><span class="ident">Client</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">UserCredentials</span>, <span class="ident">String</span>) {
+    <span class="kw">fn</span> <span class="ident">create_test_account</span>(<span class="ident">client</span>: <span class="kw-2">&amp;</span><span class="ident">Client</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">UserCredentials</span>, <span class="ident">String</span>, <span class="ident">String</span>) {
         <span class="kw">let</span> <span class="ident">body</span> <span class="op">=</span> <span class="ident">UserCredentials</span> {
             <span class="ident">usr</span>: <span class="ident">generate_random_alphanumeric</span>(<span class="number">20</span>),
             <span class="ident">pwd</span>: <span class="ident">String::from</span>(<span class="string">&quot;User12356789&quot;</span>),
@@ -837,7 +1041,7 @@
             .<span class="ident">dispatch</span>();
         <span class="macro">assert_eq!</span>(<span class="ident">create_response</span>.<span class="ident">status</span>(), <span class="ident">Status::Created</span>);
 
-        <span class="kw">return</span> (<span class="ident">body</span>, <span class="ident">body_json</span>);
+        (<span class="ident">body</span>, <span class="ident">body_json</span>, <span class="ident">create_response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>())
     }
 
     <span class="comment">//***** Test Methods *****//</span>
@@ -847,7 +1051,13 @@
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client::tracked</span>(<span class="ident">rocket</span>()).<span class="ident">expect</span>(<span class="string">&quot;valid rocket instance&quot;</span>);
         <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">get</span>(<span class="macro">uri!</span>(<span class="ident"><span class="kw">super</span>::index</span>)).<span class="ident">dispatch</span>();
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">Status::Ok</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
         <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>().<span class="ident">is_empty</span>());
     }
 
@@ -856,14 +1066,20 @@
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client::tracked</span>(<span class="ident">rocket</span>()).<span class="ident">expect</span>(<span class="string">&quot;valid rocket instance&quot;</span>);
         <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">get</span>(<span class="macro">uri!</span>(<span class="ident"><span class="kw">super</span>::docs</span>)).<span class="ident">dispatch</span>();
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">Status::Ok</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
         <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>().<span class="ident">is_empty</span>());
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">login_success</span>() {
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client::tracked</span>(<span class="ident">rocket</span>()).<span class="ident">expect</span>(<span class="string">&quot;valid rocket instance&quot;</span>);
-        <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">body_json</span>) <span class="op">=</span> <span class="ident">create_test_account</span>(<span class="kw-2">&amp;</span><span class="ident">client</span>);
+        <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">body_json</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">create_test_account</span>(<span class="kw-2">&amp;</span><span class="ident">client</span>);
 
         <span class="comment">//Attempt to login</span>
         <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">client</span>
@@ -873,7 +1089,13 @@
             .<span class="ident">dispatch</span>();
 
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">Status::Ok</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
 
         <span class="kw">let</span> <span class="ident">token</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">Claims::parse_token</span>(<span class="kw-2">&amp;</span><span class="ident">token</span>).<span class="ident">expect</span>(<span class="string">&quot;a valid token&quot;</span>);
@@ -882,7 +1104,7 @@
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">login_failures</span>() {
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client::tracked</span>(<span class="ident">rocket</span>()).<span class="ident">expect</span>(<span class="string">&quot;valid rocket instance&quot;</span>);
-        <span class="kw">let</span> (<span class="ident">body</span>, <span class="ident">body_json</span>) <span class="op">=</span> <span class="ident">create_test_account</span>(<span class="kw-2">&amp;</span><span class="ident">client</span>);
+        <span class="kw">let</span> (<span class="ident">body</span>, <span class="ident">body_json</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">create_test_account</span>(<span class="kw-2">&amp;</span><span class="ident">client</span>);
 
         <span class="kw">let</span> <span class="ident">wrong_password_body</span> <span class="op">=</span> <span class="ident">body_json</span>.<span class="ident">replace</span>(<span class="kw-2">&amp;</span><span class="ident">body</span>.<span class="ident">pwd</span>, <span class="string">&quot;incorrect&quot;</span>);
         <span class="kw">let</span> <span class="ident">wrong_username_body</span> <span class="op">=</span> <span class="ident">body_json</span>.<span class="ident">replace</span>(<span class="kw-2">&amp;</span><span class="ident">body</span>.<span class="ident">usr</span>, <span class="string">&quot;incorrect&quot;</span>);
@@ -893,11 +1115,20 @@
             .<span class="ident">header</span>(<span class="ident">ContentType::new</span>(<span class="string">&quot;application&quot;</span>, <span class="string">&quot;json&quot;</span>))
             .<span class="ident">body</span>(<span class="kw-2">&amp;</span><span class="ident">wrong_username_body</span>)
             .<span class="ident">dispatch</span>();
-        
+
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">Status::BadRequest</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>(), <span class="string">&quot;Incorrect Password or Username&quot;</span>);
-       
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>(),
+            <span class="string">&quot;Incorrect Password or Username&quot;</span>
+        );
+
         <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">client</span>
             .<span class="ident">post</span>(<span class="macro">uri!</span>(<span class="string">&quot;/api/v1/login&quot;</span>))
             .<span class="ident">header</span>(<span class="ident">ContentType::new</span>(<span class="string">&quot;application&quot;</span>, <span class="string">&quot;json&quot;</span>))
@@ -905,9 +1136,18 @@
             .<span class="ident">dispatch</span>();
 
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">Status::BadRequest</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>(), <span class="string">&quot;Incorrect Password or Username&quot;</span>);
-    }   
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>(),
+            <span class="string">&quot;Incorrect Password or Username&quot;</span>
+        );
+    }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">create_success</span>() {
@@ -932,7 +1172,13 @@
             .<span class="ident">dispatch</span>();
 
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">Status::BadRequest</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>(), <span class="string">&quot;Password Too Short&quot;</span>);
     }
 
@@ -953,7 +1199,13 @@
             .<span class="ident">dispatch</span>();
 
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">Status::BadRequest</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>(), <span class="string">&quot;Password Too Long&quot;</span>);
     }
 
@@ -974,8 +1226,20 @@
             .<span class="ident">dispatch</span>();
 
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">Status::Created</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
 
         <span class="kw">let</span> <span class="ident">token</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">Claims::parse_token</span>(<span class="kw-2">&amp;</span><span class="ident">token</span>).<span class="ident">expect</span>(<span class="string">&quot;a valid token&quot;</span>);
@@ -986,12 +1250,139 @@
             .<span class="ident">header</span>(<span class="ident">ContentType::new</span>(<span class="string">&quot;application&quot;</span>, <span class="string">&quot;json&quot;</span>))
             .<span class="ident">body</span>(<span class="kw-2">&amp;</span><span class="ident">body_json</span>)
             .<span class="ident">dispatch</span>();
-        
+
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">Status::BadRequest</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>), <span class="string">&quot;text/plain; charset=utf-8&quot;</span>);
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get_one</span>(<span class="string">&quot;Content-Type&quot;</span>)
+                .<span class="ident">expect</span>(<span class="string">&quot;a content type header&quot;</span>),
+            <span class="string">&quot;text/plain; charset=utf-8&quot;</span>
+        );
         <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>(), <span class="string">&quot;Username Taken&quot;</span>);
     }
-}</code></pre></div>
+
+    <span class="comment">// use rocket::tokio;</span>
+
+    <span class="comment">// #[rocket::tokio::test(flavor = &quot;multi_thread&quot;, worker_threads = 16)]</span>
+    <span class="comment">// async fn be_friends() {</span>
+    <span class="comment">//     let mut handles = vec![];</span>
+    <span class="comment">//     for i in 0..200 {</span>
+    <span class="comment">//         let t = tokio::spawn(async move {</span>
+    <span class="comment">//             let command = format!(&quot;echo \&quot;{}\&quot; | text2wave -o {}&quot;,</span>
+    <span class="comment">//                 &quot;The university of auckland is cool!&quot;,</span>
+    <span class="comment">//                 &amp;format!(&quot;./cache/file-{}.wav&quot;, i)</span>
+    <span class="comment">//             );</span>
+
+    <span class="comment">//             let word_gen = Command::new(&quot;bash&quot;)</span>
+    <span class="comment">//                 .args([&quot;-c&quot;, &amp;command])</span>
+    <span class="comment">//                 .stdout(std::process::Stdio::piped())</span>
+    <span class="comment">//                 .output();</span>
+
+    <span class="comment">//             word_gen.unwrap();</span>
+    <span class="comment">//         });</span>
+    <span class="comment">//         handles.push(t);</span>
+    <span class="comment">//     }</span>
+
+    <span class="comment">//     futures::future::join_all(handles).await;</span>
+    <span class="comment">// }</span>
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">success_conversion</span>() {
+        <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client::tracked</span>(<span class="ident">rocket</span>()).<span class="ident">expect</span>(<span class="string">&quot;valid rocket instance&quot;</span>);
+        <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">token</span>) <span class="op">=</span> <span class="ident">create_test_account</span>(<span class="kw-2">&amp;</span><span class="ident">client</span>);
+
+        <span class="kw">let</span> <span class="ident">body</span> <span class="op">=</span> <span class="string">&quot;{
+            \&quot;word\&quot;: \&quot;The University of Auckland\&quot;,
+            \&quot;lang\&quot;: \&quot;en\&quot;,
+            \&quot;speed\&quot;: 1.0
+        }&quot;</span>;
+
+        <span class="comment">//Test the generation of the .wav file</span>
+        <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">client</span>
+            .<span class="ident">post</span>(<span class="macro">uri!</span>(<span class="string">&quot;/api/v1/convert&quot;</span>))
+            .<span class="ident">header</span>(<span class="ident">ContentType::new</span>(<span class="string">&quot;application&quot;</span>, <span class="string">&quot;json&quot;</span>))
+            .<span class="ident">header</span>(<span class="ident">Header::new</span>(<span class="string">&quot;Authorisation&quot;</span>, <span class="ident">token</span>))
+            .<span class="ident">body</span>(<span class="kw-2">&amp;</span><span class="ident">body</span>)
+            .<span class="ident">dispatch</span>();
+
+        <span class="kw">let</span> <span class="ident">status</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">status</span>();
+        <span class="kw">if</span> <span class="ident">status</span> <span class="op">!</span><span class="op">=</span> <span class="ident">Status::Ok</span> {
+            <span class="macro">panic!</span>(
+                <span class="string">&quot;Failed with status {} \nBody: \n{}\n&quot;</span>,
+                <span class="ident">status</span>,
+                <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>()
+            );
+        }
+
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">response</span>.<span class="ident">headers</span>().<span class="ident">get_one</span>(<span class="string">&quot;content-type&quot;</span>).<span class="ident">unwrap</span>(),
+            <span class="string">&quot;audio/mpeg&quot;</span>
+        );
+
+        <span class="comment">//TODO once filename generation is fixed, actually test for that.</span>
+        <span class="macro">assert!</span>(<span class="ident">response</span>
+            .<span class="ident">headers</span>()
+            .<span class="ident">get_one</span>(<span class="string">&quot;content-disposition&quot;</span>)
+            .<span class="ident">unwrap</span>()
+            .<span class="ident">contains</span>(<span class="string">&quot;attachment; filename=\&quot;&quot;</span>));
+
+        <span class="macro">assert_eq!</span>(<span class="ident">response</span>.<span class="ident">into_bytes</span>().<span class="ident">unwrap</span>().<span class="ident">len</span>(), <span class="number">63840</span>);
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_limits</span>() {
+        <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client::tracked</span>(<span class="ident">rocket</span>()).<span class="ident">expect</span>(<span class="string">&quot;valid rocket instance&quot;</span>);
+        <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">token</span>) <span class="op">=</span> <span class="ident">create_test_account</span>(<span class="kw-2">&amp;</span><span class="ident">client</span>);
+
+        <span class="kw">let</span> <span class="ident">body</span> <span class="op">=</span> <span class="string">&quot;{
+            \&quot;word\&quot;: \&quot;The University of Auckland\&quot;,
+            \&quot;lang\&quot;: \&quot;en\&quot;,
+            \&quot;speed\&quot;: 1.0
+        }&quot;</span>;
+
+        <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">2</span> {
+            <span class="comment">//Test the generation of the .wav file</span>
+            <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">client</span>
+                .<span class="ident">post</span>(<span class="macro">uri!</span>(<span class="string">&quot;/api/v1/convert&quot;</span>))
+                .<span class="ident">header</span>(<span class="ident">ContentType::new</span>(<span class="string">&quot;application&quot;</span>, <span class="string">&quot;json&quot;</span>))
+                .<span class="ident">header</span>(<span class="ident">Header::new</span>(<span class="string">&quot;Authorisation&quot;</span>, <span class="ident">token</span>.<span class="ident">clone</span>()))
+                .<span class="ident">body</span>(<span class="kw-2">&amp;</span><span class="ident">body</span>)
+                .<span class="ident">dispatch</span>();
+            <span class="kw">let</span> <span class="ident">status</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">status</span>();
+            <span class="kw">if</span> <span class="ident">status</span> <span class="op">!</span><span class="op">=</span> <span class="ident">Status::Ok</span> {
+                <span class="macro">panic!</span>(
+                    <span class="string">&quot;Failed with status {} \nBody: \n{}\n&quot;</span>,
+                    <span class="ident">status</span>,
+                    <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>()
+                );
+            }
+        }
+
+        <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">client</span>
+            .<span class="ident">post</span>(<span class="macro">uri!</span>(<span class="string">&quot;/api/v1/convert&quot;</span>))
+            .<span class="ident">header</span>(<span class="ident">ContentType::new</span>(<span class="string">&quot;application&quot;</span>, <span class="string">&quot;json&quot;</span>))
+            .<span class="ident">header</span>(<span class="ident">Header::new</span>(<span class="string">&quot;Authorisation&quot;</span>, <span class="ident">token</span>))
+            .<span class="ident">body</span>(<span class="kw-2">&amp;</span><span class="ident">body</span>)
+            .<span class="ident">dispatch</span>();
+
+        <span class="kw">let</span> <span class="ident">status</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">status</span>();
+        <span class="kw">if</span> <span class="ident">status</span> <span class="op">!</span><span class="op">=</span> <span class="ident">Status::TooManyRequests</span> {
+            <span class="macro">panic!</span>(
+                <span class="string">&quot;Failed with status {} \nBody: \n{}\n&quot;</span>,
+                <span class="ident">status</span>,
+                <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>()
+            );
+        }
+
+        <span class="comment">//TODO this could check for a tolerance on the seconds number?</span>
+        <span class="macro">assert!</span>(<span class="ident">response</span>
+            .<span class="ident">into_string</span>()
+            .<span class="ident">unwrap</span>()
+            .<span class="ident">contains</span>(<span class="string">&quot;Too many requests! You will be able to make another request in&quot;</span>));
+    }
+}
+</code></pre></div>
 </section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="festival_api" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div>
     <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script>
 </body></html>
