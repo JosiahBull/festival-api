@@ -92,12 +92,23 @@ impl PhrasePackage {
                 &self.lang
             )
         }
-
+        
         //Validate fild format selection
         //TODO
 
         //Check that provided phrase is valid
-        
+        if self.word.len() > *WORD_LENGTH_LIMIT {
+            reject!(
+                "Phrase is too long! Greater than {} chars",
+                *WORD_LENGTH_LIMIT
+            )
+        }
+        if self.word.len() < 1 {
+            reject!("No word provided!")
+        }
+        if !self.word.bytes().all(|c| !c.is_ascii_digit()) {
+            reject!("Cannot have numbers in phrase!")
+        }
 
         Ok(())
     }
@@ -187,7 +198,9 @@ impl<'r> FromRequest<'r> for Claims {
 #[cfg(test)]
 #[cfg(not(tarpaulin_include))]
 mod tests {
-    use super::Claims;
+    use super::{Claims, PhrasePackage};
+    use super::{WORD_LENGTH_LIMIT, SPEED_MAX_VAL, SPEED_MIN_VAL};
+    use crate::common::generate_random_alphanumeric;
 
     #[test]
     fn create_new_token() {
@@ -199,5 +212,132 @@ mod tests {
 
         assert_eq!(claims.sub, usr_id);
         //TODO validate time claims on the token
+    }
+
+    #[test]
+    fn validate_success_package() {
+        let mut pack = PhrasePackage {
+            word: String::from("Hello, world!"),
+            lang: String::from("en"),
+            speed: *SPEED_MAX_VAL
+        };
+        pack.validated().expect("a valid package");
+
+        let mut pack = PhrasePackage {
+            word: String::from("Hello, world!"),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL
+        };
+        pack.validated().expect("a valid package");
+
+        let mut pack = PhrasePackage {
+            word: String::from("H"),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL
+        };
+        pack.validated().expect("a valid package");
+
+        let mut pack = PhrasePackage {
+            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT).chars().filter_map(|x| {
+                if !x.is_numeric() {
+                    return Some(x)
+                }
+                Some('a')
+            }).collect(),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL
+        };
+        pack.validated().expect("a valid package");
+    }
+
+    #[test]
+    fn validate_correction_package() {
+        // Validate the min value correct is in place!
+
+        //We can't run this test if the min value is 0.0!
+        if *SPEED_MIN_VAL <= 0.0 {
+            panic!("WARNING: TEST UNABLE TO BE RUN AS SPEED_MIN_VAL < 0.0!");
+        }
+
+        let mut pack = PhrasePackage {
+            word: String::from("Hello, world!"),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL - 0.1,
+        };
+        
+        
+        // Validate the max value correct is in place!
+        pack.validated().expect("a valid package");
+        assert_eq!(pack.speed, *SPEED_MIN_VAL);
+
+        let mut pack = PhrasePackage {
+            word: String::from("Hello, world!"),
+            lang: String::from("en"),
+            speed: *SPEED_MAX_VAL + 0.1,
+        };
+
+        pack.validated().expect("a valid package");
+        assert_eq!(pack.speed, *SPEED_MAX_VAL);
+
+
+        // Validate the 0.5 rounding is in place!
+        for i in 0..100 {
+            let mut pack = PhrasePackage {
+                word: String::from("Hello, world!"),
+                lang: String::from("en"),
+                speed: 0.0 + 0.1 * i as f32,
+            };
+
+            pack.validated().expect("a valid package");
+
+            assert_eq!(pack.speed % 0.5, 0.0);
+        }
+    }
+
+    #[test]
+    fn validate_failure_package() {
+        // Validate that empty string fails
+        let mut pack = PhrasePackage {
+            word: String::from(""),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL
+        };
+
+        pack.validated().expect_err("should be too short");
+
+     
+        //Test string too long
+        let mut pack = PhrasePackage {
+            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT + 1).chars().filter_map(|x| {
+                if !x.is_numeric() {
+                    return Some(x)
+                }
+                Some('a')
+            }).collect(),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL
+        };
+
+        pack.validated().expect_err("should be too long");
+
+
+        //Test unsupported lang
+        let mut pack = PhrasePackage {
+            word: String::from(""),
+            lang: String::from("adfadlfjalk"),
+            speed: *SPEED_MIN_VAL
+        };
+
+        pack.validated().expect_err("should be invalid lang");
+
+
+        //Check that numbers in phrase fails
+        let mut pack = PhrasePackage {
+            word: String::from("adfae12312"),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL
+        };
+
+        pack.validated().expect_err("should be too short");
     }
 }

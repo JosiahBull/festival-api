@@ -204,41 +204,12 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
 async fn convert(
     token: Result<models::Claims, Response>,
     conn: DbConn,
-    phrase_package: Json<models::PhrasePackage>,
+    mut phrase_package: Json<models::PhrasePackage>,
 ) -> Result<Response, Response> {
     let token = token?;
 
     // Validate PhrasePackage
-    if phrase_package.word.len() > *WORD_LENGTH_LIMIT {
-        reject!(
-            "Word is too long! Greater than {} chars",
-            *WORD_LENGTH_LIMIT
-        )
-    }
-    if phrase_package.word.len() < 1 {
-        reject!("No word provided!")
-    }
-    if !phrase_package.word.bytes().all(|c| !c.is_ascii_digit()) {
-        reject!("Cannot have numbers in phrase!")
-    }
-    if phrase_package.speed > *SPEED_MAX_VAL {
-        reject!(
-            "Speed values greater than {} are not allowed.",
-            *SPEED_MAX_VAL
-        )
-    }
-    if phrase_package.speed < *SPEED_MIN_VAL {
-        reject!(
-            "Speed values lower than {} are not allowed.",
-            *SPEED_MIN_VAL
-        )
-    }
-    if !SUPPORTED_LANGS.contains_key(&phrase_package.lang) {
-        reject!(
-            "Provided lang ({}) is not supported by this api!",
-            &phrase_package.lang
-        )
-    }
+    phrase_package.validated()?;
 
     // Validate that this user hasn't been timed out
     let reqs: Vec<models::GenerationRequest> =
@@ -279,13 +250,12 @@ async fn convert(
     );
     if !Path::new(&file_name).exists() {
         // Generate a wav file if this file does not already exist.
-        let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o {}",
+        let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o '{}'",
             &phrase_package.word,
             &SUPPORTED_LANGS.get(&phrase_package.lang).unwrap().festival_code,
             &phrase_package.speed,
             &file_name
         );
-
         let word_gen = Command::new("bash")
             .args(["-c", &command])
             .stdout(std::process::Stdio::piped())
@@ -293,6 +263,15 @@ async fn convert(
 
         if let Err(e) = word_gen {
             failure!("Failed to generate wav from provided string. {}", e)
+        }
+        let word_gen = word_gen.unwrap();
+
+        if !word_gen.status.success() {
+
+            let stdout = String::from_utf8(word_gen.stdout).unwrap_or("Unable to parse stdout!".into());
+            let stderr = String::from_utf8(word_gen.stderr).unwrap_or("Unable to parse stderr!".into());
+
+            failure!("Failed to generate wav from provided string due to error.\nStdout: \n{}\nStderr: \n{}", stdout, stderr)
         }
     }
 
@@ -640,7 +619,7 @@ mod rocket_tests {
         let status = response.status();
         if status != Status::Ok {
             panic!(
-                "Failed with status {} Body: {}",
+                "Failed with status {} \nBody: \n{}\n",
                 status,
                 response.into_string().unwrap()
             );
@@ -658,7 +637,9 @@ mod rocket_tests {
             .unwrap()
             .contains("attachment; filename=\""));
 
-        assert_eq!(response.into_bytes().unwrap().len(), 58930);
+        let body = response.into_bytes().unwrap().len();
+        assert!(body > 55_000);
+        assert!(body < 60_000);
     }
 
     #[test]
@@ -680,7 +661,14 @@ mod rocket_tests {
                 .header(Header::new("Authorisation", token.clone()))
                 .body(&body)
                 .dispatch();
-            assert_eq!(response.status(), Status::Ok);
+            let status = response.status();
+            if status != Status::Ok {
+                panic!(
+                    "Failed with status {} \nBody: \n{}\n",
+                    status,
+                    response.into_string().unwrap()
+                );
+            }
         }
 
         let response = client
@@ -689,7 +677,15 @@ mod rocket_tests {
             .header(Header::new("Authorisation", token))
             .body(&body)
             .dispatch();
-        assert_eq!(response.status(), Status::TooManyRequests);
+
+        let status = response.status();
+        if status != Status::TooManyRequests {
+            panic!(
+                "Failed with status {} \nBody: \n{}\n",
+                status,
+                response.into_string().unwrap()
+            );
+        }
 
         //TODO this could check for a tolerance on the seconds number?
         assert!(response.into_string().unwrap().contains("Too many requests! You will be able to make another request in"));

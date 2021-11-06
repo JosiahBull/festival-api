@@ -48,7 +48,9 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
 
 Currently this api is not setup with a service such as docker, so you must have [Rust](https://www.rust-lang.org/tools/install) installed.
 
-This api depends on Rust, Rocket, Diesel and Postgres.
+This api depends on Rust, Rocket, Diesel, Postgres, and Festival.
+
+**Note: Festival may not have the default lang `voice_kal_diphone` installed for your system! To fix this change the english voice in `./config/langs.toml` to match what you wish to use on your system.**
 
 ```sh
 # Spawn a postgres backing db
