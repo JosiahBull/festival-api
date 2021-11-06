@@ -9,7 +9,7 @@
 
 [lang.english]
 iso_691-1_code = "en"
-festival_code = "voice_cmu_us_slt_cg"
+festival_code = "voice_cmu_us_aew_cg"
 enabled = true
 
 [lang.maori]

@@ -47,7 +47,6 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
             _ => rocket::http::Header::new("Content-Disposition", "inline"),
         };
 
-        //TODO write a macro to make this prettier
         let status: Status = match self {
             Response::TextErr(ref d) => d.status,
             Response::TextOk(ref d) => d.status,
@@ -56,7 +55,6 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
         };
 
         //Construct and return response
-        //TODO write a macro to make this prettier
         let response = match self {
             Response::TextErr(d) => d.data.respond_to(req),
             Response::TextOk(d) => d.data.respond_to(req),

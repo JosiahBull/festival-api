@@ -25,6 +25,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Setup Festival
+      run: | 
+        sudo apt-get update
+        sudo apt-get install festival -y
+        wget http://www.festvox.org/packed/festival/2.5/voices/festvox_cmu_us_aew_cg.tar.gz
+        tar -xf festvox_cmu_us_aew_cg.tar.gz
+        sudo mkdir -p /usr/share/festival/voices/us/
+        sudo cp -r festival/lib/voices/us/cmu_us_aew_cg/ /usr/share/festival/voices/us/
+
     - name: Setup Database
       run: | 
         cargo install diesel_cli --no-default-features --features postgres
@@ -35,8 +44,7 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test -- --test-threads 1
       env:
         ROCKET_DATABASES: '{postgres_database={url=postgres://postgres:postgres@localhost/fest_api}}'
         JWT_SECRET: nevergonnagiveyouup
-        JWT_EXPIRY_TIME_HOURS: 200

@@ -1,6 +1,10 @@
+use crate::macros::reject;
 use crate::response::{Data, Response};
 use crate::schema::*;
-use crate::{JWT_EXPIRY_TIME_HOURS, JWT_SECRET};
+use crate::{
+    JWT_EXPIRY_TIME_HOURS, JWT_SECRET, SPEED_MAX_VAL, SPEED_MIN_VAL, SUPPORTED_LANGS,
+    WORD_LENGTH_LIMIT,
+};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rocket::http::Status;
@@ -16,7 +20,7 @@ pub struct UserCredentials {
 }
 
 /// Represents a user of this api.
-#[derive(Queryable, QueryableByName, Serialize)]
+#[derive(Debug, Queryable, QueryableByName, Serialize)]
 #[table_name = "users"]
 pub struct User {
     pub id: i32,
@@ -36,7 +40,15 @@ pub struct GenerationRequest {
     pub word: String,
     pub lang: String,
     pub speed: f32,
-    pub ip_addr: Vec<u8>,
+}
+
+#[derive(Insertable)]
+#[table_name = "reqs"]
+pub struct NewGenerationRequest {
+    pub usr_id: i32,
+    pub word: String,
+    pub lang: String,
+    pub speed: f32,
 }
 
 /// A phrase package which the user is requesting a .mp3 for
@@ -45,6 +57,62 @@ pub struct PhrasePackage {
     pub word: String,
     pub lang: String,
     pub speed: f32,
+}
+
+impl PhrasePackage {
+    /// Validates (and attempts to fix) a phrase package.
+    /// Returns Ok() if the package is valid, and Err otherwise.
+    /// Attempts to correct:
+    /// - Speed values larger or smaller than the allowd values
+    /// - Speed values that are not divisible by 0.5
+    ///
+    /// Fails on:
+    /// - Invalid language selection
+    /// - Invalid file format selection
+    /// - Phrase too long
+    /// - Phrase contains invalid chars (TBD) //TODO
+    /// - Phrase contains invalid phrases
+    pub fn validated(&mut self) -> Result<(), Response> {
+        //Attempt to correct speed values
+        if self.speed > *SPEED_MAX_VAL {
+            self.speed = *SPEED_MAX_VAL;
+        }
+        if self.speed < *SPEED_MIN_VAL {
+            self.speed = *SPEED_MIN_VAL;
+        }
+        if self.speed % 0.5 != 0.0 {
+            self.speed *= 2.0;
+            self.speed = self.speed.floor();
+            self.speed /= 2.0;
+        }
+
+        //Check language selection is valid
+        if !SUPPORTED_LANGS.contains_key(&self.lang) {
+            reject!(
+                "Provided lang ({}) is not supported by this api!",
+                &self.lang
+            )
+        }
+
+        //Validate fild format selection
+        //TODO
+
+        //Check that provided phrase is valid
+        if self.word.len() > *WORD_LENGTH_LIMIT {
+            reject!(
+                "Phrase is too long! Greater than {} chars",
+                *WORD_LENGTH_LIMIT
+            )
+        }
+        if self.word.is_empty() {
+            reject!("No word provided!")
+        }
+        if !self.word.bytes().all(|c| !c.is_ascii_digit()) {
+            reject!("Cannot have numbers in phrase!")
+        }
+
+        Ok(())
+    }
 }
 
 pub struct Language {
@@ -129,8 +197,11 @@ impl<'r> FromRequest<'r> for Claims {
 }
 
 #[cfg(test)]
+#[cfg(not(tarpaulin_include))]
 mod tests {
-    use super::Claims;
+    use super::{Claims, PhrasePackage};
+    use super::{SPEED_MAX_VAL, SPEED_MIN_VAL, WORD_LENGTH_LIMIT};
+    use crate::common::generate_random_alphanumeric;
 
     #[test]
     fn create_new_token() {
@@ -142,5 +213,134 @@ mod tests {
 
         assert_eq!(claims.sub, usr_id);
         //TODO validate time claims on the token
+    }
+
+    #[test]
+    fn validate_success_package() {
+        let mut pack = PhrasePackage {
+            word: String::from("Hello, world!"),
+            lang: String::from("en"),
+            speed: *SPEED_MAX_VAL,
+        };
+        pack.validated().expect("a valid package");
+
+        let mut pack = PhrasePackage {
+            word: String::from("Hello, world!"),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL,
+        };
+        pack.validated().expect("a valid package");
+
+        let mut pack = PhrasePackage {
+            word: String::from("H"),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL,
+        };
+        pack.validated().expect("a valid package");
+
+        let mut pack = PhrasePackage {
+            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT)
+                .chars()
+                .map(|x| {
+                    if !x.is_numeric() {
+                        return x;
+                    }
+                    'a'
+                })
+                .collect(),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL,
+        };
+        pack.validated().expect("a valid package");
+    }
+
+    #[test]
+    #[allow(clippy::float_cmp)]
+    fn validate_correction_package() {
+        // Validate the min value correct is in place!
+
+        //We can't run this test if the min value is 0.0!
+        if *SPEED_MIN_VAL <= 0.0 {
+            panic!("WARNING: TEST UNABLE TO BE RUN AS SPEED_MIN_VAL < 0.0!");
+        }
+
+        let mut pack = PhrasePackage {
+            word: String::from("Hello, world!"),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL - 0.1,
+        };
+
+        // Validate the max value correct is in place!
+        pack.validated().expect("a valid package");
+        assert_eq!(pack.speed, *SPEED_MIN_VAL);
+
+        let mut pack = PhrasePackage {
+            word: String::from("Hello, world!"),
+            lang: String::from("en"),
+            speed: *SPEED_MAX_VAL + 0.1,
+        };
+
+        pack.validated().expect("a valid package");
+        assert_eq!(pack.speed, *SPEED_MAX_VAL);
+
+        // Validate the 0.5 rounding is in place!
+        for i in 0..100 {
+            let mut pack = PhrasePackage {
+                word: String::from("Hello, world!"),
+                lang: String::from("en"),
+                speed: 0.0 + 0.1 * i as f32,
+            };
+
+            pack.validated().expect("a valid package");
+
+            assert_eq!(pack.speed % 0.5, 0.0);
+        }
+    }
+
+    #[test]
+    fn validate_failure_package() {
+        // Validate that empty string fails
+        let mut pack = PhrasePackage {
+            word: String::from(""),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL,
+        };
+
+        pack.validated().expect_err("should be too short");
+
+        //Test string too long
+        let mut pack = PhrasePackage {
+            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT + 1)
+                .chars()
+                .map(|x| {
+                    if !x.is_numeric() {
+                        return x;
+                    }
+                    'a'
+                })
+                .collect(),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL,
+        };
+
+        pack.validated().expect_err("should be too long");
+
+        //Test unsupported lang
+        let mut pack = PhrasePackage {
+            word: String::from(""),
+            lang: String::from("adfadlfjalk"),
+            speed: *SPEED_MIN_VAL,
+        };
+
+        pack.validated().expect_err("should be invalid lang");
+
+        //Check that numbers in phrase fails
+        let mut pack = PhrasePackage {
+            word: String::from("adfae12312"),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL,
+        };
+
+        pack.validated().expect_err("should be too short");
     }
 }

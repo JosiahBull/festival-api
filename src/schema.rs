@@ -16,7 +16,6 @@ table! {
         word -> Text,
         lang -> Text,
         speed -> Float4,
-        ip_addr -> Bytea,
     }
 }
 

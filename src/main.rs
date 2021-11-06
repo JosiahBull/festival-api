@@ -1,22 +1,29 @@
+#![allow(clippy::needless_doctest_main)]
+
 #[cfg(not(tarpaulin_include))]
 #[rustfmt::skip]
 mod schema;
+
 mod common;
 mod macros;
 mod models;
 mod response;
+
+//Cache is a WIP, so it's not used currently.
+#[allow(dead_code)]
+mod cache;
 
 #[macro_use]
 extern crate rocket;
 #[macro_use]
 extern crate diesel;
 
-use std::{collections::HashMap, env::var, path::Path, process::Command};
+use std::{collections::HashMap, path::Path, process::Command};
 
 use diesel::prelude::*;
 use lazy_static::lazy_static;
-use macros::{failure, reject};
-use models::UserCredentials;
+use macros::{failure, load_env, reject};
+use models::{NewGenerationRequest, UserCredentials};
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
 
@@ -27,63 +34,64 @@ compile_error!("Unable to compile for your platform! This API is only available 
 #[rocket_sync_db_pools::database("postgres_database")]
 pub struct DbConn(diesel::PgConnection);
 
-const API_NAME: &str = "Jo";
-const CACHE_PATH: &str = "./cache";
-const WORD_LENGTH_LIMIT: usize = 100;
-const SPEED_MAX_VAL: f32 = 3.0;
-const SPEED_MIN_VAL: f32 = 0.5;
-// const MAX_REQUESTS_IP_TRHESHOLD: usize = 10;
-const MAX_REQUESTS_ACC_THRESHOLD: usize = 2;
-const MAX_REQUEST_TIME_PERIOD_MINUTES: usize = 5;
-
 lazy_static! {
     /// The secret used for fast-hashing JWT's for validation.
-    static ref JWT_SECRET: String = var("JWT_SECRET").expect("Env var JWT_SECRET not set!");
-
-    /// The number of hours that a JWT may be used before expiring and forcing the user to re-validate.
-    static ref JWT_EXPIRY_TIME_HOURS: usize = var("JWT_EXPIRY_TIME_HOURS")
-        .expect("Env var JWT_EXPIRY_TIME_HOURS not set!")
-        .parse()
-        .unwrap();
-
+    static ref JWT_SECRET: String = load_env!("JWT_SECRET");
+    /// The number of hours that a JWT may be used before expiring and forcing the user to revalidate.
+    static ref JWT_EXPIRY_TIME_HOURS: usize = load_env!("JWT_EXPIRY_TIME_HOURS");
+    /// The name of the api which is sent with certain requests.
+    static ref API_NAME: String = load_env!("API_NAME");
+    /// The path to the cache for storing .wav files
+    static ref CACHE_PATH: String = load_env!("CACHE_PATH");
+    /// The maximum length of a phrase that the api will process.
+    static ref WORD_LENGTH_LIMIT: usize = load_env!("WORD_LENGTH_LIMIT");
+    /// The maximum speed at which a phrase can be read.
+    static ref SPEED_MAX_VAL: f32 = load_env!("SPEED_MAX_VAL");
+    /// The lowerest speed at which a phrase can be read.
+    static ref SPEED_MIN_VAL: f32 = load_env!("SPEED_MIN_VAL");
+    /// The maximum requests that an account can make in a given time period established by
+    /// `MAX_REQUESTS_TIME_PERIOD_MINUTES`
+    static ref MAX_REQUESTS_ACC_THRESHOLD: usize = load_env!("MAX_REQUESTS_ACC_THRESHOLD");
+    /// The time period for timing out users who make too many requests.
+    static ref MAX_REQUESTS_TIME_PERIOD_MINUTES:usize = load_env!("MAX_REQUESTS_TIME_PERIOD_MINUTES");
     /// A list of supported speech languages by this api.
     static ref SUPPORTED_LANGS: HashMap<String, models::Language> = {
         let path = "./config/langs.toml";
-        let data = std::fs::read_to_string(path).expect(&format!("Unable to find {}", path));
-        let f = data.parse::<toml::Value>().expect(&format!("Unable to parse `{}`", path));
+        let data = std::fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to find {}", path));
+        let f = data.parse::<toml::Value>().unwrap_or_else(|_| panic!("Unable to parse `{}`", path));
 
         let languages: &toml::value::Table = f.get("lang")
-            .expect(&format!("Unable to parse {}, no langs provided!", path))
+            .unwrap_or_else(|| panic!("Unable to parse {}, no langs provided!", path))
             .as_table()
-            .expect(&format!("lang tag is not a table in {}", path));
+            .unwrap_or_else(|| panic!("lang tag is not a table in {}", path));
 
         let mut map: HashMap<String, models::Language> = HashMap::default();
         let keys: Vec<&String> = languages.keys().into_iter().collect();
         for key in keys {
             let lang = languages
                 .get(key)
-                .expect(&format!("Unable to parse lang {} from {}, is it correctly formatted?", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse lang {} from {}, is it correctly formatted?", key, path))
                 .as_table()
-                .expect(&format!("Unable to prase {} as table from {}", key, path));
+                .unwrap_or_else(|| panic!("Unable to prase {} as table from {}", key, path));
 
             let enabled = lang
                 .get("enabled")
-                .expect(&format!("Unable to parse enabled on {} from {}", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse enabled on {} from {}", key, path))
                 .as_bool()
-                .expect(&format!("{}'s enabled is not a boolean in {}", key, path));
+                .unwrap_or_else(|| panic!("{}'s enabled is not a boolean in {}", key, path));
 
             let festival_code = lang
                 .get("festival_code")
-                .expect(&format!("Unable to parse festival_code on {} from {}", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse festival_code on {} from {}", key, path))
                 .as_str()
-                .expect(&format!("{}'s festival_code is not a string in {}", key, path))
+                .unwrap_or_else(|| panic!("{}'s festival_code is not a string in {}", key, path))
                 .to_owned();
 
             let iso_691_code = lang
                 .get("iso_691-1_code")
-                .expect(&format!("Unable to parse iso-691-1_code on {} from {}", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse iso-691-1_code on {} from {}", key, path))
                 .as_str()
-                .expect(&format!("{}'s iso_691-1_code is not a string in {}", key, path))
+                .unwrap_or_else(|| panic!("{}'s iso_691-1_code is not a string in {}", key, path))
                 .to_owned();
 
             map.insert(iso_691_code.clone(), models::Language {
@@ -94,9 +102,8 @@ lazy_static! {
             });
         }
 
-        return map;
+        map
     };
-
     /// The list of supported file-formats, note that wav is the preferred format due to lower cpu usage.
     static ref SUPPORTED_FORMATS: Vec<String> = {
         vec![]
@@ -104,18 +111,14 @@ lazy_static! {
 }
 
 // General Todos
-// TODO Implement rate limiting for account creation/login based on ip address. This is especially relevant due to how
-// expensive hashing passwords is compute-wise.
-// TODO have another crack at implementing a response api which doesn't require owned values.
-// TODO if not found in the global env, static refs should fall back to looking for .env, or Rocket.toml.
-// TODO write tests for all endpoints. Research is required as to how to test with the database solution required.
-// Given we are using GH actions, something like: https://docs.github.com/en/actions/using-containerized-services/creating-postgresql-service-containers
-// could be relevant?
-// TODO create macro to automatically fill in boilerplate for jwt tokens to help reduce clutter.
+// TODO Implement timeouts for repeated failed login attempts.
+// TODO the api shouldn't charge for serving files from the cache. If we also provide an endpoint for finding out which
+// words are cached, we could allow users to more smartly choose which phrases they wish to display.
+// This should also reduce load on the api significant as it'll encourage users to pull common words!
 
 #[get("/")]
 fn index() -> String {
-    format!("Welcome to {}'s API for converting text into downloadable wav files! Please make a request to /docs for documentation.", API_NAME)
+    format!("Welcome to {} API for converting text into downloadable wav files! Please make a request to /docs for documentation.", *API_NAME)
 }
 
 #[get("/docs")]
@@ -200,44 +203,21 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
 async fn convert(
     token: Result<models::Claims, Response>,
     conn: DbConn,
-    phrase_package: Json<models::PhrasePackage>,
+    mut phrase_package: Json<models::PhrasePackage>,
 ) -> Result<Response, Response> {
     let token = token?;
 
     // Validate PhrasePackage
-    if phrase_package.word.len() > WORD_LENGTH_LIMIT {
-        reject!("Word is too long! Greater than {} chars", WORD_LENGTH_LIMIT)
-    }
-    if phrase_package.word.len() < 1 {
-        reject!("No word provided!")
-    }
-    if !phrase_package.word.bytes().all(|c| !c.is_ascii_digit()) {
-        reject!("Cannot have numbers in phrase!")
-    }
-    if phrase_package.speed > SPEED_MAX_VAL {
-        reject!(
-            "Speed values greater than {} are not allowed.",
-            SPEED_MAX_VAL
-        )
-    }
-    if phrase_package.speed < SPEED_MIN_VAL {
-        reject!("Speed values lower than {} are not allowed.", SPEED_MIN_VAL)
-    }
-    if !SUPPORTED_LANGS.contains_key(&phrase_package.lang) {
-        reject!(
-            "Provided lang ({}) is not supported by this api!",
-            &phrase_package.lang
-        )
-    }
+    phrase_package.validated()?;
 
-    // Validate that this user hasn't been timed out, and log this request.
+    // Validate that this user hasn't been timed out
     let reqs: Vec<models::GenerationRequest> =
-        common::load_recent_requests(&conn, token.sub, MAX_REQUESTS_ACC_THRESHOLD).await?;
-    if reqs.len() == MAX_REQUESTS_ACC_THRESHOLD {
+        common::load_recent_requests(&conn, token.sub, *MAX_REQUESTS_ACC_THRESHOLD).await?;
+    if reqs.len() == *MAX_REQUESTS_ACC_THRESHOLD {
         //Validate that this user hasn't made too many requests
         let earliest_req_time = common::get_time_since(reqs.last().unwrap().crt);
         let max_req_time_duration =
-            chrono::Duration::minutes(MAX_REQUEST_TIME_PERIOD_MINUTES as i64);
+            chrono::Duration::minutes(*MAX_REQUESTS_TIME_PERIOD_MINUTES as i64);
 
         if earliest_req_time < max_req_time_duration {
             return Err(Response::TextErr(Data {
@@ -250,28 +230,48 @@ async fn convert(
         }
     }
 
+    let req = NewGenerationRequest {
+        usr_id: token.sub,
+        word: phrase_package.word.clone(),
+        lang: phrase_package.lang.clone(),
+        speed: phrase_package.speed,
+    };
+
+    // Log this request
+    common::log_request(&conn, req).await?;
+
     // Generate the phrase if it isn't in the cache.
     let file_name = format!(
         "{}/{}.wav",
-        CACHE_PATH,
+        *CACHE_PATH,
         common::generate_random_alphanumeric(10)
     );
     if !Path::new(&file_name).exists() {
         // Generate a wav file if this file does not already exist.
-        let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o {}",
+        // TODO make this secure!
+        let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o '{}'",
             &phrase_package.word,
             &SUPPORTED_LANGS.get(&phrase_package.lang).unwrap().festival_code,
             &phrase_package.speed,
             &file_name
         );
-
         let word_gen = Command::new("bash")
             .args(["-c", &command])
             .stdout(std::process::Stdio::piped())
             .output();
 
         if let Err(e) = word_gen {
-            error!("Failed to generate wav from provided string. {}", e)
+            failure!("Failed to generate wav from provided string. {}", e)
+        }
+        let word_gen = word_gen.unwrap();
+
+        if !word_gen.status.success() {
+            let stdout = String::from_utf8(word_gen.stdout)
+                .unwrap_or_else(|_| "Unable to parse stdout!".into());
+            let stderr = String::from_utf8(word_gen.stderr)
+                .unwrap_or_else(|_| "Unable to parse stderr!".into());
+
+            failure!("Failed to generate wav from provided string due to error.\nStdout: \n{}\nStderr: \n{}", stdout, stderr)
         }
     }
 
@@ -300,11 +300,19 @@ async fn convert(
     }))
 }
 
+// struct CacheFairing(crate::cache::Cache<String, models::GenerationRequest, NamedFile>);
+
 #[launch]
 fn rocket() -> _ {
     //Initalize all globals
     lazy_static::initialize(&JWT_SECRET);
     lazy_static::initialize(&JWT_EXPIRY_TIME_HOURS);
+    lazy_static::initialize(&API_NAME);
+    lazy_static::initialize(&CACHE_PATH);
+    lazy_static::initialize(&SPEED_MAX_VAL);
+    lazy_static::initialize(&SPEED_MIN_VAL);
+    lazy_static::initialize(&MAX_REQUESTS_ACC_THRESHOLD);
+    lazy_static::initialize(&MAX_REQUESTS_TIME_PERIOD_MINUTES);
     lazy_static::initialize(&SUPPORTED_LANGS);
     lazy_static::initialize(&SUPPORTED_FORMATS);
 
@@ -315,17 +323,18 @@ fn rocket() -> _ {
 }
 
 #[cfg(test)]
-mod tests {
+#[cfg(not(tarpaulin_include))]
+mod rocket_tests {
     use crate::models::UserCredentials;
 
     use super::common::generate_random_alphanumeric;
     use super::models::Claims;
     use super::rocket;
-    use rocket::http::{ContentType, Status};
+    use rocket::http::{ContentType, Header, Status};
     use rocket::local::blocking::Client;
 
     //***** Helper Methods *****//
-    fn create_test_account(client: &Client) -> (UserCredentials, String) {
+    fn create_test_account(client: &Client) -> (UserCredentials, String, String) {
         let body = UserCredentials {
             usr: generate_random_alphanumeric(20),
             pwd: String::from("User12356789"),
@@ -340,7 +349,7 @@ mod tests {
             .dispatch();
         assert_eq!(create_response.status(), Status::Created);
 
-        return (body, body_json);
+        (body, body_json, create_response.into_string().unwrap())
     }
 
     //***** Test Methods *****//
@@ -378,7 +387,7 @@ mod tests {
     #[test]
     fn login_success() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let (_, body_json) = create_test_account(&client);
+        let (_, body_json, _) = create_test_account(&client);
 
         //Attempt to login
         let response = client
@@ -403,7 +412,7 @@ mod tests {
     #[test]
     fn login_failures() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let (body, body_json) = create_test_account(&client);
+        let (body, body_json, _) = create_test_account(&client);
 
         let wrong_password_body = body_json.replace(&body.pwd, "incorrect");
         let wrong_username_body = body_json.replace(&body.usr, "incorrect");
@@ -559,5 +568,125 @@ mod tests {
             "text/plain; charset=utf-8"
         );
         assert_eq!(response.into_string().unwrap(), "Username Taken");
+    }
+
+    // use rocket::tokio;
+
+    // #[rocket::tokio::test(flavor = "multi_thread", worker_threads = 16)]
+    // async fn be_friends() {
+    //     let mut handles = vec![];
+    //     for i in 0..200 {
+    //         let t = tokio::spawn(async move {
+    //             let command = format!("echo \"{}\" | text2wave -o {}",
+    //                 "The university of auckland is cool!",
+    //                 &format!("./cache/file-{}.wav", i)
+    //             );
+
+    //             let word_gen = Command::new("bash")
+    //                 .args(["-c", &command])
+    //                 .stdout(std::process::Stdio::piped())
+    //                 .output();
+
+    //             word_gen.unwrap();
+    //         });
+    //         handles.push(t);
+    //     }
+
+    //     futures::future::join_all(handles).await;
+    // }
+
+    #[test]
+    fn success_conversion() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let (_, _, token) = create_test_account(&client);
+
+        let body = "{
+            \"word\": \"The University of Auckland\",
+            \"lang\": \"en\",
+            \"speed\": 1.0
+        }";
+
+        //Test the generation of the .wav file
+        let response = client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token))
+            .body(&body)
+            .dispatch();
+
+        let status = response.status();
+        if status != Status::Ok {
+            panic!(
+                "Failed with status {} \nBody: \n{}\n",
+                status,
+                response.into_string().unwrap()
+            );
+        }
+
+        assert_eq!(
+            response.headers().get_one("content-type").unwrap(),
+            "audio/mpeg"
+        );
+
+        //TODO once filename generation is fixed, actually test for that.
+        assert!(response
+            .headers()
+            .get_one("content-disposition")
+            .unwrap()
+            .contains("attachment; filename=\""));
+
+        assert_eq!(response.into_bytes().unwrap().len(), 63840);
+    }
+
+    #[test]
+    fn test_limits() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let (_, _, token) = create_test_account(&client);
+
+        let body = "{
+            \"word\": \"The University of Auckland\",
+            \"lang\": \"en\",
+            \"speed\": 1.0
+        }";
+
+        for _ in 0..2 {
+            //Test the generation of the .wav file
+            let response = client
+                .post(uri!("/api/v1/convert"))
+                .header(ContentType::new("application", "json"))
+                .header(Header::new("Authorisation", token.clone()))
+                .body(&body)
+                .dispatch();
+            let status = response.status();
+            if status != Status::Ok {
+                panic!(
+                    "Failed with status {} \nBody: \n{}\n",
+                    status,
+                    response.into_string().unwrap()
+                );
+            }
+        }
+
+        let response = client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token))
+            .body(&body)
+            .dispatch();
+
+        let status = response.status();
+        if status != Status::TooManyRequests {
+            panic!(
+                "Failed with status {} \nBody: \n{}\n",
+                status,
+                response.into_string().unwrap()
+            );
+        }
+
+        //TODO this could check for a tolerance on the seconds number?
+        assert!(response
+            .into_string()
+            .unwrap()
+            .contains("Too many requests! You will be able to make another request in"));
     }
 }

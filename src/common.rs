@@ -55,17 +55,15 @@ pub async fn find_user_in_db(
 ) -> Result<Option<crate::models::User>, Response> {
     use crate::schema::users::dsl::*;
     let r: Result<Vec<crate::models::User>, diesel::result::Error> = conn
-        .run(move |c| {
-            return match name {
-                SearchItem::Name(s) => users
-                    .filter(usr.eq(s))
-                    .limit(1)
-                    .load::<crate::models::User>(c),
-                SearchItem::Id(n) => users
-                    .filter(id.eq(n))
-                    .limit(1)
-                    .load::<crate::models::User>(c),
-            };
+        .run(move |c| match name {
+            SearchItem::Name(s) => users
+                .filter(usr.eq(s))
+                .limit(1)
+                .load::<crate::models::User>(c),
+            SearchItem::Id(n) => users
+                .filter(id.eq(n))
+                .limit(1)
+                .load::<crate::models::User>(c),
         })
         .await;
 
@@ -95,6 +93,23 @@ pub async fn update_user_last_seen(
         Ok(_) => Ok(()),
         Err(e) => failure!("Unable to update user due to error {}", e),
     };
+}
+
+pub async fn log_request(
+    conn: &DbConn,
+    req: crate::models::NewGenerationRequest,
+) -> Result<(), Response> {
+    use crate::schema::reqs::dsl::*;
+
+    let r: Result<usize, diesel::result::Error> = conn
+        .run(move |c| diesel::insert_into(reqs).values(req).execute(c))
+        .await;
+
+    if let Err(e) = r {
+        failure!("Unable to log request to database: {}", e);
+    }
+
+    Ok(())
 }
 
 /// Load a users most recent requests, limited based on
@@ -139,6 +154,7 @@ pub fn generate_random_alphanumeric(length: usize) -> String {
 }
 
 #[cfg(test)]
+#[cfg(not(tarpaulin_include))]
 mod test {
     use super::{
         compare_hashed_strings, generate_random_alphanumeric, get_time_since, hash_string_with_salt,
@@ -169,12 +185,9 @@ mod test {
         //Ensure that we can compare the hash still!
         let pwd = generate_random_alphanumeric(4);
         let hashed_pwd = hash_string_with_salt(pwd.clone()).expect("Failed to hash password ");
-        assert!(compare_hashed_strings(pwd.clone(), hashed_pwd.clone())
+        assert!(compare_hashed_strings(pwd, hashed_pwd.clone()).expect("Failed to compare hashes "));
+        assert!(!compare_hashed_strings(String::from("hello"), hashed_pwd)
             .expect("Failed to compare hashes "));
-        assert!(
-            !compare_hashed_strings(String::from("hello"), hashed_pwd.clone())
-                .expect("Failed to compare hashes ")
-        );
     }
 
     #[test]

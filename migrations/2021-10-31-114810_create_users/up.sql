@@ -16,7 +16,6 @@ CREATE TABLE reqs (
     word TEXT NOT NULL,
     lang TEXT NOT NULL,
     speed REAL NOT NULL,
-    ip_addr BYTEA NOT NULL,
     CONSTRAINT fk_users FOREIGN KEY(usr_id) REFERENCES users(id)
 );
 
