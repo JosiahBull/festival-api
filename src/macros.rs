@@ -191,3 +191,19 @@ macro_rules! load_env {
 }
 
 pub(crate) use {failure, load_env, reject};
+
+#[cfg(test)]
+#[cfg(not(tarpaulin_include))]
+mod tests {
+    use super::load_env;
+    use lazy_static::lazy_static;
+
+    #[test]
+    #[should_panic]
+    fn test_failed_env_load() {
+        lazy_static! {
+            static ref U: String = load_env!("this_value_does_not_exist123");
+        }
+        lazy_static::initialize(&U);
+    }
+}

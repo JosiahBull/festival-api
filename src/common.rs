@@ -9,7 +9,7 @@ use rocket::http::Status;
 
 use crate::macros::failure;
 use crate::response::{Data, Response};
-use crate::DbConn;
+use crate::{DbConn, MAX_REQUESTS_ACC_THRESHOLD, MAX_REQUESTS_TIME_PERIOD_MINUTES};
 
 /// Hash a string with a random salt to be stored in the database.
 /// Utilizes the argon2id algorithm
@@ -97,10 +97,18 @@ pub async fn update_user_last_seen(
 
 pub async fn log_request(
     conn: &DbConn,
-    req: crate::models::NewGenerationRequest,
+    usr_id: i32,
+    phrase_package: &crate::models::PhrasePackage,
 ) -> Result<(), Response> {
-    use crate::schema::reqs::dsl::*;
+    let req = crate::models::NewGenerationRequest {
+        usr_id,
+        word: phrase_package.word.clone(),
+        lang: phrase_package.lang.clone(),
+        speed: phrase_package.speed,
+        fmt: phrase_package.fmt.clone(),
+    };
 
+    use crate::schema::reqs::dsl::reqs;
     let r: Result<usize, diesel::result::Error> = conn
         .run(move |c| diesel::insert_into(reqs).values(req).execute(c))
         .await;
@@ -136,6 +144,31 @@ pub async fn load_recent_requests(
         Ok(f) => Ok(f),
         Err(e) => failure!("Unable to collect recent requests due to error {}", e),
     };
+}
+
+pub async fn is_user_timed_out(conn: &DbConn, usr_id: i32) -> Result<(), Response> {
+    let reqs: Vec<crate::models::GenerationRequest> =
+        load_recent_requests(conn, usr_id, *MAX_REQUESTS_ACC_THRESHOLD).await?;
+    if reqs.len() >= *MAX_REQUESTS_ACC_THRESHOLD {
+        //Validate that this user hasn't made too many requests
+        let earliest_req_time = get_time_since(reqs.last().unwrap().crt);
+        let max_req_time_duration =
+            chrono::Duration::minutes(*MAX_REQUESTS_TIME_PERIOD_MINUTES as i64);
+
+        if earliest_req_time < max_req_time_duration {
+            return Err(Response::TextErr(Data {
+                data: format!(
+                    "Too many requests! You will be able to make another request in {} seconds.",
+                    (earliest_req_time - max_req_time_duration)
+                        .num_seconds()
+                        .abs()
+                ),
+                status: Status::TooManyRequests,
+            }));
+        }
+    }
+
+    Ok(())
 }
 
 /// Get the time (in seconds) since a chrono datetime. Returns a duration which can be negative if the time is in the future.

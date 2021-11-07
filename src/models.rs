@@ -40,6 +40,7 @@ pub struct GenerationRequest {
     pub word: String,
     pub lang: String,
     pub speed: f32,
+    pub fmt: String,
 }
 
 #[derive(Insertable)]
@@ -49,6 +50,7 @@ pub struct NewGenerationRequest {
     pub word: String,
     pub lang: String,
     pub speed: f32,
+    pub fmt: String,
 }
 
 /// A phrase package which the user is requesting a .mp3 for
@@ -57,6 +59,7 @@ pub struct PhrasePackage {
     pub word: String,
     pub lang: String,
     pub speed: f32,
+    pub fmt: String,
 }
 
 impl PhrasePackage {
@@ -221,6 +224,7 @@ mod tests {
             word: String::from("Hello, world!"),
             lang: String::from("en"),
             speed: *SPEED_MAX_VAL,
+            fmt: String::from("mp3"),
         };
         pack.validated().expect("a valid package");
 
@@ -228,6 +232,7 @@ mod tests {
             word: String::from("Hello, world!"),
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL,
+            fmt: String::from("mp3"),
         };
         pack.validated().expect("a valid package");
 
@@ -235,6 +240,7 @@ mod tests {
             word: String::from("H"),
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL,
+            fmt: String::from("mp3"),
         };
         pack.validated().expect("a valid package");
 
@@ -250,6 +256,7 @@ mod tests {
                 .collect(),
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL,
+            fmt: String::from("mp3"),
         };
         pack.validated().expect("a valid package");
     }
@@ -268,6 +275,7 @@ mod tests {
             word: String::from("Hello, world!"),
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL - 0.1,
+            fmt: String::from("mp3"),
         };
 
         // Validate the max value correct is in place!
@@ -278,6 +286,7 @@ mod tests {
             word: String::from("Hello, world!"),
             lang: String::from("en"),
             speed: *SPEED_MAX_VAL + 0.1,
+            fmt: String::from("mp3"),
         };
 
         pack.validated().expect("a valid package");
@@ -289,6 +298,7 @@ mod tests {
                 word: String::from("Hello, world!"),
                 lang: String::from("en"),
                 speed: 0.0 + 0.1 * i as f32,
+                fmt: String::from("mp3"),
             };
 
             pack.validated().expect("a valid package");
@@ -304,6 +314,7 @@ mod tests {
             word: String::from(""),
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL,
+            fmt: String::from("mp3"),
         };
 
         pack.validated().expect_err("should be too short");
@@ -321,6 +332,7 @@ mod tests {
                 .collect(),
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL,
+            fmt: String::from("mp3"),
         };
 
         pack.validated().expect_err("should be too long");
@@ -330,6 +342,7 @@ mod tests {
             word: String::from(""),
             lang: String::from("adfadlfjalk"),
             speed: *SPEED_MIN_VAL,
+            fmt: String::from("mp3"),
         };
 
         pack.validated().expect_err("should be invalid lang");
@@ -339,6 +352,7 @@ mod tests {
             word: String::from("adfae12312"),
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL,
+            fmt: String::from("mp3"),
         };
 
         pack.validated().expect_err("should be too short");

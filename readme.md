@@ -8,10 +8,11 @@ A simple REST api which takes a request body of the form:
 {
     "word": "university",
     "lang": "en",
-    "speed": 0.7
+    "speed": 0.7,
+    "fmt": "wav"
 }
 ```
-and returns a `.wav` file which may be streamed or played for a user.
+and returns a file which may be streamed or played for a user.
 
 Detailed documentation on how to use the API can be found [here](https://josiahbull.github.io/festival-api/).
 
@@ -29,15 +30,15 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
     - [x] Account Creation Endpoint
     - [x] JWT Tokens + Validation
     - [x] Tests 
-- [ ] Conversion endpoint
+- [x] Conversion endpoint
     - [x] Validation of Requests from user
     - [x] Generation of wav files
     - [x] Account Rate Limiting
-    - [ ] Conversion from .wav to .mp3 or any other fileformat
-    - [ ] Tests
-- [ ] Configuration
+    - [x] Conversion from .wav to .mp3 or any other fileformat
+    - [x] Tests
+- [x] Configuration
     - [x] Language Configuration `/config/langs.toml`
-    - [ ] File Format Configuration `/config/formats.toml`
+    - [x] File Format Configuration `/config/general.toml`
     - [x] General Configuration `/config/general.toml`
 - [ ] Setup docker-compose
 - [ ] Code Comments/Documentation
@@ -46,7 +47,7 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
 
 Currently this api is not setup with a service such as docker, so you must have [Rust](https://www.rust-lang.org/tools/install) installed.
 
-This api depends on Rust, Rocket, Diesel, Postgres, and Festival.
+This api depends on Rust, Rocket, Diesel, Postgres, Sox, and Festival.
 
 **Note: Festival may not have the default lang `voice_kal_diphone` installed for your system! To fix this change the english voice in `./config/langs.toml` to match what you wish to use on your system.**
 

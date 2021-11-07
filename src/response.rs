@@ -18,7 +18,7 @@ pub enum Response {
     TextOk(Data<String>),
     #[allow(dead_code)]
     JsonOk(Data<String>),
-    FileDownload(Data<NamedFile>),
+    FileDownload((Data<NamedFile>, String)),
 }
 
 #[rocket::async_trait]
@@ -39,10 +39,7 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
         let c_disp = match self {
             Response::FileDownload(ref d) => rocket::http::Header::new(
                 "Content-Disposition",
-                format!(
-                    "attachment; filename=\"{}\"",
-                    d.data.path().to_string_lossy()
-                ),
+                format!("attachment; filename=\"{}\"", d.1),
             ),
             _ => rocket::http::Header::new("Content-Disposition", "inline"),
         };
@@ -51,7 +48,7 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
             Response::TextErr(ref d) => d.status,
             Response::TextOk(ref d) => d.status,
             Response::JsonOk(ref d) => d.status,
-            Response::FileDownload(ref d) => d.status,
+            Response::FileDownload(ref d) => d.0.status,
         };
 
         //Construct and return response
@@ -59,7 +56,7 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
             Response::TextErr(d) => d.data.respond_to(req),
             Response::TextOk(d) => d.data.respond_to(req),
             Response::JsonOk(d) => d.data.respond_to(req),
-            Response::FileDownload(d) => d.data.respond_to(req),
+            Response::FileDownload(d) => d.0.data.respond_to(req),
         };
 
         let mut response = response.unwrap(); //HACK

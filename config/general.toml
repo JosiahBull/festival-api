@@ -14,6 +14,14 @@ API_NAME = "Jo's"
 # Default: "./cache"
 CACHE_PATH = "./cache" 
 
+# Closely related to the above cache path.
+# This is a temporary location for files to be stored, i.e. if doing a conversion from .wav
+# to .mp4. This is also where .wavs that aren't cached will be stored after generation 
+# before being deleted. Files can be deleted from here when the server is shutdown without
+# risk.
+# Default: "./cache/temp"
+TEMP_PATH = "./cache/temp"
+
 # The maximum length of a phrase in chars.
 # A user that sends a phrase longer than this will recieve a 400 response.
 # Default: 100
@@ -40,9 +48,18 @@ MAX_REQUESTS_ACC_THRESHOLD = 2
 
 # The time period over which request rate limits apply.
 # Default: 5
-MAX_REQUESTS_TIME_PERIOD_MINUTES = 5
+MAX_REQUESTS_TIME_PERIOD_MINUTES = 1
 
 # The number of hours a JWT token should be valid for before we require the user to 
 # revalidate their token.
 # Default: 200
 JWT_EXPIRY_TIME_HOURS = 200
+
+# The file formats that may be returned by the api.
+# A user may request their file in any one of these formats.
+# Note that only .wav files will be cached by the api, and converted on the fly to what is required.
+# These formats must be matched *exactly*, do not include a period, write in lower case.
+# Note that this api uses sox internally for it's conversion, so you must use formats it supports.
+# Supported formats can be found here: http://sox.sourceforge.net/AudioFormats-6.html
+# Default: [ "wav", "mp3", "aif" ]
+ALLOWED_FORMATS = [ "wav", "mp3", "aif" ]

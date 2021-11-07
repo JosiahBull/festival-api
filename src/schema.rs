@@ -16,6 +16,7 @@ table! {
         word -> Text,
         lang -> Text,
         speed -> Float4,
+        fmt -> Text,
     }
 }
 
