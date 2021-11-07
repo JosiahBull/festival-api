@@ -344,6 +344,20 @@
 <span id="344">344</span>
 <span id="345">345</span>
 <span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::macros::reject</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::response</span>::{<span class="ident">Data</span>, <span class="ident">Response</span>};
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::schema</span>::<span class="kw-2">*</span>;
@@ -386,6 +400,7 @@
     <span class="kw">pub</span> <span class="ident">word</span>: <span class="ident">String</span>,
     <span class="kw">pub</span> <span class="ident">lang</span>: <span class="ident">String</span>,
     <span class="kw">pub</span> <span class="ident">speed</span>: <span class="ident">f32</span>,
+    <span class="kw">pub</span> <span class="ident">fmt</span>: <span class="ident">String</span>,
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Insertable</span>)]</span>
@@ -395,6 +410,7 @@
     <span class="kw">pub</span> <span class="ident">word</span>: <span class="ident">String</span>,
     <span class="kw">pub</span> <span class="ident">lang</span>: <span class="ident">String</span>,
     <span class="kw">pub</span> <span class="ident">speed</span>: <span class="ident">f32</span>,
+    <span class="kw">pub</span> <span class="ident">fmt</span>: <span class="ident">String</span>,
 }
 
 <span class="doccomment">/// A phrase package which the user is requesting a .mp3 for</span>
@@ -403,6 +419,7 @@
     <span class="kw">pub</span> <span class="ident">word</span>: <span class="ident">String</span>,
     <span class="kw">pub</span> <span class="ident">lang</span>: <span class="ident">String</span>,
     <span class="kw">pub</span> <span class="ident">speed</span>: <span class="ident">f32</span>,
+    <span class="kw">pub</span> <span class="ident">fmt</span>: <span class="ident">String</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">PhrasePackage</span> {
@@ -567,6 +584,7 @@
             <span class="ident">word</span>: <span class="ident">String::from</span>(<span class="string">&quot;Hello, world!&quot;</span>),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MAX_VAL</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
         <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect</span>(<span class="string">&quot;a valid package&quot;</span>);
 
@@ -574,6 +592,7 @@
             <span class="ident">word</span>: <span class="ident">String::from</span>(<span class="string">&quot;Hello, world!&quot;</span>),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MIN_VAL</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
         <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect</span>(<span class="string">&quot;a valid package&quot;</span>);
 
@@ -581,6 +600,7 @@
             <span class="ident">word</span>: <span class="ident">String::from</span>(<span class="string">&quot;H&quot;</span>),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MIN_VAL</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
         <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect</span>(<span class="string">&quot;a valid package&quot;</span>);
 
@@ -596,6 +616,7 @@
                 .<span class="ident">collect</span>(),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MIN_VAL</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
         <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect</span>(<span class="string">&quot;a valid package&quot;</span>);
     }
@@ -614,6 +635,7 @@
             <span class="ident">word</span>: <span class="ident">String::from</span>(<span class="string">&quot;Hello, world!&quot;</span>),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MIN_VAL</span> <span class="op">-</span> <span class="number">0.1</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
 
         <span class="comment">// Validate the max value correct is in place!</span>
@@ -624,6 +646,7 @@
             <span class="ident">word</span>: <span class="ident">String::from</span>(<span class="string">&quot;Hello, world!&quot;</span>),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MAX_VAL</span> <span class="op">+</span> <span class="number">0.1</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
 
         <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect</span>(<span class="string">&quot;a valid package&quot;</span>);
@@ -635,6 +658,7 @@
                 <span class="ident">word</span>: <span class="ident">String::from</span>(<span class="string">&quot;Hello, world!&quot;</span>),
                 <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
                 <span class="ident">speed</span>: <span class="number">0.0</span> <span class="op">+</span> <span class="number">0.1</span> <span class="op">*</span> <span class="ident">i</span> <span class="kw">as</span> <span class="ident">f32</span>,
+                <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
             };
 
             <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect</span>(<span class="string">&quot;a valid package&quot;</span>);
@@ -650,6 +674,7 @@
             <span class="ident">word</span>: <span class="ident">String::from</span>(<span class="string">&quot;&quot;</span>),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MIN_VAL</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
 
         <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect_err</span>(<span class="string">&quot;should be too short&quot;</span>);
@@ -667,6 +692,7 @@
                 .<span class="ident">collect</span>(),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MIN_VAL</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
 
         <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect_err</span>(<span class="string">&quot;should be too long&quot;</span>);
@@ -676,6 +702,7 @@
             <span class="ident">word</span>: <span class="ident">String::from</span>(<span class="string">&quot;&quot;</span>),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;adfadlfjalk&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MIN_VAL</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
 
         <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect_err</span>(<span class="string">&quot;should be invalid lang&quot;</span>);
@@ -685,6 +712,7 @@
             <span class="ident">word</span>: <span class="ident">String::from</span>(<span class="string">&quot;adfae12312&quot;</span>),
             <span class="ident">lang</span>: <span class="ident">String::from</span>(<span class="string">&quot;en&quot;</span>),
             <span class="ident">speed</span>: <span class="kw-2">*</span><span class="ident">SPEED_MIN_VAL</span>,
+            <span class="ident">fmt</span>: <span class="ident">String::from</span>(<span class="string">&quot;mp3&quot;</span>),
         };
 
         <span class="ident">pack</span>.<span class="ident">validated</span>().<span class="ident">expect_err</span>(<span class="string">&quot;should be too short&quot;</span>);

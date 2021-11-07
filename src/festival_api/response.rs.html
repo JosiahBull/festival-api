@@ -75,9 +75,6 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
-<span id="78">78</span>
-<span id="79">79</span>
-<span id="80">80</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">rocket</span>::{<span class="ident">fs::NamedFile</span>, <span class="ident">http::Status</span>, <span class="ident">response::Responder</span>, <span class="ident">Request</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
@@ -98,7 +95,7 @@
     <span class="ident">TextOk</span>(<span class="ident">Data</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>),
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
     <span class="ident">JsonOk</span>(<span class="ident">Data</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>),
-    <span class="ident">FileDownload</span>(<span class="ident">Data</span><span class="op">&lt;</span><span class="ident">NamedFile</span><span class="op">&gt;</span>),
+    <span class="ident">FileDownload</span>((<span class="ident">Data</span><span class="op">&lt;</span><span class="ident">NamedFile</span><span class="op">&gt;</span>, <span class="ident">String</span>)),
 }
 
 <span class="attribute">#[<span class="ident">rocket::async_trait</span>]</span>
@@ -119,10 +116,7 @@
         <span class="kw">let</span> <span class="ident">c_disp</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span> {
             <span class="ident">Response::FileDownload</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">rocket::http::Header::new</span>(
                 <span class="string">&quot;Content-Disposition&quot;</span>,
-                <span class="macro">format!</span>(
-                    <span class="string">&quot;attachment; filename=\&quot;{}\&quot;&quot;</span>,
-                    <span class="ident">d</span>.<span class="ident">data</span>.<span class="ident">path</span>().<span class="ident">to_string_lossy</span>()
-                ),
+                <span class="macro">format!</span>(<span class="string">&quot;attachment; filename=\&quot;{}\&quot;&quot;</span>, <span class="ident">d</span>.<span class="number">1</span>),
             ),
             <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">rocket::http::Header::new</span>(<span class="string">&quot;Content-Disposition&quot;</span>, <span class="string">&quot;inline&quot;</span>),
         };
@@ -131,7 +125,7 @@
             <span class="ident">Response::TextErr</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="ident">status</span>,
             <span class="ident">Response::TextOk</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="ident">status</span>,
             <span class="ident">Response::JsonOk</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="ident">status</span>,
-            <span class="ident">Response::FileDownload</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="ident">status</span>,
+            <span class="ident">Response::FileDownload</span>(<span class="kw-2">ref</span> <span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="number">0</span>.<span class="ident">status</span>,
         };
 
         <span class="comment">//Construct and return response</span>
@@ -139,7 +133,7 @@
             <span class="ident">Response::TextErr</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="ident">data</span>.<span class="ident">respond_to</span>(<span class="ident">req</span>),
             <span class="ident">Response::TextOk</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="ident">data</span>.<span class="ident">respond_to</span>(<span class="ident">req</span>),
             <span class="ident">Response::JsonOk</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="ident">data</span>.<span class="ident">respond_to</span>(<span class="ident">req</span>),
-            <span class="ident">Response::FileDownload</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="ident">data</span>.<span class="ident">respond_to</span>(<span class="ident">req</span>),
+            <span class="ident">Response::FileDownload</span>(<span class="ident">d</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">d</span>.<span class="number">0</span>.<span class="ident">data</span>.<span class="ident">respond_to</span>(<span class="ident">req</span>),
         };
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">unwrap</span>(); <span class="comment">//HACK</span>
