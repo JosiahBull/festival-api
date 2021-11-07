@@ -1,3 +1,5 @@
+//! Common functions used in endpoints. Varied between db interactions and general processing.
+
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
@@ -11,9 +13,20 @@ use crate::macros::failure;
 use crate::response::{Data, Response};
 use crate::{DbConn, MAX_REQUESTS_ACC_THRESHOLD, MAX_REQUESTS_TIME_PERIOD_MINUTES};
 
-/// Hash a string with a random salt to be stored in the database.
+/// Hash a string with a random salt. Very useful for passwords and the like.
 /// Utilizes the argon2id algorithm
 /// Followed best practices as laid out here: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+/// Example Usage
+/// ```rust
+///
+/// let unhashed_string = String::from("your-text-here, maybe a password?");
+/// let hashed_string = hash_string_with_salt(unhashed_string.clone()).unwrap();
+/// let second_hashed_string = hash_string_with_salt(unhashed_string.clone()).unwrap();
+///
+/// assert_ne!(unhashed_string, hashed_string);
+/// assert_ne!(unhashed_string, second_hashed_string);
+/// assert_ne!(hashed_string, second_hashed_string);
+/// ```
 pub fn hash_string_with_salt(s: String) -> Result<String, Response> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
@@ -28,6 +41,21 @@ pub fn hash_string_with_salt(s: String) -> Result<String, Response> {
 
 /// A function which checks whether the first string can be hashed into the second string.
 /// Returns a boolean true if they are the same, and false otherwise.
+/// In the event the strings cannot be compared due to an error, returns an Err(response)
+/// which may be returned to the user.
+/// Example Usage:
+/// ```rust
+/// let original_string: String = String::from("hello, world");
+/// let hashed_string: String = hash_string_with_salt(original_string).unwrap();
+///
+/// //A valid comparison
+/// let result = compare_hashed_strings(original_string, hashed_string);
+/// assert!(result);
+///
+/// //An invalid comparison
+/// let result = compared_hashed_strings(String::from("other, string"). hashed_string);
+/// assert!(!result);
+/// ```
 pub fn compare_hashed_strings(orignal: String, hashed: String) -> Result<bool, Response> {
     let argon2 = Argon2::default();
     let parsed_hash = PasswordHash::new(&hashed).map_err(|e| {
@@ -41,21 +69,23 @@ pub fn compare_hashed_strings(orignal: String, hashed: String) -> Result<bool, R
         .is_ok())
 }
 
+/// A search item to be used for finding various database interactions when the flexibility
+/// between searching via a users name, and a users id is required.
 pub enum SearchItem {
     Name(String),
-    #[allow(dead_code)]
     Id(i32),
 }
 
 /// Attempt to find a user in the database, returns None if the user is unable to be found.
 /// Note that the provided name is assumed unique. If multiple results exist, the first will be returned.
+/// If the database interaction fails, returns a response which can be shown to the user.
 pub async fn find_user_in_db(
     conn: &DbConn,
-    name: SearchItem,
+    search: SearchItem,
 ) -> Result<Option<crate::models::User>, Response> {
     use crate::schema::users::dsl::*;
     let r: Result<Vec<crate::models::User>, diesel::result::Error> = conn
-        .run(move |c| match name {
+        .run(move |c| match search {
             SearchItem::Name(s) => users
                 .filter(usr.eq(s))
                 .limit(1)
@@ -77,15 +107,18 @@ pub async fn find_user_in_db(
 /// Attempts to find and then update a user with a new timestamp.
 pub async fn update_user_last_seen(
     conn: &DbConn,
-    search_id: i32,
+    search: SearchItem,
     time: chrono::DateTime<Utc>,
 ) -> Result<(), Response> {
     use crate::schema::users::dsl::*;
     let r: Result<crate::models::User, _> = conn
-        .run(move |c| {
-            diesel::update(users.filter(id.eq(search_id)))
+        .run(move |c| match search {
+            SearchItem::Name(s) => diesel::update(users.filter(usr.eq(s)))
                 .set(last_accessed.eq(time))
-                .get_result(c)
+                .get_result(c),
+            SearchItem::Id(search_id) => diesel::update(users.filter(id.eq(search_id)))
+                .set(last_accessed.eq(time))
+                .get_result(c),
         })
         .await;
 
@@ -95,32 +128,7 @@ pub async fn update_user_last_seen(
     };
 }
 
-pub async fn log_request(
-    conn: &DbConn,
-    usr_id: i32,
-    phrase_package: &crate::models::PhrasePackage,
-) -> Result<(), Response> {
-    let req = crate::models::NewGenerationRequest {
-        usr_id,
-        word: phrase_package.word.clone(),
-        lang: phrase_package.lang.clone(),
-        speed: phrase_package.speed,
-        fmt: phrase_package.fmt.clone(),
-    };
-
-    use crate::schema::reqs::dsl::reqs;
-    let r: Result<usize, diesel::result::Error> = conn
-        .run(move |c| diesel::insert_into(reqs).values(req).execute(c))
-        .await;
-
-    if let Err(e) = r {
-        failure!("Unable to log request to database: {}", e);
-    }
-
-    Ok(())
-}
-
-/// Load a users most recent requests, limited based on
+/// Load a users most recent requests, limited based on the number of requests.
 pub async fn load_recent_requests(
     conn: &DbConn,
     search_id: i32,
@@ -146,6 +154,9 @@ pub async fn load_recent_requests(
     };
 }
 
+/// Returns Ok(()) if the user is not timed out.
+/// If the user is timed out returns Err(Response) with a custom message containing
+/// the number of seconds the user has left before becoming non-timed out.
 pub async fn is_user_timed_out(conn: &DbConn, usr_id: i32) -> Result<(), Response> {
     let reqs: Vec<crate::models::GenerationRequest> =
         load_recent_requests(conn, usr_id, *MAX_REQUESTS_ACC_THRESHOLD).await?;
@@ -166,6 +177,33 @@ pub async fn is_user_timed_out(conn: &DbConn, usr_id: i32) -> Result<(), Respons
                 status: Status::TooManyRequests,
             }));
         }
+    }
+
+    Ok(())
+}
+
+/// Uploads the provided phrase_package as a request to the database.
+/// This is important for rate limiting, among other things.
+pub async fn log_request(
+    conn: &DbConn,
+    usr_id: i32,
+    phrase_package: &crate::models::PhrasePackage,
+) -> Result<(), Response> {
+    let req = crate::models::NewGenerationRequest {
+        usr_id,
+        word: phrase_package.word.clone(),
+        lang: phrase_package.lang.clone(),
+        speed: phrase_package.speed,
+        fmt: phrase_package.fmt.clone(),
+    };
+
+    use crate::schema::reqs::dsl::reqs;
+    let r: Result<usize, diesel::result::Error> = conn
+        .run(move |c| diesel::insert_into(reqs).values(req).execute(c))
+        .await;
+
+    if let Err(e) = r {
+        failure!("Unable to log request to database: {}", e);
     }
 
     Ok(())

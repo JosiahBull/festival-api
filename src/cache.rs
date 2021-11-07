@@ -15,40 +15,74 @@
 use priority_queue::DoublePriorityQueue;
 use std::{collections::HashMap, hash::Hash, io::ErrorKind, marker::PhantomData};
 
+/// The number of bytes in a mb.
 const BYTES_IN_MB: usize = 1_000_000;
+
+/// A type indicating that this return type may be cached properly in the api.
+/// These methods are required to save and load from the disk.
 #[rocket::async_trait]
 trait Cachable<U> {
+    /// Load the underlying file from the disk, or generate it fresh if it's not there.
     async fn load_underlying(&self) -> Result<U, std::io::Error>;
+
+    /// Get the total size this object is taking up on the disk. Should fail if the file has not been
+    /// saved to the disk.
     async fn size_on_disk(&self) -> Result<usize, std::io::Error>;
+
+    /// Save this file to the disk, so that it is cached for future use. May require regeneration of the 
+    /// file.
     async fn save_on_disk(&self) -> Result<(), std::io::Error>;
+
+    /// Remove the underlying file from the disk.
     async fn remove_from_disk(&self) -> Result<(), std::io::Error>;
 }
 
+/// A struct which wraps cacheable data for the cache. This is useful as we can store information about the 
+/// stored item, which can be used when making decisions about whether to cache or not.
 #[derive(Debug, Clone)]
 struct Info<G, U>
 where
     G: Cachable<U> + Send + Sync,
 {
+    /// Number of times this data has been requested
     uses: usize,
+    /// Whether it is currently cached to disk
     cached: bool,
+    /// The wrapped internal data
     wrapped: G,
+    #[doc(hidden)]
     _return_type: PhantomData<U>,
 }
 
+/// A cache for storing frequently used data. Will automatically attempt to cache popular items over time, 
+/// decaching less popular items as required.
 struct Cache<T, G, U>
 where
     T: Hash + Eq + Clone,
     G: Cachable<U> + Send + Sync,
 {
+    /// Maximum number of items to cache
     max_to_cache: usize,
+    /// Maximum size of items to cache
     max_size_of_cache_bytes: usize,
 
+    /// The current count of items cached
     count: usize,
+    /// THe current size of all cached items on the disk =
     size_on_disk: usize,
 
+    /// When an item gets replaced, how large should the "bump" be to prevent
+    /// it from being quickly deseated. This is very important as it stops frequent swapping of lower
+    /// cached items consuming system resources.
     uses_threshold: usize,
 
+    /// A double priority queue which stores the itemes in least and most popular form.
+    /// This is backed by a HashMap, which means we get O(log(n)) for most operations in the worst 
+    /// case.
     priority: DoublePriorityQueue<T, usize>,
+
+    /// The cache itself, stores data about a variety of objects. Note that we wrap objects with
+    /// an info struct to track information about individual objects.
     cache: HashMap<T, Info<G, U>>,
 }
 
@@ -57,6 +91,7 @@ where
     T: Hash + Eq + Clone,
     G: Cachable<U> + std::cmp::PartialEq + Send + Sync,
 {
+    /// Create a new cache, with a specific max number of items and max size on disk.
     fn new(max_items: usize, max_size: usize) -> Cache<T, G, U> {
         Cache::<T, G, U> {
             max_to_cache: max_items,
@@ -65,6 +100,7 @@ where
         }
     }
 
+    /// Change the uses_threshold value
     fn set_threshold(&mut self, threshold: usize) {
         self.uses_threshold = threshold;
     }
@@ -78,6 +114,7 @@ where
         }
     }
 
+    /// Get information about an item
     fn get_info(&self, key: &T) -> Option<&Info<G, U>> {
         if let Some(item) = self.cache.get(key) {
             Some(item)
@@ -192,10 +229,20 @@ where
         }
     }
 
-    fn get_underlying(&mut self) -> &mut HashMap<T, Info<G, U>> {
+    /// Collect a reference to the underlying backing HashMap. This is primarily useful for testing,
+    /// but can also be useful if you wish to manually retrieve data from a stored object.
+    fn get_underlying(&self) -> &HashMap<T, Info<G, U>> {
+        &self.cache
+    }
+
+    /// An unsafe function, allows manual editing of the underlying backing hashmap. Editing this 
+    /// directly may break the entire cache, as there are many values which must remain perfectly in 
+    /// line for this to succeed.
+    unsafe fn get_underlying_mut(&mut self) -> &mut HashMap<T, Info<G, U>> {
         &mut self.cache
     }
 
+    /// Check whether the cache contains a given key
     fn contains_item(&self, key: &T) -> bool {
         self.cache.contains_key(key)
     }
@@ -450,7 +497,7 @@ mod test {
             .await
             .unwrap();
 
-        let underlying: &mut HashMap<String, Info<Item, i64>> = cache.get_underlying();
+        let underlying: &HashMap<String, Info<Item, i64>> = cache.get_underlying();
 
         let keys = underlying.clone().into_keys();
         let vals = underlying.clone().into_values();

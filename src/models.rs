@@ -1,9 +1,10 @@
+//! Various objects, including database objects, for the api.
 use crate::macros::reject;
 use crate::response::{Data, Response};
 use crate::schema::*;
 use crate::{
-    JWT_EXPIRY_TIME_HOURS, JWT_SECRET, SPEED_MAX_VAL, SPEED_MIN_VAL, SUPPORTED_LANGS,
-    WORD_LENGTH_LIMIT,
+    ALLOWED_FORMATS, JWT_EXPIRY_TIME_HOURS, JWT_SECRET, SPEED_MAX_VAL, SPEED_MIN_VAL,
+    SUPPORTED_LANGS, WORD_LENGTH_LIMIT,
 };
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -31,6 +32,8 @@ pub struct User {
     pub last_accessed: chrono::DateTime<Utc>,
 }
 
+/// A request to generate a .wav file from text from a user that has been stored in the db.
+/// This is a return object from the reqs table of the database.
 #[derive(Queryable, QueryableByName)]
 #[table_name = "reqs"]
 pub struct GenerationRequest {
@@ -43,6 +46,8 @@ pub struct GenerationRequest {
     pub fmt: String,
 }
 
+/// A request to generate a .wav file from text for a user, to be stored in the db.
+/// This is an insertion object for the reqs table of the database.
 #[derive(Insertable)]
 #[table_name = "reqs"]
 pub struct NewGenerationRequest {
@@ -53,7 +58,7 @@ pub struct NewGenerationRequest {
     pub fmt: String,
 }
 
-/// A phrase package which the user is requesting a .mp3 for
+/// A phrase package which the user is requesting a speech to be generated for.
 #[derive(Deserialize)]
 pub struct PhrasePackage {
     pub word: String,
@@ -98,7 +103,12 @@ impl PhrasePackage {
         }
 
         //Validate fild format selection
-        //TODO
+        if !ALLOWED_FORMATS.contains(&self.fmt) {
+            reject!(
+                "Requested format ({}) is not supported by this api!",
+                &self.fmt
+            )
+        }
 
         //Check that provided phrase is valid
         if self.word.len() > *WORD_LENGTH_LIMIT {
@@ -118,6 +128,8 @@ impl PhrasePackage {
     }
 }
 
+/// Represents a possible language that the api may convert text into.
+/// This is loaded on boot from `./config/langs.toml`.
 pub struct Language {
     pub display_name: String,
     pub iso_691_code: String,
@@ -203,7 +215,7 @@ impl<'r> FromRequest<'r> for Claims {
 #[cfg(not(tarpaulin_include))]
 mod tests {
     use super::{Claims, PhrasePackage};
-    use super::{SPEED_MAX_VAL, SPEED_MIN_VAL, WORD_LENGTH_LIMIT};
+    use super::{ALLOWED_FORMATS, SPEED_MAX_VAL, SPEED_MIN_VAL, WORD_LENGTH_LIMIT};
     use crate::common::generate_random_alphanumeric;
 
     #[test]
@@ -356,5 +368,39 @@ mod tests {
         };
 
         pack.validated().expect_err("should be too short");
+    }
+
+    #[test]
+    fn invalid_file_formats() {
+        let mut pack = PhrasePackage {
+            word: String::from("hello"),
+            lang: String::from("en"),
+            speed: *SPEED_MIN_VAL,
+            fmt: String::from("format"),
+        };
+        match pack.validated().unwrap_err() {
+            crate::response::Response::TextErr(data) => {
+                let inner: String = data.into_inner().to_owned();
+                assert_eq!(
+                    inner,
+                    String::from("Requested format (format) is not supported by this api!")
+                )
+            }
+            _ => panic!("Unexpected response!"),
+        }
+    }
+
+    #[test]
+    fn valid_file_formats() {
+        for format in ALLOWED_FORMATS.iter() {
+            let mut pack = PhrasePackage {
+                word: String::from("hello"),
+                lang: String::from("en"),
+                speed: *SPEED_MIN_VAL,
+                fmt: format.clone(),
+            };
+
+            pack.validated().expect("a valid pack");
+        }
     }
 }
