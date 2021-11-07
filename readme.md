@@ -6,10 +6,10 @@
 A simple REST api which takes a request body of the form:
 ```json
 {
-    "word": "university", //The word to spell
-    "lang": "en", //The language the word is in
-    "speed": 0.7, //The speed the word is to be read at
-    "fmt": "wav" //The requested return format of the word
+    "word": "university",
+    "lang": "en",
+    "speed": 0.7,
+    "fmt": "wav"
 }
 ```
 and returns a file which may be streamed or played for a user.
@@ -30,15 +30,15 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
     - [x] Account Creation Endpoint
     - [x] JWT Tokens + Validation
     - [x] Tests 
-- [ ] Conversion endpoint
+- [x] Conversion endpoint
     - [x] Validation of Requests from user
     - [x] Generation of wav files
     - [x] Account Rate Limiting
     - [x] Conversion from .wav to .mp3 or any other fileformat
-    - [ ] Tests
-- [ ] Configuration
+    - [x] Tests
+- [x] Configuration
     - [x] Language Configuration `/config/langs.toml`
-    - [ ] File Format Configuration `/config/formats.toml`
+    - [x] File Format Configuration `/config/general.toml`
     - [x] General Configuration `/config/general.toml`
 - [ ] Setup docker-compose
 - [ ] Code Comments/Documentation
