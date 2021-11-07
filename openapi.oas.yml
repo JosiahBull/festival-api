@@ -27,6 +27,10 @@ components:
           type: number
           description: A float between 0.5 and 3, values outside of these will be truncated.
           example: 0.7
+        fmt:
+          type: string
+          description: The file format you want to be sent. `wav` is preferred.
+          example: wav
     UserCredentials:
       type: object
       required:

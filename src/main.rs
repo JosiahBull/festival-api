@@ -1,5 +1,5 @@
 #![allow(clippy::needless_doctest_main)]
-
+#![allow(soft_unstable)]
 #[cfg(not(tarpaulin_include))]
 #[rustfmt::skip]
 mod schema;
@@ -18,12 +18,16 @@ extern crate rocket;
 #[macro_use]
 extern crate diesel;
 
-use std::{collections::HashMap, path::Path, process::Command};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+    process::Command,
+};
 
 use diesel::prelude::*;
 use lazy_static::lazy_static;
 use macros::{failure, load_env, reject};
-use models::{NewGenerationRequest, UserCredentials};
+use models::UserCredentials;
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
 
@@ -41,8 +45,10 @@ lazy_static! {
     static ref JWT_EXPIRY_TIME_HOURS: usize = load_env!("JWT_EXPIRY_TIME_HOURS");
     /// The name of the api which is sent with certain requests.
     static ref API_NAME: String = load_env!("API_NAME");
-    /// The path to the cache for storing .wav files
+    /// The path to the cache for storing .wav files.
     static ref CACHE_PATH: String = load_env!("CACHE_PATH");
+    /// The path where temporary files are stored, and should be deleted from on a crash.
+    static ref TEMP_PATH: String = load_env!("TEMP_PATH");
     /// The maximum length of a phrase that the api will process.
     static ref WORD_LENGTH_LIMIT: usize = load_env!("WORD_LENGTH_LIMIT");
     /// The maximum speed at which a phrase can be read.
@@ -105,8 +111,29 @@ lazy_static! {
         map
     };
     /// The list of supported file-formats, note that wav is the preferred format due to lower cpu usage.
-    static ref SUPPORTED_FORMATS: Vec<String> = {
-        vec![]
+    static ref ALLOWED_FORMATS: HashSet<String> = {
+        let path = "./config/general.toml";
+        let data = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", path, e));
+        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", path, e));
+
+        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", path));
+
+        let formats = table.get("ALLOWED_FORMATS")
+            .unwrap_or_else(|| panic!("Unable to find ALLOWED_FORMATS in {}", path))
+            .as_array()
+            .unwrap_or_else(|| panic!("ALLOWED_FORMATS in {} is not an array of strings!", path));
+
+        let mut res = HashSet::default();
+
+        for format in formats {
+            let string = format
+                .as_str()
+                .unwrap_or_else(|| panic!("ALLOWED_FORMATS in {} is not an array of strings!", path))
+                .to_owned();
+            res.insert(string);
+        }
+
+        res
     };
 }
 
@@ -205,60 +232,34 @@ async fn convert(
     conn: DbConn,
     mut phrase_package: Json<models::PhrasePackage>,
 ) -> Result<Response, Response> {
+    //Validate token
     let token = token?;
 
     // Validate PhrasePackage
     phrase_package.validated()?;
 
     // Validate that this user hasn't been timed out
-    let reqs: Vec<models::GenerationRequest> =
-        common::load_recent_requests(&conn, token.sub, *MAX_REQUESTS_ACC_THRESHOLD).await?;
-    if reqs.len() == *MAX_REQUESTS_ACC_THRESHOLD {
-        //Validate that this user hasn't made too many requests
-        let earliest_req_time = common::get_time_since(reqs.last().unwrap().crt);
-        let max_req_time_duration =
-            chrono::Duration::minutes(*MAX_REQUESTS_TIME_PERIOD_MINUTES as i64);
-
-        if earliest_req_time < max_req_time_duration {
-            return Err(Response::TextErr(Data {
-                data: format!(
-                    "Too many requests! You will be able to make another request in {} seconds.",
-                    (earliest_req_time - max_req_time_duration).num_seconds()
-                ),
-                status: Status::TooManyRequests,
-            }));
-        }
-    }
-
-    let req = NewGenerationRequest {
-        usr_id: token.sub,
-        word: phrase_package.word.clone(),
-        lang: phrase_package.lang.clone(),
-        speed: phrase_package.speed,
-    };
+    common::is_user_timed_out(&conn, token.sub).await?;
 
     // Log this request
-    common::log_request(&conn, req).await?;
+    common::log_request(&conn, token.sub, &phrase_package).await?;
 
-    // Generate the phrase if it isn't in the cache.
-    let file_name = format!(
-        "{}/{}.wav",
-        *CACHE_PATH,
-        common::generate_random_alphanumeric(10)
-    );
-    if !Path::new(&file_name).exists() {
+    // Generate the phrase
+    let file_name_base = common::generate_random_alphanumeric(10);
+
+    let file_name_wav = format!("{}/{}.wav", *CACHE_PATH, &file_name_base,);
+
+    if !Path::new(&file_name_wav).exists() {
         // Generate a wav file if this file does not already exist.
         // TODO make this secure!
         let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o '{}'",
             &phrase_package.word,
             &SUPPORTED_LANGS.get(&phrase_package.lang).unwrap().festival_code,
             &phrase_package.speed,
-            &file_name
+            &file_name_wav
         );
-        let word_gen = Command::new("bash")
-            .args(["-c", &command])
-            .stdout(std::process::Stdio::piped())
-            .output();
+        //TODO refactor this erorr handling into another function
+        let word_gen = Command::new("bash").args(["-c", &command]).output();
 
         if let Err(e) = word_gen {
             failure!("Failed to generate wav from provided string. {}", e)
@@ -275,10 +276,38 @@ async fn convert(
         }
     }
 
-    //Format the file to the desired output
-    //TODO
+    let mut converted_file = file_name_wav.clone();
 
-    let resp_file = match NamedFile::open(&file_name).await {
+    //Format the file to the desired output
+    if phrase_package.fmt != "wav" {
+        //Carry out conversion
+        converted_file = format!(
+            "{}/temp/{}.{}",
+            *CACHE_PATH, &file_name_base, phrase_package.fmt
+        );
+
+        let con = Command::new("sox")
+            .arg(&file_name_wav)
+            .arg(&converted_file)
+            .output();
+
+        //TODO refactor this erorr handling into another function that can be tested individually
+        if let Err(e) = con {
+            failure!("Failed to generate wav from provided string. {}", e)
+        }
+        let con = con.unwrap();
+
+        if !con.status.success() {
+            let stdout =
+                String::from_utf8(con.stdout).unwrap_or_else(|_| "Unable to parse stdout!".into());
+            let stderr =
+                String::from_utf8(con.stderr).unwrap_or_else(|_| "Unable to parse stderr!".into());
+
+            failure!("Failed to generate wav from provided string due to error.\nStdout: \n{}\nStderr: \n{}", stdout, stderr)
+        }
+    }
+
+    let resp_file = match NamedFile::open(&converted_file).await {
         Ok(f) => f,
         Err(e) => failure!("Unable to open processed file {}", e),
     };
@@ -286,18 +315,30 @@ async fn convert(
     //Remove the link on the filesystem, note that as we have an opened NamedFile, that should persist.
     //See https://github.com/SergioBenitez/Rocket/issues/610 for more info.
     //This is temporary pending development of a proper caching system.
-    if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&file_name)).await {
+    if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&file_name_wav)).await {
         failure!(
             "Unable to temporary file from system prior to response {}",
             e
         )
     };
 
+    if file_name_wav != converted_file {
+        if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&converted_file)).await {
+            failure!(
+                "Unable to temporary file from system prior to response {}",
+                e
+            )
+        };
+    }
+
     //Return the response
-    Ok(Response::FileDownload(Data {
-        data: resp_file,
-        status: Status::Ok,
-    }))
+    Ok(Response::FileDownload((
+        Data {
+            data: resp_file,
+            status: Status::Ok,
+        },
+        format!("output.{}", phrase_package.fmt),
+    )))
 }
 
 // struct CacheFairing(crate::cache::Cache<String, models::GenerationRequest, NamedFile>);
@@ -309,12 +350,13 @@ fn rocket() -> _ {
     lazy_static::initialize(&JWT_EXPIRY_TIME_HOURS);
     lazy_static::initialize(&API_NAME);
     lazy_static::initialize(&CACHE_PATH);
+    lazy_static::initialize(&TEMP_PATH);
     lazy_static::initialize(&SPEED_MAX_VAL);
     lazy_static::initialize(&SPEED_MIN_VAL);
     lazy_static::initialize(&MAX_REQUESTS_ACC_THRESHOLD);
     lazy_static::initialize(&MAX_REQUESTS_TIME_PERIOD_MINUTES);
     lazy_static::initialize(&SUPPORTED_LANGS);
-    lazy_static::initialize(&SUPPORTED_FORMATS);
+    lazy_static::initialize(&ALLOWED_FORMATS);
 
     rocket::build()
         .mount("/", routes![index, docs])
@@ -325,11 +367,10 @@ fn rocket() -> _ {
 #[cfg(test)]
 #[cfg(not(tarpaulin_include))]
 mod rocket_tests {
-    use crate::models::UserCredentials;
-
     use super::common::generate_random_alphanumeric;
-    use super::models::Claims;
+    use super::models::{Claims, UserCredentials};
     use super::rocket;
+    use super::ALLOWED_FORMATS;
     use rocket::http::{ContentType, Header, Status};
     use rocket::local::blocking::Client;
 
@@ -571,9 +612,8 @@ mod rocket_tests {
     }
 
     // use rocket::tokio;
-
     // #[rocket::tokio::test(flavor = "multi_thread", worker_threads = 16)]
-    // async fn be_friends() {
+    // async fn gen_speed() {
     //     let mut handles = vec![];
     //     for i in 0..200 {
     //         let t = tokio::spawn(async move {
@@ -582,9 +622,8 @@ mod rocket_tests {
     //                 &format!("./cache/file-{}.wav", i)
     //             );
 
-    //             let word_gen = Command::new("bash")
+    //             let word_gen = std::process::Command::new("bash")
     //                 .args(["-c", &command])
-    //                 .stdout(std::process::Stdio::piped())
     //                 .output();
 
     //             word_gen.unwrap();
@@ -603,7 +642,8 @@ mod rocket_tests {
         let body = "{
             \"word\": \"The University of Auckland\",
             \"lang\": \"en\",
-            \"speed\": 1.0
+            \"speed\": 1.0,
+            \"fmt\": \"wav\"
         }";
 
         //Test the generation of the .wav file
@@ -628,13 +668,10 @@ mod rocket_tests {
             "audio/mpeg"
         );
 
-        //TODO once filename generation is fixed, actually test for that.
-        assert!(response
-            .headers()
-            .get_one("content-disposition")
-            .unwrap()
-            .contains("attachment; filename=\""));
-
+        assert_eq!(
+            response.headers().get_one("content-disposition").unwrap(),
+            "attachment; filename=\"output.wav\""
+        );
         assert_eq!(response.into_bytes().unwrap().len(), 63840);
     }
 
@@ -646,7 +683,8 @@ mod rocket_tests {
         let body = "{
             \"word\": \"The University of Auckland\",
             \"lang\": \"en\",
-            \"speed\": 1.0
+            \"speed\": 1.0,
+            \"fmt\": \"wav\"
         }";
 
         for _ in 0..2 {
@@ -688,5 +726,107 @@ mod rocket_tests {
             .into_string()
             .unwrap()
             .contains("Too many requests! You will be able to make another request in"));
+    }
+
+    /// Validate that all file format options work as intended
+    #[test]
+    fn test_every_format() {
+        for format in ALLOWED_FORMATS.iter() {
+            let client = Client::tracked(rocket()).expect("valid rocket instance");
+            let (_, _, token) = create_test_account(&client);
+
+            let body = format!(
+                "{{
+                \"word\": \"The University of Auckland\",
+                \"lang\": \"en\",
+                \"speed\": 1.0,
+                \"fmt\": \"{}\"
+            }}",
+                format
+            );
+
+            //Generate a 'generic' file and validate the response is correct
+            let response = client
+                .post(uri!("/api/v1/convert"))
+                .header(ContentType::new("application", "json"))
+                .header(Header::new("Authorisation", token))
+                .body(&body)
+                .dispatch();
+
+            let status = response.status();
+            if status != Status::Ok {
+                panic!(
+                    "Failed with status {} \nBody: \n{}\n",
+                    status,
+                    response.into_string().unwrap()
+                );
+            }
+            let expected = format!("attachment; filename=\"output.{}\"", format);
+            assert_eq!(
+                response.headers().get_one("content-disposition").unwrap(),
+                expected
+            );
+        }
+    }
+
+    /// Validate that all languages are accepted by the api
+    #[test]
+    fn test_every_lang() {
+        //TODO
+    }
+
+    /// Ensure that incorrect tokens fail as expected
+    #[test]
+    fn test_invalid_auth_tokens() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let (_, _, token) = create_test_account(&client);
+
+        let body = "{
+            \"word\": \"The University of Auckland\",
+            \"lang\": \"en\",
+            \"speed\": 1.0,
+            \"fmt\": \"wav\"
+        }";
+
+        //Test No Header
+        let response = client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .body(&body)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::Unauthorized);
+        assert_eq!(
+            response.into_string().unwrap(),
+            "Authorisation Header Not Present"
+        );
+
+        //Test Invalid Token
+
+        let bad_token = format!("a{}", &token);
+
+        let response = client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", bad_token))
+            .body(&body)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::Unauthorized);
+        assert_eq!(response.into_string().unwrap(), "Invalid Auth Token");
+
+        //Test Invalid Header
+        let response = client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorization", token))
+            .body(&body)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::Unauthorized);
+        assert_eq!(
+            response.into_string().unwrap(),
+            "Authorisation Header Not Present"
+        );
     }
 }

@@ -15,7 +15,7 @@
 use priority_queue::DoublePriorityQueue;
 use std::{collections::HashMap, hash::Hash, io::ErrorKind, marker::PhantomData};
 
-const BYTES_IN_MB: usize = 1048576;
+const BYTES_IN_MB: usize = 1_000_000;
 #[rocket::async_trait]
 trait Cachable<U> {
     async fn load_underlying(&self) -> Result<U, std::io::Error>;
@@ -107,22 +107,29 @@ where
         } else {
             //Check if this item has enough popularity to be cached!
             //TODO fix bug here that could cause size to get away from us
-            if item.uses > *self.priority.peek_min().unwrap().1 {
-                //Cache new item
-                item.cached = true;
-                item.wrapped.save_on_disk().await?;
-                self.size_on_disk += item.wrapped.size_on_disk().await?;
-                self.priority
-                    .push(key.clone(), item.uses + self.uses_threshold);
+            let min = self.priority.peek_min();
+            if let Some(min) = min {
+                if item.uses > *min.1 {
+                    //Cache new item
+                    item.cached = true;
+                    item.wrapped.save_on_disk().await?;
+                    self.size_on_disk += item.wrapped.size_on_disk().await?;
+                    self.priority
+                        .push(key.clone(), item.uses + self.uses_threshold);
 
-                //Decache existing lowest item
-                let decache_key = self.priority.pop_min().unwrap().0;
-                let decache_item = self.cache.get_mut(&decache_key).unwrap();
-                self.size_on_disk -= decache_item.wrapped.size_on_disk().await?;
-                decache_item.wrapped.remove_from_disk().await?;
-                decache_item.cached = false;
-            };
-            Ok(false)
+                    //Decache existing lowest item
+                    let decache_key = self.priority.pop_min().unwrap().0;
+                    let decache_item = self.cache.get_mut(&decache_key).unwrap();
+                    self.size_on_disk -= decache_item.wrapped.size_on_disk().await?;
+                    decache_item.wrapped.remove_from_disk().await?;
+                    decache_item.cached = false;
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
+            } else {
+                Ok(false)
+            }
         }
     }
 
@@ -132,10 +139,11 @@ where
         if self.cache.contains_key(&key) {
             let item = self.cache.get_mut(&key).unwrap();
             item.uses += 1;
+            let was_cached = item.cached;
 
-            if self.check_popularity(&key).await? {
+            if self.check_popularity(&key).await? && was_cached {
                 //Item already cached, lets just increase it's popularity
-                //TODO Small bug here where a recently cached item will get an extra "use"... it's fairly harmless though so is it worth fixing?
+                //TODO Small bug here where a newly cached item will get an extra "use"... it's fairly harmless though so is it worth fixing?
                 self.priority.change_priority_by(&key, |x| {
                     *x += 1;
                 });
@@ -219,9 +227,11 @@ where
 #[cfg(test)]
 #[cfg(not(tarpaulin_include))]
 mod test {
+    use priority_queue::DoublePriorityQueue;
+
     use super::{Cachable, Cache, Info};
     use crate::rocket::tokio;
-    use std::collections::HashMap;
+    use std::{collections::HashMap, marker::PhantomData};
 
     #[derive(Debug, PartialEq, Clone)]
     struct Item {
@@ -274,7 +284,7 @@ mod test {
         //Assert that the minimum number required is now 5
         assert_eq!(*cache.priority.peek_min().unwrap().1, 5);
 
-        //Create a new item, use it 7 times (which should make it become cached)
+        //Create a new item, use it enough to become cached
         cache
             .insert("Item2".to_string(), Item { data: 3 })
             .await
@@ -284,7 +294,6 @@ mod test {
             assert_eq!(item, 3);
             assert!(!cache.get_info(&String::from("Item2")).unwrap().cached); //Not cached!
             assert_eq!(cache.get_info(&String::from("Item2")).unwrap().uses, i + 1);
-            //Check uses match
         }
 
         //Using 1 more time should make this item become cached, and decache the other item
@@ -298,7 +307,10 @@ mod test {
         assert!(!cache.get_info(&String::from("Item1")).unwrap().cached); //Not cached!
 
         //Check that the minimum required uses has increased
-        assert_eq!(*cache.priority.peek_min().unwrap().1, 8);
+        let min_cached_val = cache.priority.peek_min().unwrap().1;
+        let expected_min_cached_val =
+            cache.get_info(&String::from("Item2")).unwrap().uses + cache.uses_threshold;
+        assert_eq!(*min_cached_val, expected_min_cached_val);
     }
 
     /// Ensure cache size limits work correctly, both for number and size of files.
@@ -363,6 +375,12 @@ mod test {
             .await
             .unwrap();
 
+        //Validate inserted item
+        let d = cache.get_underlying();
+        assert_eq!(d.get("Item1").expect("an item").uses, 0);
+        assert_eq!(d.get("Item1").expect("an item").cached, true);
+        assert_eq!(d.get("Item1").expect("an item")._return_type, PhantomData);
+
         //Check for an item that exists and one that doesn't exist
         let exists: bool = cache.contains_item(&String::from("Item1"));
         assert!(exists);
@@ -374,9 +392,29 @@ mod test {
         let item: Option<&Item> = cache.get_raw(&String::from("Item1"));
         assert_eq!(item.unwrap().data.to_owned(), 6);
 
+        //Attempt to collect a (raw) item that doesn't exist
+        let item: Option<&Item> = cache.get_raw(&String::from("Item5"));
+        assert_eq!(item, None);
+
+        //Collect information on an item that exists
+        let item: Option<&Info<Item, i64>> = cache.get_info(&String::from("Item1"));
+        assert!(item.is_some());
+        let info = item.unwrap();
+        assert_eq!(info.uses, 0);
+        assert_eq!(info.cached, true);
+        assert_eq!(info.wrapped, Item { data: 6 });
+
+        //Collect information on an item that doesn't exist
+        let item: Option<&Info<Item, i64>> = cache.get_info(&String::from("Item5"));
+        assert!(item.is_none());
+
         //Attempt to load an items ""true"" data that we want.
         let true_data: Option<i64> = cache.load(String::from("Item1")).await.unwrap();
         assert_eq!(true_data.unwrap(), 6);
+
+        //Attempt to load an item which doesn't exist
+        let doesnt_exist = cache.load(String::from("Item5")).await.unwrap();
+        assert!(doesnt_exist.is_none());
     }
 
     /// Ensure that inserting a duplicate key into the cache causes a failure.
@@ -391,10 +429,13 @@ mod test {
             .unwrap();
 
         //Check that inserting a duplicate item works as intended
-        cache
+        let err = cache
             .insert(String::from("Item2"), Item { data: 9 })
             .await
             .unwrap_err();
+
+        assert_eq!(err.kind(), std::io::ErrorKind::AlreadyExists);
+        assert_eq!(err.to_string(), "Key already exists in cache");
 
         assert_eq!(cache.load(String::from("Item2")).await.unwrap().unwrap(), 8);
     }
@@ -417,6 +458,37 @@ mod test {
         assert_eq!(keys.len(), 1);
         assert_eq!(keys.last().unwrap(), String::from("Item2"));
         assert_eq!(vals.last().unwrap().wrapped.data, 92);
+    }
+
+    /// Test that default spawns with the expected values
+    #[test]
+    fn test_default() {
+        let cache: Cache<String, Item, i64> = Cache::default();
+        assert_eq!(cache.max_to_cache, 100);
+        assert_eq!(cache.max_size_of_cache_bytes, 10_000_000);
+        assert_eq!(cache.count, 0);
+        assert_eq!(cache.uses_threshold, 5);
+        assert!(cache.cache.len() == 0);
+        assert_eq!(cache.priority, DoublePriorityQueue::new());
+    }
+
+    /// Test that the default insertion is good
+    #[rocket::tokio::test]
+    async fn test_inserted_defaults() {
+        let mut cache: Cache<String, Item, i64> = Cache::new(0, 0);
+
+        cache
+            .insert(String::from("Item2"), Item { data: 92 })
+            .await
+            .unwrap();
+
+        let underlying = cache.get_underlying();
+        assert_eq!(underlying.get("Item2").expect("a valid item").cached, false);
+        assert_eq!(underlying.get("Item2").expect("a valid item").uses, 0);
+        assert_eq!(
+            underlying.get("Item2").expect("a valid item")._return_type,
+            PhantomData
+        );
     }
 }
 

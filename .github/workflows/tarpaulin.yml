@@ -38,6 +38,7 @@ jobs:
         run: | 
           sudo apt-get update
           sudo apt-get install festival -y
+          sudo apt-get install ffmpeg -y
           wget http://www.festvox.org/packed/festival/2.5/voices/festvox_cmu_us_aew_cg.tar.gz
           tar -xf festvox_cmu_us_aew_cg.tar.gz
           sudo mkdir -p /usr/share/festival/voices/us/

@@ -1,3 +1,11 @@
+# Ignore
 /target
-.env
-/cache/*.wav
+/.env
+/cache/**/*
+/tarpaulin-report.html
+/lcov.info
+
+# Allow
+!/cache/.gitkeep
+!/cache/temp
+!/cache/temp/.gitkeep
