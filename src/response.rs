@@ -116,8 +116,8 @@ mod tests {
             Response::TextOk(s) => {
                 assert_eq!(s.status(), Status::Ok);
                 assert_eq!(*s.into_inner(), String::from("hello, world"));
-            },
-            _ => panic!("Invalid type!")
+            }
+            _ => panic!("Invalid type!"),
         }
     }
 }

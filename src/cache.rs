@@ -29,7 +29,7 @@ trait Cachable<U> {
     /// saved to the disk.
     async fn size_on_disk(&self) -> Result<usize, std::io::Error>;
 
-    /// Save this file to the disk, so that it is cached for future use. May require regeneration of the 
+    /// Save this file to the disk, so that it is cached for future use. May require regeneration of the
     /// file.
     async fn save_on_disk(&self) -> Result<(), std::io::Error>;
 
@@ -37,7 +37,7 @@ trait Cachable<U> {
     async fn remove_from_disk(&self) -> Result<(), std::io::Error>;
 }
 
-/// A struct which wraps cacheable data for the cache. This is useful as we can store information about the 
+/// A struct which wraps cacheable data for the cache. This is useful as we can store information about the
 /// stored item, which can be used when making decisions about whether to cache or not.
 #[derive(Debug, Clone)]
 struct Info<G, U>
@@ -54,7 +54,7 @@ where
     _return_type: PhantomData<U>,
 }
 
-/// A cache for storing frequently used data. Will automatically attempt to cache popular items over time, 
+/// A cache for storing frequently used data. Will automatically attempt to cache popular items over time,
 /// decaching less popular items as required.
 struct Cache<T, G, U>
 where
@@ -77,7 +77,7 @@ where
     uses_threshold: usize,
 
     /// A double priority queue which stores the itemes in least and most popular form.
-    /// This is backed by a HashMap, which means we get O(log(n)) for most operations in the worst 
+    /// This is backed by a HashMap, which means we get O(log(n)) for most operations in the worst
     /// case.
     priority: DoublePriorityQueue<T, usize>,
 
@@ -235,8 +235,8 @@ where
         &self.cache
     }
 
-    /// An unsafe function, allows manual editing of the underlying backing hashmap. Editing this 
-    /// directly may break the entire cache, as there are many values which must remain perfectly in 
+    /// An unsafe function, allows manual editing of the underlying backing hashmap. Editing this
+    /// directly may break the entire cache, as there are many values which must remain perfectly in
     /// line for this to succeed.
     unsafe fn get_underlying_mut(&mut self) -> &mut HashMap<T, Info<G, U>> {
         &mut self.cache
