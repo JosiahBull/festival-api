@@ -830,10 +830,59 @@
 <span id="830">830</span>
 <span id="831">831</span>
 <span id="832">832</span>
-</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::needless_doctest_main</span>)]</span>
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">soft_unstable</span>)]</span>
+<span id="833">833</span>
+<span id="834">834</span>
+<span id="835">835</span>
+<span id="836">836</span>
+<span id="837">837</span>
+<span id="838">838</span>
+<span id="839">839</span>
+<span id="840">840</span>
+<span id="841">841</span>
+<span id="842">842</span>
+<span id="843">843</span>
+<span id="844">844</span>
+<span id="845">845</span>
+<span id="846">846</span>
+<span id="847">847</span>
+<span id="848">848</span>
+<span id="849">849</span>
+<span id="850">850</span>
+<span id="851">851</span>
+<span id="852">852</span>
+<span id="853">853</span>
+<span id="854">854</span>
+<span id="855">855</span>
+<span id="856">856</span>
+<span id="857">857</span>
+<span id="858">858</span>
+<span id="859">859</span>
+<span id="860">860</span>
+<span id="861">861</span>
+<span id="862">862</span>
+<span id="863">863</span>
+<span id="864">864</span>
+<span id="865">865</span>
+<span id="866">866</span>
+<span id="867">867</span>
+<span id="868">868</span>
+<span id="869">869</span>
+<span id="870">870</span>
+<span id="871">871</span>
+<span id="872">872</span>
+<span id="873">873</span>
+<span id="874">874</span>
+<span id="875">875</span>
+<span id="876">876</span>
+<span id="877">877</span>
+<span id="878">878</span>
+<span id="879">879</span>
+<span id="880">880</span>
+</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">doc</span> <span class="op">=</span> <span class="macro">include_str!</span>(<span class="string">&quot;../readme.md&quot;</span>)]</span>
+
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">tarpaulin_include</span>))]</span>
 <span class="attribute">#[<span class="ident">rustfmt::skip</span>]</span>
+<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
 <span class="kw">mod</span> <span class="ident">schema</span>;
 
 <span class="kw">mod</span> <span class="ident">common</span>;
@@ -975,17 +1024,19 @@
 <span class="comment">// words are cached, we could allow users to more smartly choose which phrases they wish to display.</span>
 <span class="comment">// This should also reduce load on the api significant as it&#39;ll encourage users to pull common words!</span>
 
+<span class="doccomment">/// The base url of the program. This is just a catch-all for those who stumble across the api without knowing what it does.</span>
 <span class="attribute">#[<span class="ident">get</span>(<span class="string">&quot;/&quot;</span>)]</span>
 <span class="kw">fn</span> <span class="ident">index</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
     <span class="macro">format!</span>(<span class="string">&quot;Welcome to {} API for converting text into downloadable wav files! Please make a request to /docs for documentation.&quot;</span>, <span class="kw-2">*</span><span class="ident">API_NAME</span>)
 }
 
+<span class="doccomment">/// Returns the OAS docs for this api in an easily downloadable file.</span>
 <span class="attribute">#[<span class="ident">get</span>(<span class="string">&quot;/docs&quot;</span>)]</span>
 <span class="kw">fn</span> <span class="ident">docs</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
     <span class="string">&quot;Api docs not yet setup with automated github actions. Feel free to implement that though if you&#39;re up for a challenge!&quot;</span>.<span class="ident">to_string</span>()
 }
 
-<span class="doccomment">/// Attempt to login a student</span>
+<span class="doccomment">/// Attempts to login a student with provided credentials.</span>
 <span class="attribute">#[<span class="ident">post</span>(<span class="string">&quot;/login&quot;</span>, <span class="ident">data</span> <span class="op">=</span> <span class="string">&quot;&lt;creds&gt;&quot;</span>, <span class="ident">format</span> <span class="op">=</span> <span class="string">&quot;application/json&quot;</span>)]</span>
 <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">login</span>(<span class="ident">conn</span>: <span class="ident">DbConn</span>, <span class="ident">creds</span>: <span class="ident">Json</span><span class="op">&lt;</span><span class="ident">UserCredentials</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span>, <span class="ident">Response</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">creds</span> <span class="op">=</span> <span class="ident">creds</span>.<span class="ident">into_inner</span>();
@@ -1005,7 +1056,12 @@
     }
 
     <span class="comment">//Update the users last_seen status</span>
-    <span class="ident">common::update_user_last_seen</span>(<span class="kw-2">&amp;</span><span class="ident">conn</span>, <span class="ident">user</span>.<span class="ident">id</span>, <span class="ident">chrono::offset::Utc::now</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="ident">common::update_user_last_seen</span>(
+        <span class="kw-2">&amp;</span><span class="ident">conn</span>,
+        <span class="ident">common::SearchItem::Id</span>(<span class="ident">user</span>.<span class="ident">id</span>),
+        <span class="ident">chrono::offset::Utc::now</span>(),
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(<span class="ident">Response::TextOk</span>(<span class="ident">Data</span> {
         <span class="ident">data</span>: <span class="ident">models::Claims::new_token</span>(<span class="ident">user</span>.<span class="ident">id</span>),
@@ -1037,7 +1093,7 @@
     <span class="comment">//Hash Password</span>
     <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">UserCredentials</span> {
         <span class="ident">usr</span>: <span class="ident">creds</span>.<span class="ident">usr</span>,
-        <span class="ident">pwd</span>: <span class="ident">common::hash_string_with_salt</span>(<span class="ident">creds</span>.<span class="ident">pwd</span>)<span class="question-mark">?</span>,
+        <span class="ident">pwd</span>: <span class="ident">common::hash_string_with_salt</span>(<span class="ident">creds</span>.<span class="ident">pwd</span>),
     };
 
     <span class="comment">//Save account in db</span>
@@ -1057,7 +1113,9 @@
     }))
 }
 
-<span class="doccomment">/// Expects a phrase package, attempts to convert it to a .mp3 to be returned to the user. Requires authentication to access.</span>
+<span class="doccomment">/// Expects a phrase package, attempts to convert it to a sound file to be returned to the user.</span>
+<span class="doccomment">/// Requires an authenticate user account to access. This endpoint also features strict rate limiting</span>
+<span class="doccomment">/// as generating .wav files is very resource intensive.</span>
 <span class="attribute">#[<span class="ident">post</span>(<span class="string">&quot;/convert&quot;</span>, <span class="ident">data</span> <span class="op">=</span> <span class="string">&quot;&lt;phrase_package&gt;&quot;</span>, <span class="ident">format</span> <span class="op">=</span> <span class="string">&quot;application/json&quot;</span>)]</span>
 <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">convert</span>(
     <span class="ident">token</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">models::Claims</span>, <span class="ident">Response</span><span class="op">&gt;</span>,
@@ -1149,7 +1207,7 @@
     <span class="comment">//This is temporary pending development of a proper caching system.</span>
     <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">rocket::tokio::fs::remove_file</span>(<span class="ident">Path::new</span>(<span class="kw-2">&amp;</span><span class="ident">file_name_wav</span>)).<span class="kw">await</span> {
         <span class="macro">failure!</span>(
-            <span class="string">&quot;Unable to temporary file from system prior to response {}&quot;</span>,
+            <span class="string">&quot;Unable to remove temporary file from system prior to response {}&quot;</span>,
             <span class="ident">e</span>
         )
     };
@@ -1157,7 +1215,7 @@
     <span class="kw">if</span> <span class="ident">file_name_wav</span> <span class="op">!</span><span class="op">=</span> <span class="ident">converted_file</span> {
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">rocket::tokio::fs::remove_file</span>(<span class="ident">Path::new</span>(<span class="kw-2">&amp;</span><span class="ident">converted_file</span>)).<span class="kw">await</span> {
             <span class="macro">failure!</span>(
-                <span class="string">&quot;Unable to temporary file from system prior to response {}&quot;</span>,
+                <span class="string">&quot;Unable to remove temporary file from system prior to response {}&quot;</span>,
                 <span class="ident">e</span>
             )
         };
@@ -1175,6 +1233,7 @@
 
 <span class="comment">// struct CacheFairing(crate::cache::Cache&lt;String, models::GenerationRequest, NamedFile&gt;);</span>
 
+<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
 <span class="attribute">#[<span class="ident">launch</span>]</span>
 <span class="kw">fn</span> <span class="ident">rocket</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="kw">_</span> {
     <span class="comment">//Initalize all globals</span>
@@ -1659,6 +1718,43 @@
         <span class="macro">assert_eq!</span>(
             <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>(),
             <span class="string">&quot;Authorisation Header Not Present&quot;</span>
+        );
+    }
+
+    <span class="doccomment">/// A simple test which ensures that an invalid file format fails out as expected.</span>
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_invalid_formats</span>() {
+        <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client::tracked</span>(<span class="ident">rocket</span>()).<span class="ident">expect</span>(<span class="string">&quot;valid rocket instance&quot;</span>);
+        <span class="kw">let</span> (<span class="kw">_</span>, <span class="kw">_</span>, <span class="ident">token</span>) <span class="op">=</span> <span class="ident">create_test_account</span>(<span class="kw-2">&amp;</span><span class="ident">client</span>);
+
+        <span class="kw">let</span> <span class="ident">body</span> <span class="op">=</span> <span class="string">&quot;{
+            \&quot;word\&quot;: \&quot;The University of Auckland\&quot;,
+            \&quot;lang\&quot;: \&quot;en\&quot;,
+            \&quot;speed\&quot;: 1.0,
+            \&quot;fmt\&quot;: \&quot;this-will-never-exist\&quot;
+        }&quot;</span>;
+
+        <span class="comment">//Generate a &#39;generic&#39; file and validate the response is correct</span>
+        <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">client</span>
+            .<span class="ident">post</span>(<span class="macro">uri!</span>(<span class="string">&quot;/api/v1/convert&quot;</span>))
+            .<span class="ident">header</span>(<span class="ident">ContentType::new</span>(<span class="string">&quot;application&quot;</span>, <span class="string">&quot;json&quot;</span>))
+            .<span class="ident">header</span>(<span class="ident">Header::new</span>(<span class="string">&quot;Authorisation&quot;</span>, <span class="ident">token</span>))
+            .<span class="ident">body</span>(<span class="kw-2">&amp;</span><span class="ident">body</span>)
+            .<span class="ident">dispatch</span>();
+
+        <span class="kw">let</span> <span class="ident">status</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">status</span>();
+        <span class="kw">if</span> <span class="ident">status</span> <span class="op">!</span><span class="op">=</span> <span class="ident">Status::BadRequest</span> {
+            <span class="macro">panic!</span>(
+                <span class="string">&quot;Failed with status {} \nBody: \n{}\n&quot;</span>,
+                <span class="ident">status</span>,
+                <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">unwrap</span>()
+            );
+        }
+
+        <span class="kw">let</span> <span class="ident">body</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">into_string</span>().<span class="ident">expect</span>(<span class="string">&quot;a valid body&quot;</span>);
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">body</span>,
+            <span class="ident">String::from</span>(<span class="string">&quot;Requested format (this-will-never-exist) is not supported by this api!&quot;</span>)
         );
     }
 }

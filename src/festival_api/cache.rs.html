@@ -551,6 +551,87 @@
 <span id="551">551</span>
 <span id="552">552</span>
 <span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This module handles caching for the api.</span>
 <span class="doccomment">//! A configurable number of words, or a max total size of files should be kept.</span>
 <span class="doccomment">//! The data flow is as follows</span>
@@ -568,40 +649,88 @@
 <span class="kw">use</span> <span class="ident">priority_queue::DoublePriorityQueue</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections::HashMap</span>, <span class="ident">hash::Hash</span>, <span class="ident">io::ErrorKind</span>, <span class="ident">marker::PhantomData</span>};
 
+<span class="doccomment">/// The number of bytes in a mb.</span>
 <span class="kw">const</span> <span class="ident">BYTES_IN_MB</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">1_000_000</span>;
+
+<span class="doccomment">/// A type indicating that this return type may be cached properly in the api.</span>
+<span class="doccomment">/// These methods are required to save and load from the disk.</span>
 <span class="attribute">#[<span class="ident">rocket::async_trait</span>]</span>
 <span class="kw">trait</span> <span class="ident">Cachable</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span> {
+    <span class="doccomment">/// Load the underlying file from the disk, or generate it fresh if it&#39;s not there.</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load_underlying</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">U</span>, <span class="ident">std::io::Error</span><span class="op">&gt;</span>;
+
+    <span class="doccomment">/// Get the total size this object is taking up on the disk. Should fail if the file has not been</span>
+    <span class="doccomment">/// saved to the disk.</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">size_on_disk</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">std::io::Error</span><span class="op">&gt;</span>;
+
+    <span class="doccomment">/// Save this file to the disk, so that it is cached for future use. May require regeneration of the</span>
+    <span class="doccomment">/// file.</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">save_on_disk</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">std::io::Error</span><span class="op">&gt;</span>;
+
+    <span class="doccomment">/// Remove the underlying file from the disk.</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remove_from_disk</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">std::io::Error</span><span class="op">&gt;</span>;
 }
 
+<span class="doccomment">/// A struct which wraps cacheable data for the cache. This is useful as we can store information about the</span>
+<span class="doccomment">/// stored item, which can be used when making decisions about whether to cache or not.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">struct</span> <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">G</span>: <span class="ident">Cachable</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
 {
+    <span class="doccomment">/// Number of times this data has been requested</span>
     <span class="ident">uses</span>: <span class="ident">usize</span>,
+    <span class="doccomment">/// Whether it is currently cached to disk</span>
     <span class="ident">cached</span>: <span class="ident">bool</span>,
+    <span class="doccomment">/// The wrapped internal data</span>
     <span class="ident">wrapped</span>: <span class="ident">G</span>,
+    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
     <span class="ident">_return_type</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span>,
 }
 
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span> <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+    <span class="ident">G</span>: <span class="ident">Cachable</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
+{
+    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">data</span>: <span class="ident">G</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="ident">Info</span> {
+            <span class="ident">wrapped</span>: <span class="ident">data</span>,
+            <span class="ident">uses</span>: <span class="number">0</span>,
+            <span class="ident">cached</span>: <span class="bool-val">false</span>,
+            <span class="ident">_return_type</span>: <span class="ident">PhantomData</span>,
+        }
+    }
+}
+
+<span class="doccomment">/// A cache for storing frequently used data. Will automatically attempt to cache popular items over time,</span>
+<span class="doccomment">/// decaching less popular items as required.</span>
 <span class="kw">struct</span> <span class="ident">Cache</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
     <span class="ident">G</span>: <span class="ident">Cachable</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
 {
+    <span class="doccomment">/// Maximum number of items to cache</span>
     <span class="ident">max_to_cache</span>: <span class="ident">usize</span>,
+    <span class="doccomment">/// Maximum size of items to cache</span>
     <span class="ident">max_size_of_cache_bytes</span>: <span class="ident">usize</span>,
 
+    <span class="doccomment">/// The current count of items cached</span>
     <span class="ident">count</span>: <span class="ident">usize</span>,
+    <span class="doccomment">/// THe current size of all cached items on the disk =</span>
     <span class="ident">size_on_disk</span>: <span class="ident">usize</span>,
 
+    <span class="doccomment">/// When an item gets replaced, how large should the &quot;bump&quot; be to prevent</span>
+    <span class="doccomment">/// it from being quickly deseated. This is very important as it stops frequent swapping of lower</span>
+    <span class="doccomment">/// cached items consuming system resources.</span>
     <span class="ident">uses_threshold</span>: <span class="ident">usize</span>,
 
+    <span class="doccomment">/// A double priority queue which stores the itemes in least and most popular form.</span>
+    <span class="doccomment">/// This is backed by a HashMap, which means we get O(log(n)) for most operations in the worst</span>
+    <span class="doccomment">/// case.</span>
     <span class="ident">priority</span>: <span class="ident">DoublePriorityQueue</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">usize</span><span class="op">&gt;</span>,
+
+    <span class="doccomment">/// The cache itself, stores data about a variety of objects. Note that we wrap objects with</span>
+    <span class="doccomment">/// an info struct to track information about individual objects.</span>
     <span class="ident">cache</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
@@ -610,6 +739,7 @@
     <span class="ident">T</span>: <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span> <span class="op">+</span> <span class="ident">Clone</span>,
     <span class="ident">G</span>: <span class="ident">Cachable</span><span class="op">&lt;</span><span class="ident">U</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">std::cmp::PartialEq</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span>,
 {
+    <span class="doccomment">/// Create a new cache, with a specific max number of items and max size on disk.</span>
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">max_items</span>: <span class="ident">usize</span>, <span class="ident">max_size</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Cache</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span> {
         <span class="ident">Cache</span>::<span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span> {
             <span class="ident">max_to_cache</span>: <span class="ident">max_items</span>,
@@ -618,6 +748,7 @@
         }
     }
 
+    <span class="doccomment">/// Change the uses_threshold value</span>
     <span class="kw">fn</span> <span class="ident">set_threshold</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">threshold</span>: <span class="ident">usize</span>) {
         <span class="self">self</span>.<span class="ident">uses_threshold</span> <span class="op">=</span> <span class="ident">threshold</span>;
     }
@@ -631,6 +762,7 @@
         }
     }
 
+    <span class="doccomment">/// Get information about an item</span>
     <span class="kw">fn</span> <span class="ident">get_info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Info</span><span class="op">&lt;</span><span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">item</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">cache</span>.<span class="ident">get</span>(<span class="ident">key</span>) {
             <span class="prelude-val">Some</span>(<span class="ident">item</span>)
@@ -723,16 +855,7 @@
         <span class="comment">// If not insert it</span>
         <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">contains_item</span>(<span class="kw-2">&amp;</span><span class="ident">key</span>) {
             <span class="comment">//Not in cache, lets add it.</span>
-            <span class="self">self</span>.<span class="ident">cache</span>.<span class="ident">insert</span>(
-                <span class="ident">key</span>.<span class="ident">clone</span>(),
-                <span class="ident">Info</span> {
-                    <span class="ident">wrapped</span>: <span class="ident">value</span>,
-                    <span class="ident">uses</span>: <span class="number">0</span>,
-                    <span class="ident">cached</span>: <span class="bool-val">false</span>,
-                    <span class="ident">_return_type</span>: <span class="ident">PhantomData</span>,
-                },
-            );
-
+            <span class="self">self</span>.<span class="ident">cache</span>.<span class="ident">insert</span>(<span class="ident">key</span>.<span class="ident">clone</span>(), <span class="ident">Info::new</span>(<span class="ident">value</span>));
             <span class="comment">//Check if we should cache this item!</span>
             <span class="self">self</span>.<span class="ident">check_popularity</span>(<span class="kw-2">&amp;</span><span class="ident">key</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -745,10 +868,20 @@
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">get_underlying</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="doccomment">/// Collect a reference to the underlying backing HashMap. This is primarily useful for testing,</span>
+    <span class="doccomment">/// but can also be useful if you wish to manually retrieve data from a stored object.</span>
+    <span class="kw">fn</span> <span class="ident">get_underlying</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache</span>
+    }
+
+    <span class="doccomment">/// An unsafe function, allows manual editing of the underlying backing hashmap. Editing this</span>
+    <span class="doccomment">/// directly may break the entire cache, as there are many values which must remain perfectly in</span>
+    <span class="doccomment">/// line for this to succeed.</span>
+    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">get_underlying_mut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">G</span>, <span class="ident">U</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">cache</span>
     }
 
+    <span class="doccomment">/// Check whether the cache contains a given key</span>
     <span class="kw">fn</span> <span class="ident">contains_item</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">cache</span>.<span class="ident">contains_key</span>(<span class="ident">key</span>)
     }
@@ -1003,7 +1136,7 @@
             .<span class="kw">await</span>
             .<span class="ident">unwrap</span>();
 
-        <span class="kw">let</span> <span class="ident">underlying</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">Item</span>, <span class="ident">i64</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">cache</span>.<span class="ident">get_underlying</span>();
+        <span class="kw">let</span> <span class="ident">underlying</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">Item</span>, <span class="ident">i64</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">cache</span>.<span class="ident">get_underlying</span>();
 
         <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">underlying</span>.<span class="ident">clone</span>().<span class="ident">into_keys</span>();
         <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">underlying</span>.<span class="ident">clone</span>().<span class="ident">into_values</span>();
@@ -1011,6 +1144,25 @@
         <span class="macro">assert_eq!</span>(<span class="ident">keys</span>.<span class="ident">len</span>(), <span class="number">1</span>);
         <span class="macro">assert_eq!</span>(<span class="ident">keys</span>.<span class="ident">last</span>().<span class="ident">unwrap</span>(), <span class="ident">String::from</span>(<span class="string">&quot;Item2&quot;</span>));
         <span class="macro">assert_eq!</span>(<span class="ident">vals</span>.<span class="ident">last</span>().<span class="ident">unwrap</span>().<span class="ident">wrapped</span>.<span class="ident">data</span>, <span class="number">92</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">underlying</span>.<span class="ident">get</span>(<span class="string">&quot;Item2&quot;</span>).<span class="ident">unwrap</span>().<span class="ident">uses</span>, <span class="number">0</span>);
+
+        <span class="comment">//Test getting underlying as mutable</span>
+        <span class="kw">unsafe</span> {
+            <span class="kw">let</span> <span class="ident">underlying</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">Item</span>, <span class="ident">i64</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">cache</span>.<span class="ident">get_underlying_mut</span>();
+            <span class="ident">underlying</span>.<span class="ident">get_mut</span>(<span class="string">&quot;Item2&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a valid value&quot;</span>).<span class="ident">uses</span> <span class="op">=</span> <span class="number">5</span>;
+            <span class="ident">underlying</span>.<span class="ident">get_mut</span>(<span class="string">&quot;Item2&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a valid value&quot;</span>).<span class="ident">wrapped</span> <span class="op">=</span> <span class="ident">Item</span> { <span class="ident">data</span>: <span class="number">56</span> };
+        }
+
+        <span class="comment">//Validate that changing those values worked!</span>
+        <span class="kw">let</span> <span class="ident">underlying</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">Item</span>, <span class="ident">i64</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">cache</span>.<span class="ident">get_underlying</span>();
+
+        <span class="kw">let</span> <span class="ident">keys</span> <span class="op">=</span> <span class="ident">underlying</span>.<span class="ident">clone</span>().<span class="ident">into_keys</span>();
+        <span class="kw">let</span> <span class="ident">vals</span> <span class="op">=</span> <span class="ident">underlying</span>.<span class="ident">clone</span>().<span class="ident">into_values</span>();
+
+        <span class="macro">assert_eq!</span>(<span class="ident">keys</span>.<span class="ident">len</span>(), <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">keys</span>.<span class="ident">last</span>().<span class="ident">unwrap</span>(), <span class="ident">String::from</span>(<span class="string">&quot;Item2&quot;</span>));
+        <span class="macro">assert_eq!</span>(<span class="ident">vals</span>.<span class="ident">last</span>().<span class="ident">unwrap</span>().<span class="ident">wrapped</span>.<span class="ident">data</span>, <span class="number">56</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">underlying</span>.<span class="ident">get</span>(<span class="string">&quot;Item2&quot;</span>).<span class="ident">unwrap</span>().<span class="ident">uses</span>, <span class="number">5</span>);
     }
 
     <span class="doccomment">/// Test that default spawns with the expected values</span>
@@ -1042,6 +1194,16 @@
             <span class="ident">underlying</span>.<span class="ident">get</span>(<span class="string">&quot;Item2&quot;</span>).<span class="ident">expect</span>(<span class="string">&quot;a valid item&quot;</span>).<span class="ident">_return_type</span>,
             <span class="ident">PhantomData</span>
         );
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_new</span>() {
+        <span class="kw">let</span> <span class="ident">info</span>: <span class="ident">Info</span><span class="op">&lt;</span><span class="ident">Item</span>, <span class="ident">i64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Info::new</span>(<span class="ident">Item</span> { <span class="ident">data</span>: <span class="number">92</span> });
+
+        <span class="macro">assert_eq!</span>(<span class="ident">info</span>.<span class="ident">_return_type</span>, <span class="ident">PhantomData</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">info</span>.<span class="ident">wrapped</span>, <span class="ident">Item</span> { <span class="ident">data</span>: <span class="number">92</span> });
+        <span class="macro">assert_eq!</span>(<span class="ident">info</span>.<span class="ident">cached</span>, <span class="bool-val">false</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">info</span>.<span class="ident">uses</span>, <span class="number">0</span>);
     }
 }
 

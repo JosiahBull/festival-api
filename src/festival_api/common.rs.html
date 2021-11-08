@@ -250,7 +250,64 @@
 <span id="250">250</span>
 <span id="251">251</span>
 <span id="252">252</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">argon2</span>::{
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Common functions used in endpoints. Varied between db interactions and general processing.</span>
+
+<span class="kw">use</span> <span class="ident">argon2</span>::{
     <span class="ident">password_hash</span>::{<span class="ident">rand_core::OsRng</span>, <span class="ident">PasswordHash</span>, <span class="ident">PasswordHasher</span>, <span class="ident">PasswordVerifier</span>, <span class="ident">SaltString</span>},
     <span class="ident">Argon2</span>,
 };
@@ -263,23 +320,45 @@
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::response</span>::{<span class="ident">Data</span>, <span class="ident">Response</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">DbConn</span>, <span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>, <span class="ident">MAX_REQUESTS_TIME_PERIOD_MINUTES</span>};
 
-<span class="doccomment">/// Hash a string with a random salt to be stored in the database.</span>
-<span class="doccomment">/// Utilizes the argon2id algorithm</span>
+<span class="doccomment">/// Hash a string with a random salt to be stored in the database. Utilizing the argon2id algorithm</span>
 <span class="doccomment">/// Followed best practices as laid out here: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">hash_string_with_salt</span>(<span class="ident">s</span>: <span class="ident">String</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Response</span><span class="op">&gt;</span> {
+<span class="doccomment">/// Example Usage</span>
+<span class="doccomment">/// ```rust</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// let unhashed_string = String::from(&quot;your-text-here, maybe a password?&quot;);</span>
+<span class="doccomment">/// let hashed_string = hash_string_with_salt(unhashed_string.clone()).unwrap();</span>
+<span class="doccomment">/// let second_hashed_string = hash_string_with_salt(unhashed_string.clone()).unwrap();</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// assert_ne!(unhashed_string, hashed_string);</span>
+<span class="doccomment">/// assert_ne!(unhashed_string, second_hashed_string);</span>
+<span class="doccomment">/// assert_ne!(hashed_string, second_hashed_string);</span>
+<span class="doccomment">/// ```</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">hash_string_with_salt</span>(<span class="ident">s</span>: <span class="ident">String</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
     <span class="kw">let</span> <span class="ident">salt</span> <span class="op">=</span> <span class="ident">SaltString::generate</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">OsRng</span>);
     <span class="kw">let</span> <span class="ident">argon2</span> <span class="op">=</span> <span class="ident">Argon2::default</span>();
-    <span class="kw">let</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">argon2</span>.<span class="ident">hash_password</span>(<span class="ident">s</span>.<span class="ident">as_bytes</span>(), <span class="kw-2">&amp;</span><span class="ident">salt</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-        <span class="ident">Response::TextErr</span>(<span class="ident">Data</span> {
-            <span class="ident">data</span>: <span class="macro">format!</span>(<span class="string">&quot;Failed to create hash {}&quot;</span>, <span class="ident">e</span>),
-            <span class="ident">status</span>: <span class="ident">Status::InternalServerError</span>,
-        })
-    })<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="ident">hash</span>.<span class="ident">to_string</span>())
+    <span class="comment">//SAFETY: Looking at the source of the argon2 crate, the only way this could fail was if the salt was incorrect</span>
+    <span class="comment">//which given this function is tested can never happen.</span>
+    <span class="kw">let</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">argon2</span>.<span class="ident">hash_password</span>(<span class="ident">s</span>.<span class="ident">as_bytes</span>(), <span class="kw-2">&amp;</span><span class="ident">salt</span>).<span class="ident">unwrap</span>();
+    <span class="ident">hash</span>.<span class="ident">to_string</span>()
 }
 
 <span class="doccomment">/// A function which checks whether the first string can be hashed into the second string.</span>
 <span class="doccomment">/// Returns a boolean true if they are the same, and false otherwise.</span>
+<span class="doccomment">/// In the event the strings cannot be compared due to an error, returns an Err(response)</span>
+<span class="doccomment">/// which may be returned to the user.</span>
+<span class="doccomment">/// Example Usage:</span>
+<span class="doccomment">/// ```rust</span>
+<span class="doccomment">/// let original_string: String = String::from(&quot;hello, world&quot;);</span>
+<span class="doccomment">/// let hashed_string: String = hash_string_with_salt(original_string).unwrap();</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// //A valid comparison</span>
+<span class="doccomment">/// let result = compare_hashed_strings(original_string, hashed_string);</span>
+<span class="doccomment">/// assert!(result);</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// //An invalid comparison</span>
+<span class="doccomment">/// let result = compared_hashed_strings(String::from(&quot;other, string&quot;). hashed_string);</span>
+<span class="doccomment">/// assert!(!result);</span>
+<span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">compare_hashed_strings</span>(<span class="ident">orignal</span>: <span class="ident">String</span>, <span class="ident">hashed</span>: <span class="ident">String</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span>, <span class="ident">Response</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">argon2</span> <span class="op">=</span> <span class="ident">Argon2::default</span>();
     <span class="kw">let</span> <span class="ident">parsed_hash</span> <span class="op">=</span> <span class="ident">PasswordHash::new</span>(<span class="kw-2">&amp;</span><span class="ident">hashed</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
@@ -288,26 +367,29 @@
             <span class="ident">status</span>: <span class="ident">Status::InternalServerError</span>,
         })
     })<span class="question-mark">?</span>;
+
     <span class="prelude-val">Ok</span>(<span class="ident">argon2</span>
         .<span class="ident">verify_password</span>(<span class="ident">orignal</span>.<span class="ident">as_bytes</span>(), <span class="kw-2">&amp;</span><span class="ident">parsed_hash</span>)
         .<span class="ident">is_ok</span>())
 }
 
+<span class="doccomment">/// A search item to be used for finding various database interactions when the flexibility</span>
+<span class="doccomment">/// between searching via a users name, and a users id is required.</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SearchItem</span> {
     <span class="ident">Name</span>(<span class="ident">String</span>),
-    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
     <span class="ident">Id</span>(<span class="ident">i32</span>),
 }
 
 <span class="doccomment">/// Attempt to find a user in the database, returns None if the user is unable to be found.</span>
 <span class="doccomment">/// Note that the provided name is assumed unique. If multiple results exist, the first will be returned.</span>
+<span class="doccomment">/// If the database interaction fails, returns a response which can be shown to the user.</span>
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">find_user_in_db</span>(
     <span class="ident">conn</span>: <span class="kw-2">&amp;</span><span class="ident">DbConn</span>,
-    <span class="ident">name</span>: <span class="ident">SearchItem</span>,
+    <span class="ident">search</span>: <span class="ident">SearchItem</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="kw">crate</span>::models::User</span><span class="op">&gt;</span>, <span class="ident">Response</span><span class="op">&gt;</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::schema::users::dsl</span>::<span class="kw-2">*</span>;
     <span class="kw">let</span> <span class="ident">r</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident"><span class="kw">crate</span>::models::User</span><span class="op">&gt;</span>, <span class="ident">diesel::result::Error</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">conn</span>
-        .<span class="ident">run</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">name</span> {
+        .<span class="ident">run</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">search</span> {
             <span class="ident">SearchItem::Name</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">users</span>
                 .<span class="ident">filter</span>(<span class="ident">usr</span>.<span class="ident">eq</span>(<span class="ident">s</span>))
                 .<span class="ident">limit</span>(<span class="number">1</span>)
@@ -329,15 +411,18 @@
 <span class="doccomment">/// Attempts to find and then update a user with a new timestamp.</span>
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">update_user_last_seen</span>(
     <span class="ident">conn</span>: <span class="kw-2">&amp;</span><span class="ident">DbConn</span>,
-    <span class="ident">search_id</span>: <span class="ident">i32</span>,
+    <span class="ident">search</span>: <span class="ident">SearchItem</span>,
     <span class="ident">time</span>: <span class="ident">chrono::DateTime</span><span class="op">&lt;</span><span class="ident">Utc</span><span class="op">&gt;</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Response</span><span class="op">&gt;</span> {
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::schema::users::dsl</span>::<span class="kw-2">*</span>;
     <span class="kw">let</span> <span class="ident">r</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">crate</span>::models::User</span>, <span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">conn</span>
-        .<span class="ident">run</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">c</span><span class="op">|</span> {
-            <span class="ident">diesel::update</span>(<span class="ident">users</span>.<span class="ident">filter</span>(<span class="ident">id</span>.<span class="ident">eq</span>(<span class="ident">search_id</span>)))
+        .<span class="ident">run</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">search</span> {
+            <span class="ident">SearchItem::Name</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">diesel::update</span>(<span class="ident">users</span>.<span class="ident">filter</span>(<span class="ident">usr</span>.<span class="ident">eq</span>(<span class="ident">s</span>)))
                 .<span class="ident">set</span>(<span class="ident">last_accessed</span>.<span class="ident">eq</span>(<span class="ident">time</span>))
-                .<span class="ident">get_result</span>(<span class="ident">c</span>)
+                .<span class="ident">get_result</span>(<span class="ident">c</span>),
+            <span class="ident">SearchItem::Id</span>(<span class="ident">search_id</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">diesel::update</span>(<span class="ident">users</span>.<span class="ident">filter</span>(<span class="ident">id</span>.<span class="ident">eq</span>(<span class="ident">search_id</span>)))
+                .<span class="ident">set</span>(<span class="ident">last_accessed</span>.<span class="ident">eq</span>(<span class="ident">time</span>))
+                .<span class="ident">get_result</span>(<span class="ident">c</span>),
         })
         .<span class="kw">await</span>;
 
@@ -347,32 +432,7 @@
     };
 }
 
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">log_request</span>(
-    <span class="ident">conn</span>: <span class="kw-2">&amp;</span><span class="ident">DbConn</span>,
-    <span class="ident">usr_id</span>: <span class="ident">i32</span>,
-    <span class="ident">phrase_package</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::models::PhrasePackage</span>,
-) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Response</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">req</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::models::NewGenerationRequest</span> {
-        <span class="ident">usr_id</span>,
-        <span class="ident">word</span>: <span class="ident">phrase_package</span>.<span class="ident">word</span>.<span class="ident">clone</span>(),
-        <span class="ident">lang</span>: <span class="ident">phrase_package</span>.<span class="ident">lang</span>.<span class="ident">clone</span>(),
-        <span class="ident">speed</span>: <span class="ident">phrase_package</span>.<span class="ident">speed</span>,
-        <span class="ident">fmt</span>: <span class="ident">phrase_package</span>.<span class="ident">fmt</span>.<span class="ident">clone</span>(),
-    };
-
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::schema::reqs::dsl::reqs</span>;
-    <span class="kw">let</span> <span class="ident">r</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">diesel::result::Error</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">conn</span>
-        .<span class="ident">run</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">diesel::insert_into</span>(<span class="ident">reqs</span>).<span class="ident">values</span>(<span class="ident">req</span>).<span class="ident">execute</span>(<span class="ident">c</span>))
-        .<span class="kw">await</span>;
-
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">r</span> {
-        <span class="macro">failure!</span>(<span class="string">&quot;Unable to log request to database: {}&quot;</span>, <span class="ident">e</span>);
-    }
-
-    <span class="prelude-val">Ok</span>(())
-}
-
-<span class="doccomment">/// Load a users most recent requests, limited based on</span>
+<span class="doccomment">/// Load a users most recent requests, limited based on the number of requests.</span>
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load_recent_requests</span>(
     <span class="ident">conn</span>: <span class="kw-2">&amp;</span><span class="ident">DbConn</span>,
     <span class="ident">search_id</span>: <span class="ident">i32</span>,
@@ -398,6 +458,9 @@
     };
 }
 
+<span class="doccomment">/// Returns Ok(()) if the user is not timed out.</span>
+<span class="doccomment">/// If the user is timed out returns Err(Response) with a custom message containing</span>
+<span class="doccomment">/// the number of seconds the user has left before becoming non-timed out.</span>
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">is_user_timed_out</span>(<span class="ident">conn</span>: <span class="kw-2">&amp;</span><span class="ident">DbConn</span>, <span class="ident">usr_id</span>: <span class="ident">i32</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Response</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">reqs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident"><span class="kw">crate</span>::models::GenerationRequest</span><span class="op">&gt;</span> <span class="op">=</span>
         <span class="ident">load_recent_requests</span>(<span class="ident">conn</span>, <span class="ident">usr_id</span>, <span class="kw-2">*</span><span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -418,6 +481,33 @@
                 <span class="ident">status</span>: <span class="ident">Status::TooManyRequests</span>,
             }));
         }
+    }
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Uploads the provided phrase_package as a request to the database.</span>
+<span class="doccomment">/// This is important for rate limiting, among other things.</span>
+<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">log_request</span>(
+    <span class="ident">conn</span>: <span class="kw-2">&amp;</span><span class="ident">DbConn</span>,
+    <span class="ident">usr_id</span>: <span class="ident">i32</span>,
+    <span class="ident">phrase_package</span>: <span class="kw-2">&amp;</span><span class="ident"><span class="kw">crate</span>::models::PhrasePackage</span>,
+) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Response</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">req</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::models::NewGenerationRequest</span> {
+        <span class="ident">usr_id</span>,
+        <span class="ident">word</span>: <span class="ident">phrase_package</span>.<span class="ident">word</span>.<span class="ident">clone</span>(),
+        <span class="ident">lang</span>: <span class="ident">phrase_package</span>.<span class="ident">lang</span>.<span class="ident">clone</span>(),
+        <span class="ident">speed</span>: <span class="ident">phrase_package</span>.<span class="ident">speed</span>,
+        <span class="ident">fmt</span>: <span class="ident">phrase_package</span>.<span class="ident">fmt</span>.<span class="ident">clone</span>(),
+    };
+
+    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::schema::reqs::dsl::reqs</span>;
+    <span class="kw">let</span> <span class="ident">r</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">diesel::result::Error</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">conn</span>
+        .<span class="ident">run</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">diesel::insert_into</span>(<span class="ident">reqs</span>).<span class="ident">values</span>(<span class="ident">req</span>).<span class="ident">execute</span>(<span class="ident">c</span>))
+        .<span class="kw">await</span>;
+
+    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">r</span> {
+        <span class="macro">failure!</span>(<span class="string">&quot;Unable to log request to database: {}&quot;</span>, <span class="ident">e</span>);
     }
 
     <span class="prelude-val">Ok</span>(())
@@ -445,6 +535,7 @@
         <span class="ident">compare_hashed_strings</span>, <span class="ident">generate_random_alphanumeric</span>, <span class="ident">get_time_since</span>, <span class="ident">hash_string_with_salt</span>,
     };
     <span class="kw">use</span> <span class="ident">chrono::Utc</span>;
+    <span class="kw">use</span> <span class="ident">rocket::http::Status</span>;
     <span class="kw">use</span> <span class="ident">std::collections::HashSet</span>;
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
@@ -457,7 +548,7 @@
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashSet::default</span>();
         <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">loop_count</span> {
-            <span class="kw">let</span> <span class="ident">hashed_pwd</span> <span class="op">=</span> <span class="ident">hash_string_with_salt</span>(<span class="ident">pwd</span>.<span class="ident">clone</span>()).<span class="ident">expect</span>(<span class="string">&quot;Failed to hash password &quot;</span>);
+            <span class="kw">let</span> <span class="ident">hashed_pwd</span> <span class="op">=</span> <span class="ident">hash_string_with_salt</span>(<span class="ident">pwd</span>.<span class="ident">clone</span>());
             <span class="kw">if</span> <span class="ident">set</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">hashed_pwd</span>) {
                 <span class="macro">panic!</span>(<span class="string">&quot;Duplicate key found in set - password not being salted&quot;</span>);
             }
@@ -469,10 +560,29 @@
     <span class="kw">fn</span> <span class="ident">test_compare_password</span>() {
         <span class="comment">//Ensure that we can compare the hash still!</span>
         <span class="kw">let</span> <span class="ident">pwd</span> <span class="op">=</span> <span class="ident">generate_random_alphanumeric</span>(<span class="number">4</span>);
-        <span class="kw">let</span> <span class="ident">hashed_pwd</span> <span class="op">=</span> <span class="ident">hash_string_with_salt</span>(<span class="ident">pwd</span>.<span class="ident">clone</span>()).<span class="ident">expect</span>(<span class="string">&quot;Failed to hash password &quot;</span>);
+        <span class="kw">let</span> <span class="ident">hashed_pwd</span> <span class="op">=</span> <span class="ident">hash_string_with_salt</span>(<span class="ident">pwd</span>.<span class="ident">clone</span>());
         <span class="macro">assert!</span>(<span class="ident">compare_hashed_strings</span>(<span class="ident">pwd</span>, <span class="ident">hashed_pwd</span>.<span class="ident">clone</span>()).<span class="ident">expect</span>(<span class="string">&quot;Failed to compare hashes &quot;</span>));
         <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">compare_hashed_strings</span>(<span class="ident">String::from</span>(<span class="string">&quot;hello&quot;</span>), <span class="ident">hashed_pwd</span>)
             .<span class="ident">expect</span>(<span class="string">&quot;Failed to compare hashes &quot;</span>));
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">failed_password_compare</span>() {
+        <span class="kw">let</span> <span class="ident">pwd</span> <span class="op">=</span> <span class="ident">generate_random_alphanumeric</span>(<span class="number">4</span>);
+
+        <span class="comment">// This isn&#39;t an error that can occur in practice, but it&#39;s useful to test that the application is working as expected</span>
+        <span class="comment">// upon an error being encountered.</span>
+        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">compare_hashed_strings</span>(<span class="ident">pwd</span>, <span class="ident">String::from</span>(<span class="string">&quot;&quot;</span>)).<span class="ident">expect_err</span>(<span class="string">&quot;failed comparison&quot;</span>);
+        <span class="kw">match</span> <span class="ident">result</span> {
+            <span class="ident"><span class="kw">crate</span>::response::Response::TextErr</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="macro">assert_eq!</span>(<span class="ident">data</span>.<span class="ident">status</span>(), <span class="ident">Status::InternalServerError</span>);
+                <span class="macro">assert_eq!</span>(
+                    <span class="ident">data</span>.<span class="ident">data</span>(),
+                    <span class="string">&quot;Failed to compare hashes password hash string too short&quot;</span>
+                );
+            }
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic!</span>(<span class="string">&quot;Invalid response type!&quot;</span>),
+        }
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>

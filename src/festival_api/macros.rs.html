@@ -197,16 +197,6 @@
 <span id="197">197</span>
 <span id="198">198</span>
 <span id="199">199</span>
-<span id="200">200</span>
-<span id="201">201</span>
-<span id="202">202</span>
-<span id="203">203</span>
-<span id="204">204</span>
-<span id="205">205</span>
-<span id="206">206</span>
-<span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This module contains ease-of-use macros for the Festival-Api.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Each aims to simplify code throughout the project - usually in `main.rs`.</span>
@@ -217,21 +207,17 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// **Examples**</span>
 <span class="doccomment">/// ```rust</span>
-<span class="doccomment">///     fn main() {</span>
-<span class="doccomment">///         #[get(&quot;/&quot;)]</span>
-<span class="doccomment">///         fn index() -&gt; Response {</span>
-<span class="doccomment">///             reject!(&quot;You&#39;re not cool enough to use this api!&quot;);</span>
-<span class="doccomment">///         }</span>
+<span class="doccomment">///     #[get(&quot;/&quot;)]</span>
+<span class="doccomment">///     fn index() -&gt; Response {</span>
+<span class="doccomment">///         reject!(&quot;You&#39;re not cool enough to use this api!&quot;);</span>
 <span class="doccomment">///     }</span>
 <span class="doccomment">/// ```</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// /// ```rust</span>
-<span class="doccomment">///     fn main() {</span>
-<span class="doccomment">///         #[get(&quot;/&quot;)]</span>
-<span class="doccomment">///         fn index() -&gt; Response {</span>
-<span class="doccomment">///             let reason: String = &quot;tall&quot;;</span>
-<span class="doccomment">///             reject!(&quot;You&#39;re not {} enough to use this api!&quot;, reason);</span>
-<span class="doccomment">///         }</span>
+<span class="doccomment">///     #[get(&quot;/&quot;)]</span>
+<span class="doccomment">///     fn index() -&gt; Response {</span>
+<span class="doccomment">///         let reason: String = &quot;tall&quot;;</span>
+<span class="doccomment">///         reject!(&quot;You&#39;re not {} enough to use this api!&quot;, reason);</span>
 <span class="doccomment">///     }</span>
 <span class="doccomment">/// ```</span>
 <span class="doccomment">///</span>
@@ -267,21 +253,17 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// **Examples**</span>
 <span class="doccomment">/// ```rust</span>
-<span class="doccomment">///     fn main() {</span>
-<span class="doccomment">///         #[get(&quot;/&quot;)]</span>
-<span class="doccomment">///         fn index() -&gt; Response {</span>
-<span class="doccomment">///             failure!(&quot;The server had a critical error processing your request!&quot;);</span>
-<span class="doccomment">///         }</span>
+<span class="doccomment">///     #[get(&quot;/&quot;)]</span>
+<span class="doccomment">///     fn index() -&gt; Response {</span>
+<span class="doccomment">///         failure!(&quot;The server had a critical error processing your request!&quot;);</span>
 <span class="doccomment">///     }</span>
 <span class="doccomment">/// ```</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// /// ```rust</span>
-<span class="doccomment">///     fn main() {</span>
-<span class="doccomment">///         #[get(&quot;/&quot;)]</span>
-<span class="doccomment">///         fn index() -&gt; Response {</span>
-<span class="doccomment">///             let reason: String = &quot;it caught fire!&quot;;</span>
-<span class="doccomment">///             failure!(&quot;The server failed to process your request becuase {}&quot;, reason);</span>
-<span class="doccomment">///         }</span>
+<span class="doccomment">///     #[get(&quot;/&quot;)]</span>
+<span class="doccomment">///     fn index() -&gt; Response {</span>
+<span class="doccomment">///         let reason: String = &quot;it caught fire!&quot;;</span>
+<span class="doccomment">///         failure!(&quot;The server failed to process your request becuase {}&quot;, reason);</span>
 <span class="doccomment">///     }</span>
 <span class="doccomment">/// ```</span>
 <span class="doccomment">///</span>
@@ -327,12 +309,10 @@
 <span class="doccomment">///         static ref NUMBER_SHOES: usize = load_env!(&quot;NUMBER_SHOES&quot;);</span>
 <span class="doccomment">///     }</span>
 <span class="doccomment">///</span>
-<span class="doccomment">///     fn main() {</span>
-<span class="doccomment">///         lazy_static::initialize(&amp;NUMBER_SHOES);</span>
-<span class="doccomment">///         println!(&quot;The number of shoes is {}&quot;, *NUMBER_SHOES);</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// A variety of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.</span>
+<span class="doccomment">///     lazy_static::initialize(&amp;NUMBER_SHOES);</span>
+<span class="doccomment">///     println!(&quot;The number of shoes is {}&quot;, *NUMBER_SHOES);</span>
+<span class="doccomment">///     / ```</span>
+<span class="doccomment">/// A vay of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Internally this macro relies on `toml::value::Value.try_into()` for type conversion.</span>
 <span class="doccomment">///</span>
