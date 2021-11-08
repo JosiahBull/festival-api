@@ -8,21 +8,17 @@
 ///
 /// **Examples**
 /// ```rust
-///     fn main() {
-///         #[get("/")]
-///         fn index() -> Response {
-///             reject!("You're not cool enough to use this api!");
-///         }
+///     #[get("/")]
+///     fn index() -> Response {
+///         reject!("You're not cool enough to use this api!");
 ///     }
 /// ```
 ///
 /// /// ```rust
-///     fn main() {
-///         #[get("/")]
-///         fn index() -> Response {
-///             let reason: String = "tall";
-///             reject!("You're not {} enough to use this api!", reason);
-///         }
+///     #[get("/")]
+///     fn index() -> Response {
+///         let reason: String = "tall";
+///         reject!("You're not {} enough to use this api!", reason);
 ///     }
 /// ```
 ///
@@ -58,21 +54,17 @@ macro_rules! reject {
 ///
 /// **Examples**
 /// ```rust
-///     fn main() {
-///         #[get("/")]
-///         fn index() -> Response {
-///             failure!("The server had a critical error processing your request!");
-///         }
+///     #[get("/")]
+///     fn index() -> Response {
+///         failure!("The server had a critical error processing your request!");
 ///     }
 /// ```
 ///
 /// /// ```rust
-///     fn main() {
-///         #[get("/")]
-///         fn index() -> Response {
-///             let reason: String = "it caught fire!";
-///             failure!("The server failed to process your request becuase {}", reason);
-///         }
+///     #[get("/")]
+///     fn index() -> Response {
+///         let reason: String = "it caught fire!";
+///         failure!("The server failed to process your request becuase {}", reason);
 ///     }
 /// ```
 ///
@@ -118,12 +110,10 @@ macro_rules! failure {
 ///         static ref NUMBER_SHOES: usize = load_env!("NUMBER_SHOES");
 ///     }
 ///
-///     fn main() {
-///         lazy_static::initialize(&NUMBER_SHOES);
-///         println!("The number of shoes is {}", *NUMBER_SHOES);
-///     }
-/// ```
-/// A variety of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.
+///     lazy_static::initialize(&NUMBER_SHOES);
+///     println!("The number of shoes is {}", *NUMBER_SHOES);
+///     / ```
+/// A vay of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.
 ///
 /// Internally this macro relies on `toml::value::Value.try_into()` for type conversion.
 ///

@@ -15,40 +15,88 @@
 use priority_queue::DoublePriorityQueue;
 use std::{collections::HashMap, hash::Hash, io::ErrorKind, marker::PhantomData};
 
+/// The number of bytes in a mb.
 const BYTES_IN_MB: usize = 1_000_000;
+
+/// A type indicating that this return type may be cached properly in the api.
+/// These methods are required to save and load from the disk.
 #[rocket::async_trait]
 trait Cachable<U> {
+    /// Load the underlying file from the disk, or generate it fresh if it's not there.
     async fn load_underlying(&self) -> Result<U, std::io::Error>;
+
+    /// Get the total size this object is taking up on the disk. Should fail if the file has not been
+    /// saved to the disk.
     async fn size_on_disk(&self) -> Result<usize, std::io::Error>;
+
+    /// Save this file to the disk, so that it is cached for future use. May require regeneration of the
+    /// file.
     async fn save_on_disk(&self) -> Result<(), std::io::Error>;
+
+    /// Remove the underlying file from the disk.
     async fn remove_from_disk(&self) -> Result<(), std::io::Error>;
 }
 
+/// A struct which wraps cacheable data for the cache. This is useful as we can store information about the
+/// stored item, which can be used when making decisions about whether to cache or not.
 #[derive(Debug, Clone)]
 struct Info<G, U>
 where
     G: Cachable<U> + Send + Sync,
 {
+    /// Number of times this data has been requested
     uses: usize,
+    /// Whether it is currently cached to disk
     cached: bool,
+    /// The wrapped internal data
     wrapped: G,
+    #[doc(hidden)]
     _return_type: PhantomData<U>,
 }
 
+impl<G, U> Info<G, U>
+where
+    G: Cachable<U> + Send + Sync,
+{
+    fn new(data: G) -> Self {
+        Info {
+            wrapped: data,
+            uses: 0,
+            cached: false,
+            _return_type: PhantomData,
+        }
+    }
+}
+
+/// A cache for storing frequently used data. Will automatically attempt to cache popular items over time,
+/// decaching less popular items as required.
 struct Cache<T, G, U>
 where
     T: Hash + Eq + Clone,
     G: Cachable<U> + Send + Sync,
 {
+    /// Maximum number of items to cache
     max_to_cache: usize,
+    /// Maximum size of items to cache
     max_size_of_cache_bytes: usize,
 
+    /// The current count of items cached
     count: usize,
+    /// THe current size of all cached items on the disk =
     size_on_disk: usize,
 
+    /// When an item gets replaced, how large should the "bump" be to prevent
+    /// it from being quickly deseated. This is very important as it stops frequent swapping of lower
+    /// cached items consuming system resources.
     uses_threshold: usize,
 
+    /// A double priority queue which stores the itemes in least and most popular form.
+    /// This is backed by a HashMap, which means we get O(log(n)) for most operations in the worst
+    /// case.
     priority: DoublePriorityQueue<T, usize>,
+
+    /// The cache itself, stores data about a variety of objects. Note that we wrap objects with
+    /// an info struct to track information about individual objects.
     cache: HashMap<T, Info<G, U>>,
 }
 
@@ -57,6 +105,7 @@ where
     T: Hash + Eq + Clone,
     G: Cachable<U> + std::cmp::PartialEq + Send + Sync,
 {
+    /// Create a new cache, with a specific max number of items and max size on disk.
     fn new(max_items: usize, max_size: usize) -> Cache<T, G, U> {
         Cache::<T, G, U> {
             max_to_cache: max_items,
@@ -65,6 +114,7 @@ where
         }
     }
 
+    /// Change the uses_threshold value
     fn set_threshold(&mut self, threshold: usize) {
         self.uses_threshold = threshold;
     }
@@ -78,6 +128,7 @@ where
         }
     }
 
+    /// Get information about an item
     fn get_info(&self, key: &T) -> Option<&Info<G, U>> {
         if let Some(item) = self.cache.get(key) {
             Some(item)
@@ -170,16 +221,7 @@ where
         // If not insert it
         if !self.contains_item(&key) {
             //Not in cache, lets add it.
-            self.cache.insert(
-                key.clone(),
-                Info {
-                    wrapped: value,
-                    uses: 0,
-                    cached: false,
-                    _return_type: PhantomData,
-                },
-            );
-
+            self.cache.insert(key.clone(), Info::new(value));
             //Check if we should cache this item!
             self.check_popularity(&key).await?;
 
@@ -192,10 +234,20 @@ where
         }
     }
 
-    fn get_underlying(&mut self) -> &mut HashMap<T, Info<G, U>> {
+    /// Collect a reference to the underlying backing HashMap. This is primarily useful for testing,
+    /// but can also be useful if you wish to manually retrieve data from a stored object.
+    fn get_underlying(&self) -> &HashMap<T, Info<G, U>> {
+        &self.cache
+    }
+
+    /// An unsafe function, allows manual editing of the underlying backing hashmap. Editing this
+    /// directly may break the entire cache, as there are many values which must remain perfectly in
+    /// line for this to succeed.
+    unsafe fn get_underlying_mut(&mut self) -> &mut HashMap<T, Info<G, U>> {
         &mut self.cache
     }
 
+    /// Check whether the cache contains a given key
     fn contains_item(&self, key: &T) -> bool {
         self.cache.contains_key(key)
     }
@@ -450,7 +502,7 @@ mod test {
             .await
             .unwrap();
 
-        let underlying: &mut HashMap<String, Info<Item, i64>> = cache.get_underlying();
+        let underlying: &HashMap<String, Info<Item, i64>> = cache.get_underlying();
 
         let keys = underlying.clone().into_keys();
         let vals = underlying.clone().into_values();
@@ -458,6 +510,25 @@ mod test {
         assert_eq!(keys.len(), 1);
         assert_eq!(keys.last().unwrap(), String::from("Item2"));
         assert_eq!(vals.last().unwrap().wrapped.data, 92);
+        assert_eq!(underlying.get("Item2").unwrap().uses, 0);
+
+        //Test getting underlying as mutable
+        unsafe {
+            let underlying: &mut HashMap<String, Info<Item, i64>> = cache.get_underlying_mut();
+            underlying.get_mut("Item2").expect("a valid value").uses = 5;
+            underlying.get_mut("Item2").expect("a valid value").wrapped = Item { data: 56 };
+        }
+
+        //Validate that changing those values worked!
+        let underlying: &HashMap<String, Info<Item, i64>> = cache.get_underlying();
+
+        let keys = underlying.clone().into_keys();
+        let vals = underlying.clone().into_values();
+
+        assert_eq!(keys.len(), 1);
+        assert_eq!(keys.last().unwrap(), String::from("Item2"));
+        assert_eq!(vals.last().unwrap().wrapped.data, 56);
+        assert_eq!(underlying.get("Item2").unwrap().uses, 5);
     }
 
     /// Test that default spawns with the expected values
@@ -489,6 +560,16 @@ mod test {
             underlying.get("Item2").expect("a valid item")._return_type,
             PhantomData
         );
+    }
+
+    #[test]
+    fn test_new() {
+        let info: Info<Item, i64> = Info::new(Item { data: 92 });
+
+        assert_eq!(info._return_type, PhantomData);
+        assert_eq!(info.wrapped, Item { data: 92 });
+        assert_eq!(info.cached, false);
+        assert_eq!(info.uses, 0);
     }
 }
 

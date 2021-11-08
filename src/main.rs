@@ -1,7 +1,8 @@
-#![allow(clippy::needless_doctest_main)]
-#![allow(soft_unstable)]
+#![doc = include_str!("../readme.md")]
+
 #[cfg(not(tarpaulin_include))]
 #[rustfmt::skip]
+#[doc(hidden)]
 mod schema;
 
 mod common;
@@ -143,17 +144,19 @@ lazy_static! {
 // words are cached, we could allow users to more smartly choose which phrases they wish to display.
 // This should also reduce load on the api significant as it'll encourage users to pull common words!
 
+/// The base url of the program. This is just a catch-all for those who stumble across the api without knowing what it does.
 #[get("/")]
 fn index() -> String {
     format!("Welcome to {} API for converting text into downloadable wav files! Please make a request to /docs for documentation.", *API_NAME)
 }
 
+/// Returns the OAS docs for this api in an easily downloadable file.
 #[get("/docs")]
 fn docs() -> String {
     "Api docs not yet setup with automated github actions. Feel free to implement that though if you're up for a challenge!".to_string()
 }
 
-/// Attempt to login a student
+/// Attempts to login a student with provided credentials.
 #[post("/login", data = "<creds>", format = "application/json")]
 async fn login(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, Response> {
     let creds = creds.into_inner();
@@ -173,7 +176,12 @@ async fn login(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, R
     }
 
     //Update the users last_seen status
-    common::update_user_last_seen(&conn, user.id, chrono::offset::Utc::now()).await?;
+    common::update_user_last_seen(
+        &conn,
+        common::SearchItem::Id(user.id),
+        chrono::offset::Utc::now(),
+    )
+    .await?;
 
     Ok(Response::TextOk(Data {
         data: models::Claims::new_token(user.id),
@@ -205,7 +213,7 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
     //Hash Password
     let user = UserCredentials {
         usr: creds.usr,
-        pwd: common::hash_string_with_salt(creds.pwd)?,
+        pwd: common::hash_string_with_salt(creds.pwd),
     };
 
     //Save account in db
@@ -225,7 +233,9 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
     }))
 }
 
-/// Expects a phrase package, attempts to convert it to a .mp3 to be returned to the user. Requires authentication to access.
+/// Expects a phrase package, attempts to convert it to a sound file to be returned to the user.
+/// Requires an authenticate user account to access. This endpoint also features strict rate limiting
+/// as generating .wav files is very resource intensive.
 #[post("/convert", data = "<phrase_package>", format = "application/json")]
 async fn convert(
     token: Result<models::Claims, Response>,
@@ -317,7 +327,7 @@ async fn convert(
     //This is temporary pending development of a proper caching system.
     if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&file_name_wav)).await {
         failure!(
-            "Unable to temporary file from system prior to response {}",
+            "Unable to remove temporary file from system prior to response {}",
             e
         )
     };
@@ -325,7 +335,7 @@ async fn convert(
     if file_name_wav != converted_file {
         if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&converted_file)).await {
             failure!(
-                "Unable to temporary file from system prior to response {}",
+                "Unable to remove temporary file from system prior to response {}",
                 e
             )
         };
@@ -343,6 +353,7 @@ async fn convert(
 
 // struct CacheFairing(crate::cache::Cache<String, models::GenerationRequest, NamedFile>);
 
+#[doc(hidden)]
 #[launch]
 fn rocket() -> _ {
     //Initalize all globals
@@ -827,6 +838,43 @@ mod rocket_tests {
         assert_eq!(
             response.into_string().unwrap(),
             "Authorisation Header Not Present"
+        );
+    }
+
+    /// A simple test which ensures that an invalid file format fails out as expected.
+    #[test]
+    fn test_invalid_formats() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let (_, _, token) = create_test_account(&client);
+
+        let body = "{
+            \"word\": \"The University of Auckland\",
+            \"lang\": \"en\",
+            \"speed\": 1.0,
+            \"fmt\": \"this-will-never-exist\"
+        }";
+
+        //Generate a 'generic' file and validate the response is correct
+        let response = client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token))
+            .body(&body)
+            .dispatch();
+
+        let status = response.status();
+        if status != Status::BadRequest {
+            panic!(
+                "Failed with status {} \nBody: \n{}\n",
+                status,
+                response.into_string().unwrap()
+            );
+        }
+
+        let body = response.into_string().expect("a valid body");
+        assert_eq!(
+            body,
+            String::from("Requested format (this-will-never-exist) is not supported by this api!")
         );
     }
 }

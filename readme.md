@@ -16,67 +16,85 @@ and returns a file which may be streamed or played for a user.
 
 Detailed documentation on how to use the API can be found [here](https://josiahbull.github.io/festival-api/).
 
-## Progress to 0.1-Beta Release
-- [x] Write OAS Spec
-- [x] Create db schema
-- [x] Setup Gh actions
-    - [x] Code Coverage
-    - [x] Automatic Formatting + Clippy
-    - [x] Running Tests
-    - [x] Generation of docs + oas for gh-pages.
-- [x] Write Rust/Rocket boilerplate + macros
-- [x] Student creation/login endpoints 
-    - [x] Login Endpoint
-    - [x] Account Creation Endpoint
-    - [x] JWT Tokens + Validation
-    - [x] Tests 
-- [x] Conversion endpoint
-    - [x] Validation of Requests from user
-    - [x] Generation of wav files
-    - [x] Account Rate Limiting
-    - [x] Conversion from .wav to .mp3 or any other fileformat
-    - [x] Tests
-- [x] Configuration
-    - [x] Language Configuration `/config/langs.toml`
-    - [x] File Format Configuration `/config/general.toml`
-    - [x] General Configuration `/config/general.toml`
-- [ ] Setup docker-compose
-- [ ] Code Comments/Documentation
+# Deployment
+## Docker
 
-## Getting Started
+```sh
+git clone https://github.com/JosiahBull/festival-api
+cd ./https://github.com/JosiahBull/festival-api
+cp .example.env .env
+nano .env #Update required configuration options for TLS encryption
 
-Currently this api is not setup with a service such as docker, so you must have [Rust](https://www.rust-lang.org/tools/install) installed.
+nano ./config/general.toml #Update any general configuration options you wish to include.
+nano ./config/langs.toml #Update any special languages you wish to include (ensure to modify backend.Dockerfile to install them).
 
-This api depends on Rust, Rocket, Diesel, Postgres, Sox, and Festival.
+docker volume create api-pgdata
 
-**Note: Festival may not have the default lang `voice_kal_diphone` installed for your system! To fix this change the english voice in `./config/langs.toml` to match what you wish to use on your system.**
+chmod +x ./initalize_server.sh
 
+docker-compose --env-file .env up #This takes a long time
+```
+
+# Development
+
+## Fedora
+
+To develop this api, you must have [Rust](https://www.rust-lang.org/tools/install) installed.
+
+This api also depends on Postgres, Sox, and Festival, and the festvox_cmu_us_aew lang pack.
+
+### Dependencies
+
+```sh
+    # Install Rust
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    
+    # Install Build Tools
+    sudo dnf groupinstall @development-tools @development-libraries
+
+    # Install Docker
+    # Follow here: https://docs.docker.com/engine/install/fedora/
+
+    # Install Dependencies
+    sudo dnf install festival sox libpq libpq-devel
+    cargo install diesel_cli --no-default-features --features postgres
+    cargo install rustfmt #for automatic code formatting
+    cargo install clippy #collection of useful lints
+    cargo install cargo-tarpaulin #test coverage
+
+    #Install default language pack
+    wget http://www.festvox.org/packed/festival/2.5/voices/festvox_cmu_us_aew_cg.tar.gz
+    tar -xf festvox_cmu_us_aew_cg.tar.gz
+    sudo mkdir -p /usr/share/festival/voices/us/
+    sudo cp -r festival/lib/voices/us/cmu_us_aew_cg/ /usr/share/festival/voices/us/
+    rm -rd ./festival
+    rm festvox_cmu_us_aew_cg.tar.gz
+```
+
+### Development
 ```sh
 # Spawn a postgres backing db
 docker run --name fest-db -p 5432:5432 -e POSTGRES_PASSWORD=postgres -d postgres
 export DATABASE_URL=postgres://postgres:postgres@localhost/fest_api
-
-# Install the diesel cli utility
-cargo install diesel_cli --no-default-features --features postgres
 
 # Run migration to configure db ready for api
 diesel setup
 
 # Start the api, initial compilation may take some time so get a cup of tea
 export JWT_SECRET=<Your_Token_Here>
-cargo test -- --test-threads 1
-cargo run --release
+cargo test -- --test-threads 4
+cargo run
 ```
 
-## Contributing
+# Contributing
 
-### Code Guidelines
+## Code Guidelines
 **Please write tests** if we have good test coverage we can avoid any bugs down the line.
 
 
 Outside of this we use standard Rust formatting for code. This will be enforced through use of [clippy](https://github.com/rust-lang/rust-clippy) and [rustfmt](https://github.com/rust-lang/rustfmt).
 
-### Commit Guidelines
+## Commit Guidelines
 In all commits, please try to follow the [convention for commits](https://www.conventionalcommits.org/en/v1.0.0/#specification).
 
 Ideally aim to push every commit you make, rather than accumulating a large number of commits before pushing, this helps to keep everyone on the same

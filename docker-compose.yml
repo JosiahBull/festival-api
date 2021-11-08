@@ -1,0 +1,35 @@
+version: '3'
+services:
+  fest-api:
+    container_name: fest-api
+    build: 
+      context: ./
+      dockerfile: backend.Dockerfile
+    restart: always
+    depends_on:
+      - fest-db
+    environment:
+      - ROCKET_PORT=3000
+      - ROCKET_ADDRESS=0.0.0.0
+      - BROWSER_BASE_URL=https://${DOMAIN}
+      - ROCKET_DATABASES={postgres_database={url=postgres://api:postgres@fest-db:5432/api}}
+      - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=postgres://api:postgres@fest-db:5432/api # This seems like a duplicate, but it is needed to automate migrations
+    ports:
+      - 443:3000
+      - 80:3000
+
+  fest-db:
+    container_name: fest-db
+    image: postgres:alpine
+    restart: always
+    environment:
+      - POSTGRES_DB=api
+      - POSTGRES_USER=api
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - api-pgdata:/var/lib/postgresql/data
+
+volumes:
+  api-pgdata:
+    external: true

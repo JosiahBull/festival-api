@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  description: An api to collect .wav files generated from festival.
+  description: An api to generate sound files from text using festival.
   version: "0.1.0"
   license:
     name: "GPL v3"
@@ -74,12 +74,19 @@ paths:
                 type: string
                 format: binary
         '400':
-          description: Unable to parse provided phrase package.
+          description: Bad request! Likely some of your values are out of range on the PhrasePackage.
           content:
             text/plain:
               schema:
                 type: string
                 example: "word contains invalid characters"
+        '422':
+          description: Missing/invalid fields on your PhrasePackage.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Missing field 'fmt' on line 4"
         '401':
           description: Not Authorised
           content:
@@ -120,6 +127,13 @@ paths:
               schema:
                 type: string
                 example: Incorrect Password or Username
+        '429':
+          description: Too many failed login attempts recently. You have been timed out for a period.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Too many requests! You have reached the rate limit for this account and have been timed out. Please wait 456 seconds before trying again.
         '500':
           description: Panic! Something has gone horribly wrong on our end. Please open an issue at https://github.com/JosiahBull/festival-api.
 
