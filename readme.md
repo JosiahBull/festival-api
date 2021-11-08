@@ -16,29 +16,69 @@ and returns a file which may be streamed or played for a user.
 
 Detailed documentation on how to use the API can be found [here](https://josiahbull.github.io/festival-api/).
 
-## Getting Started
+## Deployment
+### Docker
 
-Currently this api is not setup with a service such as docker, so you must have [Rust](https://www.rust-lang.org/tools/install) installed.
+```sh
+git clone https://github.com/JosiahBull/festival-api
+cd ./https://github.com/JosiahBull/festival-api
+cp .example.env .env
+nano .env #Update required configuration options for TLS encryption
 
-This api depends on Rust, Rocket, Diesel, Postgres, Sox, and Festival.
+docker volume create api-pgdata
 
-**Note: Festival may not have the default lang `voice_kal_diphone` installed for your system! To fix this change the english voice in `./config/langs.toml` to match what you wish to use on your system.**
+chmod +x ./initalize_server.sh
 
+docker-compose --env-file .env up #This takes a long time
+```
+
+## Development for Fedora
+
+To develop this api, you must have [Rust](https://www.rust-lang.org/tools/install) installed.
+
+This api also depends on Postgres, Sox, and Festival, and the festvox_cmu_us_aew lang pack.
+
+### Dependencies
+
+```sh
+    # Install Rust
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    
+    # Install Build Tools
+    sudo dnf groupinstall @development-tools @development-libraries
+
+    # Install Docker
+    # Follow here: https://docs.docker.com/engine/install/fedora/
+
+    # Install Dependencies
+    sudo dnf install festival sox libpq libpq-devel
+    cargo install diesel_cli --no-default-features --features postgres
+    cargo install rustfmt #for automatic code formatting
+    cargo install clippy #collection of useful lints
+    cargo install cargo-tarpaulin #test coverage
+
+    #Install default language pack
+    wget http://www.festvox.org/packed/festival/2.5/voices/festvox_cmu_us_aew_cg.tar.gz
+    tar -xf festvox_cmu_us_aew_cg.tar.gz
+    sudo mkdir -p /usr/share/festival/voices/us/
+    sudo cp -r festival/lib/voices/us/cmu_us_aew_cg/ /usr/share/festival/voices/us/
+    rm -rd ./festival
+    rm festvox_cmu_us_aew_cg.tar.gz
+```
+
+### Development
 ```sh
 # Spawn a postgres backing db
 docker run --name fest-db -p 5432:5432 -e POSTGRES_PASSWORD=postgres -d postgres
 export DATABASE_URL=postgres://postgres:postgres@localhost/fest_api
-
-# Install the diesel cli utility
-cargo install diesel_cli --no-default-features --features postgres
 
 # Run migration to configure db ready for api
 diesel setup
 
 # Start the api, initial compilation may take some time so get a cup of tea
 export JWT_SECRET=<Your_Token_Here>
-cargo test -- --test-threads 1
-cargo run --release
+cargo test -- --test-threads 4
+cargo run
 ```
 
 ## Contributing

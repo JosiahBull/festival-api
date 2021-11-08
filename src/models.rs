@@ -380,7 +380,7 @@ mod tests {
         };
         match pack.validated().unwrap_err() {
             crate::response::Response::TextErr(data) => {
-                let inner: String = data.into_inner().to_owned();
+                let inner: String = data.data().to_owned();
                 assert_eq!(
                     inner,
                     String::from("Requested format (format) is not supported by this api!")

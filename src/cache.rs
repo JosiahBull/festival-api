@@ -54,7 +54,7 @@ where
     _return_type: PhantomData<U>,
 }
 
-impl<G, U> Info<G, U> 
+impl<G, U> Info<G, U>
 where
     G: Cachable<U> + Send + Sync,
 {
@@ -201,7 +201,12 @@ where
             }
 
             Ok(Some(
-                self.cache.get(&key).unwrap().wrapped.load_underlying().await?,
+                self.cache
+                    .get(&key)
+                    .unwrap()
+                    .wrapped
+                    .load_underlying()
+                    .await?,
             ))
         } else {
             Ok(None)
@@ -216,16 +221,16 @@ where
         // If not insert it
         if !self.contains_item(&key) {
             //Not in cache, lets add it.
-            self.cache.insert(
-                key.clone(),
-                Info::new(value),
-            );
+            self.cache.insert(key.clone(), Info::new(value));
             //Check if we should cache this item!
             self.check_popularity(&key).await?;
 
             Ok(())
         } else {
-            Err(std::io::Error::new(ErrorKind::AlreadyExists,"Key already exists in cache"))
+            Err(std::io::Error::new(
+                ErrorKind::AlreadyExists,
+                "Key already exists in cache",
+            ))
         }
     }
 
@@ -556,7 +561,7 @@ mod test {
             PhantomData
         );
     }
-    
+
     #[test]
     fn test_new() {
         let info: Info<Item, i64> = Info::new(Item { data: 92 });

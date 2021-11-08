@@ -24,7 +24,7 @@ where
     }
 
     /// Returns the inner data of this response
-    pub fn into_inner(&self) -> &T {
+    pub fn data(&self) -> &T {
         &self.data
     }
 }
@@ -115,7 +115,7 @@ mod tests {
         match response {
             Response::TextOk(s) => {
                 assert_eq!(s.status(), Status::Ok);
-                assert_eq!(*s.into_inner(), String::from("hello, world"));
+                assert_eq!(*s.data(), String::from("hello, world"));
             }
             _ => panic!("Invalid type!"),
         }

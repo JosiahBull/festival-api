@@ -270,7 +270,7 @@ mod test {
             crate::response::Response::TextErr(data) => {
                 assert_eq!(data.status(), Status::InternalServerError);
                 assert_eq!(
-                    data.into_inner(),
+                    data.data(),
                     "Failed to compare hashes password hash string too short"
                 );
             }
