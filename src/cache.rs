@@ -54,6 +54,20 @@ where
     _return_type: PhantomData<U>,
 }
 
+impl<G, U> Info<G, U> 
+where
+    G: Cachable<U> + Send + Sync,
+{
+    fn new(data: G) -> Self {
+        Info {
+            wrapped: data,
+            uses: 0,
+            cached: false,
+            _return_type: PhantomData,
+        }
+    }
+}
+
 /// A cache for storing frequently used data. Will automatically attempt to cache popular items over time,
 /// decaching less popular items as required.
 struct Cache<T, G, U>
@@ -187,12 +201,7 @@ where
             }
 
             Ok(Some(
-                self.cache
-                    .get(&key)
-                    .unwrap()
-                    .wrapped
-                    .load_underlying()
-                    .await?,
+                self.cache.get(&key).unwrap().wrapped.load_underlying().await?,
             ))
         } else {
             Ok(None)
@@ -209,23 +218,14 @@ where
             //Not in cache, lets add it.
             self.cache.insert(
                 key.clone(),
-                Info {
-                    wrapped: value,
-                    uses: 0,
-                    cached: false,
-                    _return_type: PhantomData,
-                },
+                Info::new(value),
             );
-
             //Check if we should cache this item!
             self.check_popularity(&key).await?;
 
             Ok(())
         } else {
-            Err(std::io::Error::new(
-                ErrorKind::AlreadyExists,
-                "Key already exists in cache",
-            ))
+            Err(std::io::Error::new(ErrorKind::AlreadyExists,"Key already exists in cache"))
         }
     }
 
@@ -505,6 +505,25 @@ mod test {
         assert_eq!(keys.len(), 1);
         assert_eq!(keys.last().unwrap(), String::from("Item2"));
         assert_eq!(vals.last().unwrap().wrapped.data, 92);
+        assert_eq!(underlying.get("Item2").unwrap().uses, 0);
+
+        //Test getting underlying as mutable
+        unsafe {
+            let underlying: &mut HashMap<String, Info<Item, i64>> = cache.get_underlying_mut();
+            underlying.get_mut("Item2").expect("a valid value").uses = 5;
+            underlying.get_mut("Item2").expect("a valid value").wrapped = Item { data: 56 };
+        }
+
+        //Validate that changing those values worked!
+        let underlying: &HashMap<String, Info<Item, i64>> = cache.get_underlying();
+
+        let keys = underlying.clone().into_keys();
+        let vals = underlying.clone().into_values();
+
+        assert_eq!(keys.len(), 1);
+        assert_eq!(keys.last().unwrap(), String::from("Item2"));
+        assert_eq!(vals.last().unwrap().wrapped.data, 56);
+        assert_eq!(underlying.get("Item2").unwrap().uses, 5);
     }
 
     /// Test that default spawns with the expected values
@@ -536,6 +555,16 @@ mod test {
             underlying.get("Item2").expect("a valid item")._return_type,
             PhantomData
         );
+    }
+    
+    #[test]
+    fn test_new() {
+        let info: Info<Item, i64> = Info::new(Item { data: 92 });
+
+        assert_eq!(info._return_type, PhantomData);
+        assert_eq!(info.wrapped, Item { data: 92 });
+        assert_eq!(info.cached, false);
+        assert_eq!(info.uses, 0);
     }
 }
 

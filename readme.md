@@ -16,33 +16,6 @@ and returns a file which may be streamed or played for a user.
 
 Detailed documentation on how to use the API can be found [here](https://josiahbull.github.io/festival-api/).
 
-## Progress to 0.1-Beta Release
-- [x] Write OAS Spec
-- [x] Create db schema
-- [x] Setup Gh actions
-    - [x] Code Coverage
-    - [x] Automatic Formatting + Clippy
-    - [x] Running Tests
-    - [x] Generation of docs + oas for gh-pages.
-- [x] Write Rust/Rocket boilerplate + macros
-- [x] Student creation/login endpoints 
-    - [x] Login Endpoint
-    - [x] Account Creation Endpoint
-    - [x] JWT Tokens + Validation
-    - [x] Tests 
-- [x] Conversion endpoint
-    - [x] Validation of Requests from user
-    - [x] Generation of wav files
-    - [x] Account Rate Limiting
-    - [x] Conversion from .wav to .mp3 or any other fileformat
-    - [x] Tests
-- [x] Configuration
-    - [x] Language Configuration `/config/langs.toml`
-    - [x] File Format Configuration `/config/general.toml`
-    - [x] General Configuration `/config/general.toml`
-- [ ] Setup docker-compose
-- [ ] Code Comments/Documentation
-
 ## Getting Started
 
 Currently this api is not setup with a service such as docker, so you must have [Rust](https://www.rust-lang.org/tools/install) installed.

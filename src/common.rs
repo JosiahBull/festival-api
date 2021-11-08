@@ -13,8 +13,7 @@ use crate::macros::failure;
 use crate::response::{Data, Response};
 use crate::{DbConn, MAX_REQUESTS_ACC_THRESHOLD, MAX_REQUESTS_TIME_PERIOD_MINUTES};
 
-/// Hash a string with a random salt. Very useful for passwords and the like.
-/// Utilizes the argon2id algorithm
+/// Hash a string with a random salt to be stored in the database. Utilizing the argon2id algorithm
 /// Followed best practices as laid out here: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 /// Example Usage
 /// ```rust
@@ -27,16 +26,13 @@ use crate::{DbConn, MAX_REQUESTS_ACC_THRESHOLD, MAX_REQUESTS_TIME_PERIOD_MINUTES
 /// assert_ne!(unhashed_string, second_hashed_string);
 /// assert_ne!(hashed_string, second_hashed_string);
 /// ```
-pub fn hash_string_with_salt(s: String) -> Result<String, Response> {
+pub fn hash_string_with_salt(s: String) -> String {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    let hash = argon2.hash_password(s.as_bytes(), &salt).map_err(|e| {
-        Response::TextErr(Data {
-            data: format!("Failed to create hash {}", e),
-            status: Status::InternalServerError,
-        })
-    })?;
-    Ok(hash.to_string())
+    //SAFETY: Looking at the source of the argon2 crate, the only way this could fail was if the salt was incorrect
+    //which given this function is tested can never happen.
+    let hash = argon2.hash_password(s.as_bytes(), &salt).unwrap();
+    hash.to_string()
 }
 
 /// A function which checks whether the first string can be hashed into the second string.
@@ -64,6 +60,7 @@ pub fn compare_hashed_strings(orignal: String, hashed: String) -> Result<bool, R
             status: Status::InternalServerError,
         })
     })?;
+
     Ok(argon2
         .verify_password(orignal.as_bytes(), &parsed_hash)
         .is_ok())
@@ -231,6 +228,7 @@ mod test {
         compare_hashed_strings, generate_random_alphanumeric, get_time_since, hash_string_with_salt,
     };
     use chrono::Utc;
+    use rocket::http::Status;
     use std::collections::HashSet;
 
     #[test]
@@ -243,7 +241,7 @@ mod test {
 
         let mut set: HashSet<String> = HashSet::default();
         for _ in 0..loop_count {
-            let hashed_pwd = hash_string_with_salt(pwd.clone()).expect("Failed to hash password ");
+            let hashed_pwd = hash_string_with_salt(pwd.clone());
             if set.contains(&hashed_pwd) {
                 panic!("Duplicate key found in set - password not being salted");
             }
@@ -255,10 +253,29 @@ mod test {
     fn test_compare_password() {
         //Ensure that we can compare the hash still!
         let pwd = generate_random_alphanumeric(4);
-        let hashed_pwd = hash_string_with_salt(pwd.clone()).expect("Failed to hash password ");
+        let hashed_pwd = hash_string_with_salt(pwd.clone());
         assert!(compare_hashed_strings(pwd, hashed_pwd.clone()).expect("Failed to compare hashes "));
         assert!(!compare_hashed_strings(String::from("hello"), hashed_pwd)
             .expect("Failed to compare hashes "));
+    }
+
+    #[test]
+    fn failed_password_compare() {
+        let pwd = generate_random_alphanumeric(4);
+
+        // This isn't an error that can occur in practice, but it's useful to test that the application is working as expected
+        // upon an error being encountered.
+        let result = compare_hashed_strings(pwd, String::from("")).expect_err("failed comparison");
+        match result {
+            crate::response::Response::TextErr(data) => {
+                assert_eq!(data.status(), Status::InternalServerError);
+                assert_eq!(
+                    data.into_inner(),
+                    "Failed to compare hashes password hash string too short"
+                );
+            }
+            _ => panic!("Invalid response type!"),
+        }
     }
 
     #[test]

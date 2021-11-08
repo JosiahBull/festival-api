@@ -213,7 +213,7 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
     //Hash Password
     let user = UserCredentials {
         usr: creds.usr,
-        pwd: common::hash_string_with_salt(creds.pwd)?,
+        pwd: common::hash_string_with_salt(creds.pwd),
     };
 
     //Save account in db
@@ -327,7 +327,7 @@ async fn convert(
     //This is temporary pending development of a proper caching system.
     if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&file_name_wav)).await {
         failure!(
-            "Unable to temporary file from system prior to response {}",
+            "Unable to remove temporary file from system prior to response {}",
             e
         )
     };
@@ -335,7 +335,7 @@ async fn convert(
     if file_name_wav != converted_file {
         if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&converted_file)).await {
             failure!(
-                "Unable to temporary file from system prior to response {}",
+                "Unable to remove temporary file from system prior to response {}",
                 e
             )
         };
