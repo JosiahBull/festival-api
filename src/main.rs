@@ -150,11 +150,11 @@ lazy_static! {
             .as_str()
             .unwrap_or_else(|| panic!("ALLOWED_CHARS in {} is not a string!", path))
             .to_owned();
-        
+
         let mut res = HashSet::default();
 
         raw_string.chars().for_each(|c| {
-            res.insert(c); 
+            res.insert(c);
         });
 
         res
@@ -279,9 +279,12 @@ async fn convert(
 
     // Generate the phrase
 
-    // Create the basefile name to be stored on the system. The solution to this is to hash the provided 
+    // Create the basefile name to be stored on the system. The solution to this is to hash the provided
     // name into something that is always unique, but can be easily stored on the underlying system.
-    let temp = format!("{}_{}_{}", &phrase_package.word, &phrase_package.lang, &phrase_package.speed);
+    let temp = format!(
+        "{}_{}_{}",
+        &phrase_package.word, &phrase_package.lang, &phrase_package.speed
+    );
     let file_name_base: String = common::sha_512_hash(&temp);
 
     let file_name_wav = format!("{}/{}.wav", *CACHE_PATH, &file_name_base,);
@@ -388,7 +391,7 @@ fn rocket() -> _ {
     lazy_static::initialize(&SUPPORTED_LANGS);
     lazy_static::initialize(&ALLOWED_FORMATS);
     lazy_static::initialize(&ALLOWED_CHARS);
-    
+
     rocket::build()
         .mount("/", routes![index, docs])
         .mount("/api/v1/", routes![login, create, convert])
@@ -401,7 +404,7 @@ mod rocket_tests {
     use super::common::generate_random_alphanumeric;
     use super::models::{Claims, UserCredentials};
     use super::rocket;
-    use super::ALLOWED_FORMATS;
+    use super::{ALLOWED_FORMATS, MAX_REQUESTS_ACC_THRESHOLD};
     use rocket::http::{ContentType, Header, Status};
     use rocket::local::blocking::Client;
 
@@ -732,12 +735,15 @@ mod rocket_tests {
         for phrase in dangerous_phrases {
             let client = Client::tracked(rocket()).expect("valid rocket instance");
             let (_, _, token) = create_test_account(&client);
-            let body = format!("{{
+            let body = format!(
+                "{{
                 \"word\": \"{}\",
                 \"lang\": \"en\",
                 \"speed\": 1.0,
                 \"fmt\": \"wav\"
-            }}", phrase);
+            }}",
+                phrase
+            );
 
             let response = client
                 .post(uri!("/api/v1/convert"))
@@ -745,10 +751,9 @@ mod rocket_tests {
                 .header(Header::new("Authorisation", token.clone()))
                 .body(&body)
                 .dispatch();
-            
+
             assert_ne!(response.status(), Status::InternalServerError);
         }
-
     }
 
     #[test]
@@ -763,7 +768,7 @@ mod rocket_tests {
             \"fmt\": \"wav\"
         }";
 
-        for _ in 0..2 {
+        for _ in 0..*MAX_REQUESTS_ACC_THRESHOLD {
             //Test the generation of the .wav file
             let response = client
                 .post(uri!("/api/v1/convert"))

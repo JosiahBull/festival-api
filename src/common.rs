@@ -226,7 +226,7 @@ pub fn generate_random_alphanumeric(length: usize) -> String {
 
 /// Takes an input reference string, and hashes it using the sha512 algorithm.
 /// The resultant value is returned as a string in hexadecmial - meaning it is url and i/o safe.
-/// The choice of sha512 over sha256 is that sha512 tends to perform better at  longer strings - which we are likely to 
+/// The choice of sha512 over sha256 is that sha512 tends to perform better at  longer strings - which we are likely to
 /// encounter with this api. Users the sha2 crate internally for hashing.
 pub fn sha_512_hash(input: &str) -> String {
     let mut hasher = sha2::Sha512::new();
