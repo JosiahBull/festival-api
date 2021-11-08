@@ -4,7 +4,7 @@ use crate::response::{Data, Response};
 use crate::schema::*;
 use crate::{
     ALLOWED_FORMATS, JWT_EXPIRY_TIME_HOURS, JWT_SECRET, SPEED_MAX_VAL, SPEED_MIN_VAL,
-    SUPPORTED_LANGS, WORD_LENGTH_LIMIT,
+    SUPPORTED_LANGS, WORD_LENGTH_LIMIT, ALLOWED_CHARS,
 };
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -120,8 +120,11 @@ impl PhrasePackage {
         if self.word.is_empty() {
             reject!("No word provided!")
         }
-        if !self.word.bytes().all(|c| !c.is_ascii_digit()) {
-            reject!("Cannot have numbers in phrase!")
+
+        for c in self.word.chars() {
+            if !ALLOWED_CHARS.contains(&c) {
+                reject!("Char ({}) is not allowed to be sent to this api! Please try again.", c);
+            }
         }
 
         Ok(())

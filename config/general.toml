@@ -44,7 +44,7 @@ SPEED_MIN_VAL = 0.5
 # //TODO The API will eventually support whitelisting User's from this rate limit.
 # //TODO Setting this to -1 will disable ACC rate limiting.
 # Default: 2
-MAX_REQUESTS_ACC_THRESHOLD = 2
+MAX_REQUESTS_ACC_THRESHOLD = 5
 
 # The time period over which request rate limits apply.
 # Default: 5
@@ -63,3 +63,11 @@ JWT_EXPIRY_TIME_HOURS = 200
 # Supported formats can be found here: http://sox.sourceforge.net/AudioFormats-6.html
 # Default: [ "wav", "mp3", "aif" ]
 ALLOWED_FORMATS = [ "wav", "mp3", "aif" ]
+
+# The list of allowed chars that the user may provided in a phrase.
+# If the user attempts to send a char that is not present in this list, the request will be rejected
+# with a 400 response. 
+# Note that while you may add any chars, care should be taken to avoid certain chars, such as \, (), 
+# {}. Along with any chars that may be invalid on a unix filesystem.
+# Default: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'-()ĀāĒēĪīŌōŪū "
+ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'-()ĀāĒēĪīŌōŪū "

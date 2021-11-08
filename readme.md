@@ -21,7 +21,7 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
 
 ```sh
 git clone https://github.com/JosiahBull/festival-api
-cd ./https://github.com/JosiahBull/festival-api
+cd ./festival-api
 cp .example.env .env
 nano .env #Update required configuration options for TLS encryption
 

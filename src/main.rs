@@ -136,6 +136,29 @@ lazy_static! {
 
         res
     };
+
+    /// A hashset of chars that the api will accept as input.
+    static ref ALLOWED_CHARS: HashSet<char> = {
+        let path = "./config/general.toml";
+        let data = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", path, e));
+        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", path, e));
+
+        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", path));
+
+        let raw_string: String = table.get("ALLOWED_CHARS")
+            .unwrap_or_else(|| panic!("Unable to find ALLOWED_CHARS in {}", path))
+            .as_str()
+            .unwrap_or_else(|| panic!("ALLOWED_CHARS in {} is not a string!", path))
+            .to_owned();
+        
+        let mut res = HashSet::default();
+
+        raw_string.chars().for_each(|c| {
+            res.insert(c); 
+        });
+
+        res
+    };
 }
 
 // General Todos
@@ -255,7 +278,11 @@ async fn convert(
     common::log_request(&conn, token.sub, &phrase_package).await?;
 
     // Generate the phrase
-    let file_name_base = common::generate_random_alphanumeric(10);
+
+    // Create the basefile name to be stored on the system. The solution to this is to hash the provided 
+    // name into something that is always unique, but can be easily stored on the underlying system.
+    let temp = format!("{}_{}_{}", &phrase_package.word, &phrase_package.lang, &phrase_package.speed);
+    let file_name_base: String = common::sha_512_hash(&temp);
 
     let file_name_wav = format!("{}/{}.wav", *CACHE_PATH, &file_name_base,);
 
@@ -324,14 +351,6 @@ async fn convert(
 
     //Remove the link on the filesystem, note that as we have an opened NamedFile, that should persist.
     //See https://github.com/SergioBenitez/Rocket/issues/610 for more info.
-    //This is temporary pending development of a proper caching system.
-    if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&file_name_wav)).await {
-        failure!(
-            "Unable to remove temporary file from system prior to response {}",
-            e
-        )
-    };
-
     if file_name_wav != converted_file {
         if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&converted_file)).await {
             failure!(
@@ -368,7 +387,8 @@ fn rocket() -> _ {
     lazy_static::initialize(&MAX_REQUESTS_TIME_PERIOD_MINUTES);
     lazy_static::initialize(&SUPPORTED_LANGS);
     lazy_static::initialize(&ALLOWED_FORMATS);
-
+    lazy_static::initialize(&ALLOWED_CHARS);
+    
     rocket::build()
         .mount("/", routes![index, docs])
         .mount("/api/v1/", routes![login, create, convert])
@@ -684,6 +704,51 @@ mod rocket_tests {
             "attachment; filename=\"output.wav\""
         );
         assert_eq!(response.into_bytes().unwrap().len(), 63840);
+    }
+
+    #[test]
+    fn invalid_conversion_strings() {
+        //List of potentially "invalid" phrases to test
+        //When the sytem tries to create the file on the disk
+        //Note that we are *not* testing that the api rejects these strings, we are only testing
+        //That they don't cause a panic and we get a reasonable response (i.e. not 500)
+        let dangerous_phrases: [&str; 15] = [
+            "\\\\\\//////",
+            "\\",
+            ".",
+            ".mp4",
+            "something.png",
+            "\0",
+            "\0\0\00\0\\\\\\////\\\\/\\\0\0\0\0",
+            ">",
+            ">><<",
+            "|",
+            "||",
+            ":",
+            "&",
+            "&&",
+            "::",
+        ];
+        for phrase in dangerous_phrases {
+            let client = Client::tracked(rocket()).expect("valid rocket instance");
+            let (_, _, token) = create_test_account(&client);
+            let body = format!("{{
+                \"word\": \"{}\",
+                \"lang\": \"en\",
+                \"speed\": 1.0,
+                \"fmt\": \"wav\"
+            }}", phrase);
+
+            let response = client
+                .post(uri!("/api/v1/convert"))
+                .header(ContentType::new("application", "json"))
+                .header(Header::new("Authorisation", token.clone()))
+                .body(&body)
+                .dispatch();
+            
+            assert_ne!(response.status(), Status::InternalServerError);
+        }
+
     }
 
     #[test]

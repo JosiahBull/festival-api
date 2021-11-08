@@ -20,7 +20,7 @@ chrono = { version = "0.4.19", features = ["serde"] }
 rand = { version = "0.8.4" }
 dotenv = "0.15.0"
 priority-queue = { version = "1.2.0" }
-
+sha2 = "0.9.8"
 
 [dev-dependencies]
 futures = { version = "0.3.17" }
