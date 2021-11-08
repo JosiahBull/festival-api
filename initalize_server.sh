@@ -5,4 +5,4 @@ until diesel migration run --locked-schema; do
   sleep 5
 done
 
-/app/target/release/api
+/app/target/release/festival-api

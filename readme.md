@@ -16,14 +16,17 @@ and returns a file which may be streamed or played for a user.
 
 Detailed documentation on how to use the API can be found [here](https://josiahbull.github.io/festival-api/).
 
-## Deployment
-### Docker
+# Deployment
+## Docker
 
 ```sh
 git clone https://github.com/JosiahBull/festival-api
 cd ./https://github.com/JosiahBull/festival-api
 cp .example.env .env
 nano .env #Update required configuration options for TLS encryption
+
+nano ./config/general.toml #Update any general configuration options you wish to include.
+nano ./config/langs.toml #Update any special languages you wish to include (ensure to modify backend.Dockerfile to install them).
 
 docker volume create api-pgdata
 
@@ -32,7 +35,9 @@ chmod +x ./initalize_server.sh
 docker-compose --env-file .env up #This takes a long time
 ```
 
-## Development for Fedora
+# Development
+
+## Fedora
 
 To develop this api, you must have [Rust](https://www.rust-lang.org/tools/install) installed.
 
@@ -81,15 +86,15 @@ cargo test -- --test-threads 4
 cargo run
 ```
 
-## Contributing
+# Contributing
 
-### Code Guidelines
+## Code Guidelines
 **Please write tests** if we have good test coverage we can avoid any bugs down the line.
 
 
 Outside of this we use standard Rust formatting for code. This will be enforced through use of [clippy](https://github.com/rust-lang/rust-clippy) and [rustfmt](https://github.com/rust-lang/rustfmt).
 
-### Commit Guidelines
+## Commit Guidelines
 In all commits, please try to follow the [convention for commits](https://www.conventionalcommits.org/en/v1.0.0/#specification).
 
 Ideally aim to push every commit you make, rather than accumulating a large number of commits before pushing, this helps to keep everyone on the same
