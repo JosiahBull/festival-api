@@ -43,17 +43,17 @@ SPEED_MIN_VAL = 0.5
 # This can be set fairly aggressively.
 # //TODO The API will eventually support whitelisting User's from this rate limit.
 # //TODO Setting this to -1 will disable ACC rate limiting.
-# Default: 2
-MAX_REQUESTS_ACC_THRESHOLD = 5
+# Default: 40
+MAX_REQUESTS_ACC_THRESHOLD = 40
 
 # The time period over which request rate limits apply.
 # Default: 5
-MAX_REQUESTS_TIME_PERIOD_MINUTES = 1
+MAX_REQUESTS_TIME_PERIOD_MINUTES = 5
 
 # The number of hours a JWT token should be valid for before we require the user to 
 # revalidate their token.
-# Default: 200
-JWT_EXPIRY_TIME_HOURS = 200
+# Default: 720
+JWT_EXPIRY_TIME_HOURS = 720
 
 # The file formats that may be returned by the api.
 # A user may request their file in any one of these formats.
@@ -68,6 +68,6 @@ ALLOWED_FORMATS = [ "wav", "mp3", "aif" ]
 # If the user attempts to send a char that is not present in this list, the request will be rejected
 # with a 400 response. 
 # Note that while you may add any chars, care should be taken to avoid certain chars, such as \, (), 
-# {}. Along with any chars that may be invalid on a unix filesystem.
-# Default: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'-()ĀāĒēĪīŌōŪū "
-ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'-()ĀāĒēĪīŌōŪū "
+# {}. These should *theoretically* work and be esacped correctly, but introduce security concerns.
+# Default: "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'_-()ĀāĒēĪīŌōŪū "
+ALLOWED_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'_-()ĀāĒēĪīŌōŪū "

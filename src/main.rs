@@ -22,7 +22,7 @@ extern crate diesel;
 use std::{
     collections::{HashMap, HashSet},
     path::Path,
-    process::Command,
+    process::{Command, Stdio},
 };
 
 use diesel::prelude::*;
@@ -291,16 +291,40 @@ async fn convert(
 
     if !Path::new(&file_name_wav).exists() {
         // Generate a wav file if this file does not already exist.
-        // TODO make this secure!
-        let command = format!("echo \"{}\" | text2wave -eval \"({})\" -eval \"(Parameter.set 'Duration_Stretch {})\" -o '{}'",
-            &phrase_package.word,
-            &SUPPORTED_LANGS.get(&phrase_package.lang).unwrap().festival_code,
-            &phrase_package.speed,
-            &file_name_wav
-        );
-        //TODO refactor this erorr handling into another function
-        let word_gen = Command::new("bash").args(["-c", &command]).output();
 
+        let input = format!("\"{}\"", &phrase_package.word);
+
+        let echo_child = Command::new("echo")
+            .arg(input)
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("Failed to start echo process");
+
+        let echo_out = echo_child.stdout.expect("big sad");
+
+        let word_gen = Command::new("text2wave")
+            .arg("-eval")
+            .arg(format!(
+                "({})",
+                &SUPPORTED_LANGS
+                    .get(&phrase_package.lang)
+                    .unwrap()
+                    .festival_code
+            ))
+            .arg("-eval")
+            .arg(format!(
+                "(Parameter.set 'Duration_Stretch {})",
+                &phrase_package.speed
+            ))
+            .arg("-o")
+            .arg(&file_name_wav)
+            .stdin(Stdio::from(echo_out))
+            .spawn()
+            .expect("failed text2wave command");
+
+        let word_gen = word_gen.wait_with_output();
+
+        //TODO refactor this error handling into another function
         if let Err(e) = word_gen {
             failure!("Failed to generate wav from provided string. {}", e)
         }
@@ -761,12 +785,15 @@ mod rocket_tests {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let (_, _, token) = create_test_account(&client);
 
-        let body = "{
-            \"word\": \"The University of Auckland\",
+        let body = format!(
+            "{{
+            \"word\": \"The University of Auckland_{}\",
             \"lang\": \"en\",
             \"speed\": 1.0,
             \"fmt\": \"wav\"
-        }";
+        }}",
+            generate_random_alphanumeric(5)
+        );
 
         for _ in 0..*MAX_REQUESTS_ACC_THRESHOLD {
             //Test the generation of the .wav file
@@ -784,7 +811,15 @@ mod rocket_tests {
                     response.into_string().unwrap()
                 );
             }
+            assert_eq!(status, Status::Ok);
         }
+
+        let body = "{
+            \"word\": \"The University of Auckland\",
+            \"lang\": \"en\",
+            \"speed\": 1.0,
+            \"fmt\": \"wav\"
+        }";
 
         let response = client
             .post(uri!("/api/v1/convert"))
