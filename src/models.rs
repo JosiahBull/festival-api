@@ -263,15 +263,7 @@ mod tests {
         pack.validated().expect("a valid package");
 
         let mut pack = PhrasePackage {
-            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT)
-                .chars()
-                .map(|x| {
-                    if !x.is_numeric() {
-                        return x;
-                    }
-                    'a'
-                })
-                .collect(),
+            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT),
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL,
             fmt: String::from("mp3"),
@@ -339,15 +331,7 @@ mod tests {
 
         //Test string too long
         let mut pack = PhrasePackage {
-            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT + 1)
-                .chars()
-                .map(|x| {
-                    if !x.is_numeric() {
-                        return x;
-                    }
-                    'a'
-                })
-                .collect(),
+            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT + 1),
             lang: String::from("en"),
             speed: *SPEED_MIN_VAL,
             fmt: String::from("mp3"),
@@ -357,23 +341,13 @@ mod tests {
 
         //Test unsupported lang
         let mut pack = PhrasePackage {
-            word: String::from(""),
+            word: String::from("a wiord"),
             lang: String::from("adfadlfjalk"),
             speed: *SPEED_MIN_VAL,
             fmt: String::from("mp3"),
         };
 
         pack.validated().expect_err("should be invalid lang");
-
-        //Check that numbers in phrase fails
-        let mut pack = PhrasePackage {
-            word: String::from("adfae12312"),
-            lang: String::from("en"),
-            speed: *SPEED_MIN_VAL,
-            fmt: String::from("mp3"),
-        };
-
-        pack.validated().expect_err("should be too short");
     }
 
     #[test]
