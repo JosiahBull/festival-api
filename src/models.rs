@@ -201,7 +201,15 @@ impl<'r> FromRequest<'r> for Claims {
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Response> {
         //TODO improve the headers here, so we will check for Authorization along with Authorisation.
         //Should help the americanally challenged of us...
-        let auth_header = req.headers().get_one("Authorisation");
+        const ACCEPTED_HEADERS: [&'static str; 3] = ["authorisation", "authorization", "auth"];
+        let mut auth_header: Option<String> = None;
+
+        for header in req.headers().iter() {
+            if ACCEPTED_HEADERS.contains(&&header.name().as_str().trim().to_lowercase()[..]) {
+                auth_header = Some(header.value.to_string());
+            }
+        };
+
         if auth_header.is_none() {
             return request::Outcome::Failure((
                 Status::Unauthorized,
@@ -212,7 +220,7 @@ impl<'r> FromRequest<'r> for Claims {
             ));
         }
 
-        match Claims::parse_token(auth_header.unwrap()) {
+        match Claims::parse_token(&auth_header.unwrap()) {
             Ok(t) => {
                 //TODO validate the user hasn't been deleted (check db)
                 request::Outcome::Success(t)

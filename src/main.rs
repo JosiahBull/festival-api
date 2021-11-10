@@ -434,8 +434,6 @@ async fn convert(
     )))
 }
 
-// struct CacheFairing(crate::cache::Cache<String, models::GenerationRequest, NamedFile>);
-
 #[doc(hidden)]
 #[launch]
 fn rocket() -> _ {
@@ -524,6 +522,8 @@ mod a_rocket_tests {
         //Note that this test *must* run first. lazy_statics pollute the global environment when they run.
         //This means that if this test runs after another test which initalizes BLACKLISTED_PHRASES, it will fail.
         //I'm looking into a way to mitigate this -lazy_static- *really* shouldn't function this way in my opinion.
+        //Note that this can be fixed by wrapping all config options in RwLocks. However that can happen when:
+        //TODO split all configuration and test code up into individual modules.
 
         let replace_search = "BLACKLISTED_PHRASES = []";
         let replace_data = "BLACKLISTED_PHRASES = [\"test\", \" things \", \" stuff \"]";
@@ -1125,7 +1125,7 @@ mod a_rocket_tests {
         let response = client
             .post(uri!("/api/v1/convert"))
             .header(ContentType::new("application", "json"))
-            .header(Header::new("Authorization", token))
+            .header(Header::new("Authorizationadf", token))
             .body(&body)
             .dispatch();
 
