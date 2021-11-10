@@ -63,42 +63,45 @@ lazy_static! {
     static ref MAX_REQUESTS_TIME_PERIOD_MINUTES:usize = load_env!("MAX_REQUESTS_TIME_PERIOD_MINUTES");
     /// A list of supported speech languages by this api.
     static ref SUPPORTED_LANGS: HashMap<String, models::Language> = {
-        let path = "./config/langs.toml";
-        let data = std::fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to find {}", path));
-        let f = data.parse::<toml::Value>().unwrap_or_else(|_| panic!("Unable to parse `{}`", path));
+        let mut file_path = "./config/langs.toml";
+        if std::path::Path::new("./config/langs-test.toml").exists() {
+            file_path = "./config/langs-test.toml";
+        }
+        let data = std::fs::read_to_string(file_path).unwrap_or_else(|_| panic!("Unable to find {}", file_path));
+        let f = data.parse::<toml::Value>().unwrap_or_else(|_| panic!("Unable to parse `{}`", file_path));
 
         let languages: &toml::value::Table = f.get("lang")
-            .unwrap_or_else(|| panic!("Unable to parse {}, no langs provided!", path))
+            .unwrap_or_else(|| panic!("Unable to parse {}, no langs provided!", file_path))
             .as_table()
-            .unwrap_or_else(|| panic!("lang tag is not a table in {}", path));
+            .unwrap_or_else(|| panic!("lang tag is not a table in {}", file_path));
 
         let mut map: HashMap<String, models::Language> = HashMap::default();
         let keys: Vec<&String> = languages.keys().into_iter().collect();
         for key in keys {
             let lang = languages
                 .get(key)
-                .unwrap_or_else(|| panic!("Unable to parse lang {} from {}, is it correctly formatted?", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse lang {} from {}, is it correctly formatted?", key, file_path))
                 .as_table()
-                .unwrap_or_else(|| panic!("Unable to prase {} as table from {}", key, path));
+                .unwrap_or_else(|| panic!("Unable to prase {} as table from {}", key, file_path));
 
             let enabled = lang
                 .get("enabled")
-                .unwrap_or_else(|| panic!("Unable to parse enabled on {} from {}", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse enabled on {} from {}", key, file_path))
                 .as_bool()
-                .unwrap_or_else(|| panic!("{}'s enabled is not a boolean in {}", key, path));
+                .unwrap_or_else(|| panic!("{}'s enabled is not a boolean in {}", key, file_path));
 
             let festival_code = lang
                 .get("festival_code")
-                .unwrap_or_else(|| panic!("Unable to parse festival_code on {} from {}", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse festival_code on {} from {}", key, file_path))
                 .as_str()
-                .unwrap_or_else(|| panic!("{}'s festival_code is not a string in {}", key, path))
+                .unwrap_or_else(|| panic!("{}'s festival_code is not a string in {}", key, file_path))
                 .to_owned();
 
             let iso_691_code = lang
                 .get("iso_691-1_code")
-                .unwrap_or_else(|| panic!("Unable to parse iso-691-1_code on {} from {}", key, path))
+                .unwrap_or_else(|| panic!("Unable to parse iso-691-1_code on {} from {}", key, file_path))
                 .as_str()
-                .unwrap_or_else(|| panic!("{}'s iso_691-1_code is not a string in {}", key, path))
+                .unwrap_or_else(|| panic!("{}'s iso_691-1_code is not a string in {}", key, file_path))
                 .to_owned();
 
             map.insert(iso_691_code.clone(), models::Language {
@@ -113,42 +116,47 @@ lazy_static! {
     };
     /// The list of supported file-formats, note that wav is the preferred format due to lower cpu usage.
     static ref ALLOWED_FORMATS: HashSet<String> = {
-        let path = "./config/general.toml";
-        let data = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", path, e));
-        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", path, e));
+        let mut file_path = "./config/general.toml";
+        if std::path::Path::new("./config/general-test.toml").exists() {
+            file_path = "./config/general-test.toml";
+        }
+        let data = std::fs::read_to_string(file_path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
+        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
 
-        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", path));
+        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
 
         let formats = table.get("ALLOWED_FORMATS")
-            .unwrap_or_else(|| panic!("Unable to find ALLOWED_FORMATS in {}", path))
+            .unwrap_or_else(|| panic!("Unable to find ALLOWED_FORMATS in {}", file_path))
             .as_array()
-            .unwrap_or_else(|| panic!("ALLOWED_FORMATS in {} is not an array of strings!", path));
+            .unwrap_or_else(|| panic!("ALLOWED_FORMATS in {} is not an array of strings!", file_path));
 
         let mut res = HashSet::default();
 
         for format in formats {
             let string = format
                 .as_str()
-                .unwrap_or_else(|| panic!("ALLOWED_FORMATS in {} is not an array of strings!", path))
+                .unwrap_or_else(|| panic!("ALLOWED_FORMATS in {} is not an array of strings!", file_path))
                 .to_owned();
             res.insert(string);
         }
 
         res
     };
-
     /// A hashset of chars that the api will accept as input.
     static ref ALLOWED_CHARS: HashSet<char> = {
-        let path = "./config/general.toml";
-        let data = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", path, e));
-        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", path, e));
+        let mut file_path = "./config/general.toml";
+        if std::path::Path::new("./config/general-test.toml").exists() {
+            file_path = "./config/general-test.toml";
+        }
+        let data = std::fs::read_to_string(file_path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
+        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
 
-        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", path));
+        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
 
         let raw_string: String = table.get("ALLOWED_CHARS")
-            .unwrap_or_else(|| panic!("Unable to find ALLOWED_CHARS in {}", path))
+            .unwrap_or_else(|| panic!("Unable to find ALLOWED_CHARS in {}", file_path))
             .as_str()
-            .unwrap_or_else(|| panic!("ALLOWED_CHARS in {} is not a string!", path))
+            .unwrap_or_else(|| panic!("ALLOWED_CHARS in {} is not a string!", file_path))
             .to_owned();
 
         let mut res = HashSet::default();
@@ -156,6 +164,35 @@ lazy_static! {
         raw_string.chars().for_each(|c| {
             res.insert(c);
         });
+
+        res
+    };
+
+    static ref BLACKLISTED_PHRASES: Vec<String> = {
+        let mut file_path = "./config/general.toml";
+        if std::path::Path::new("./config/general-test.toml").exists() {
+            file_path = "./config/general-test.toml";
+        }
+
+        let data = std::fs::read_to_string(file_path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
+        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
+
+        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
+
+        let phrases = table.get("BLACKLISTED_PHRASES")
+            .unwrap_or_else(|| panic!("Unable to find BLACKLISTED_PHRASES in {}", file_path))
+            .as_array()
+            .unwrap_or_else(|| panic!("BLACKLISTED_PHRASES in {} is not an array of strings!", file_path));
+
+        let mut res = vec![];
+
+        for phrase in phrases {
+            let string = phrase
+                .as_str()
+                .unwrap_or_else(|| panic!("BLACKLISTED_PHRASES in {} is not an array of strings!", file_path))
+                .to_owned();
+            res.push(string);
+        }
 
         res
     };
@@ -415,6 +452,7 @@ fn rocket() -> _ {
     lazy_static::initialize(&SUPPORTED_LANGS);
     lazy_static::initialize(&ALLOWED_FORMATS);
     lazy_static::initialize(&ALLOWED_CHARS);
+    lazy_static::initialize(&BLACKLISTED_PHRASES);
 
     rocket::build()
         .mount("/", routes![index, docs])
@@ -424,11 +462,11 @@ fn rocket() -> _ {
 
 #[cfg(test)]
 #[cfg(not(tarpaulin_include))]
-mod rocket_tests {
+mod a_rocket_tests {
     use super::common::generate_random_alphanumeric;
     use super::models::{Claims, UserCredentials};
     use super::rocket;
-    use super::{ALLOWED_FORMATS, MAX_REQUESTS_ACC_THRESHOLD};
+    use super::{ALLOWED_FORMATS, BLACKLISTED_PHRASES, MAX_REQUESTS_ACC_THRESHOLD};
     use rocket::http::{ContentType, Header, Status};
     use rocket::local::blocking::Client;
 
@@ -451,7 +489,159 @@ mod rocket_tests {
         (body, body_json, create_response.into_string().unwrap())
     }
 
+    /// A simple struct which allows a property on toml to be changed.
+    struct AlteredToml(String);
+
+    impl AlteredToml {
+        // TODO make this smarter by allowing a key-value replace, rather than a specific string.
+        // This should maek the test more robust.
+        fn new(search: &str, replace: &str) -> Self {
+            let path = "./config/general.toml";
+            let data = std::fs::read_to_string(path).unwrap();
+
+            //Search through data
+            let new_str = data.replace(search, replace);
+
+            std::fs::write("./config/general-test.toml", new_str).unwrap();
+
+            //Save and return
+            AlteredToml(data)
+        }
+    }
+
+    impl Drop for AlteredToml {
+        fn drop(&mut self) {
+            std::fs::remove_file("./config/general-test.toml")
+                .expect("unable to remove general-test.toml after test! Please delete manually");
+        }
+    }
+
     //***** Test Methods *****//
+
+    #[test]
+    fn blacklist_filter() {
+        //HACK
+        //Note that this test *must* run first. lazy_statics pollute the global environment when they run.
+        //This means that if this test runs after another test which initalizes BLACKLISTED_PHRASES, it will fail.
+        //I'm looking into a way to mitigate this -lazy_static- *really* shouldn't function this way in my opinion.
+
+        let replace_search = "BLACKLISTED_PHRASES = []";
+        let replace_data = "BLACKLISTED_PHRASES = [\"test\", \" things \", \" stuff \"]";
+        let _t = AlteredToml::new(replace_search, replace_data);
+
+        lazy_static::initialize(&BLACKLISTED_PHRASES);
+
+        assert_eq!((*BLACKLISTED_PHRASES).len(), 3);
+
+        let test_client = Client::tracked(rocket()).expect("valid rocket instance");
+        let (_, _, token) = create_test_account(&test_client);
+
+        //Begin Test
+        //Simple test
+        let body = "{
+            \"word\": \"test\",
+            \"lang\": \"en\",
+            \"speed\": 1.0,
+            \"fmt\": \"wav\"
+        }";
+
+        let response = test_client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token.clone()))
+            .body(&body)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::BadRequest);
+        assert_eq!(
+            response.into_string().unwrap(),
+            "Blacklisted word! Phrase (test) is not allowed!"
+        );
+
+        //Test no spaces works
+        let body = "{
+            \"word\": \"adfadf-test-adfa\",
+            \"lang\": \"en\",
+            \"speed\": 1.0,
+            \"fmt\": \"wav\"
+        }";
+
+        let response = test_client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token.clone()))
+            .body(&body)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::BadRequest);
+        assert_eq!(
+            response.into_string().unwrap(),
+            "Blacklisted word! Phrase (test) is not allowed!"
+        );
+
+        //Check that no spaces works
+        let body = "{
+            \"word\": \"things\",
+            \"lang\": \"en\",
+            \"speed\": 1.0,
+            \"fmt\": \"wav\"
+        }";
+
+        let response = test_client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token.clone()))
+            .body(&body)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::BadRequest);
+        assert_eq!(
+            response.into_string().unwrap(),
+            "Blacklisted word! Phrase (things) is not allowed!"
+        );
+
+        //Check that spaces works
+        let body = "{
+            \"word\": \"vibes things my guy\",
+            \"lang\": \"en\",
+            \"speed\": 1.0,
+            \"fmt\": \"wav\"
+        }";
+
+        let response = test_client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token.clone()))
+            .body(&body)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::BadRequest);
+        assert_eq!(
+            response.into_string().unwrap(),
+            "Blacklisted word! Phrase (things) is not allowed!"
+        );
+
+        //Ensure multiple blocked words returns just the first
+        let body = "{
+            \"word\": \"testing things and stuff\",
+            \"lang\": \"en\",
+            \"speed\": 1.0,
+            \"fmt\": \"wav\"
+        }";
+
+        let response = test_client
+            .post(uri!("/api/v1/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token.clone()))
+            .body(&body)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::BadRequest);
+        assert_eq!(
+            response.into_string().unwrap(),
+            "Blacklisted word! Phrase (test) is not allowed!"
+        );
+    }
 
     #[test]
     fn test_index() {

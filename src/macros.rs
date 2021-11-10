@@ -142,7 +142,12 @@ macro_rules! load_env {
 
             //2. Attempt to load from /config/general.toml
             fn load_from_toml(name: &str) -> Result<toml::Value, String> {
-                let file_path = "./config/general.toml";
+                //if ./config/general-test.toml is available, we are in a testing env - load that instead
+                let mut file_path = "./config/general.toml";
+                if std::path::Path::new("./config/general-test.toml").exists() {
+                    file_path = "./config/general-test.toml";
+                }
+
                 let data = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;
                 let f = data.parse::<toml::Value>().map_err(|e| e.to_string())?;
 

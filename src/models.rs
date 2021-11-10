@@ -3,8 +3,8 @@ use crate::macros::reject;
 use crate::response::{Data, Response};
 use crate::schema::*;
 use crate::{
-    ALLOWED_CHARS, ALLOWED_FORMATS, JWT_EXPIRY_TIME_HOURS, JWT_SECRET, SPEED_MAX_VAL,
-    SPEED_MIN_VAL, SUPPORTED_LANGS, WORD_LENGTH_LIMIT,
+    ALLOWED_CHARS, ALLOWED_FORMATS, BLACKLISTED_PHRASES, JWT_EXPIRY_TIME_HOURS, JWT_SECRET,
+    SPEED_MAX_VAL, SPEED_MIN_VAL, SUPPORTED_LANGS, WORD_LENGTH_LIMIT,
 };
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -119,6 +119,17 @@ impl PhrasePackage {
         }
         if self.word.is_empty() {
             reject!("No word provided!")
+        }
+
+        //Validate that the nothing from the blacklist is present
+        let match_phrase = format!(" {} ", self.word);
+        for phrase in BLACKLISTED_PHRASES.iter() {
+            if match_phrase.contains(phrase) {
+                reject!(
+                    "Blacklisted word! Phrase ({}) is not allowed!",
+                    phrase.trim()
+                );
+            }
         }
 
         for c in self.word.chars() {

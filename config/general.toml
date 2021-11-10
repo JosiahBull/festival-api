@@ -71,3 +71,29 @@ ALLOWED_FORMATS = [ "wav", "mp3", "aif" ]
 # {}. These should *theoretically* work and be esacped correctly, but introduce security concerns.
 # Default: "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'_-()ĀāĒēĪīŌōŪū "
 ALLOWED_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'_-()ĀāĒēĪīŌōŪū "
+
+# A list of strings that the api will return 400 errors for if they are recieved in whole or part
+# as an attempted conversion phrase.
+#
+# You may choose between strict or loose blocking as shown below. Strings are matched exactly. 
+# Note that if one of your blocked strings contains a char which is not allowed as above, the api 
+# will ignore this blocked phrase upon startup.
+#
+# By default matches are case insensitive.
+#
+# Commonly, users may choose to block vulgar language. A good source for a word list is Uk's Ofcom:
+# https://www.ofcom.org.uk/__data/assets/pdf_file/0023/91625/OfcomQRG-AOC.pdf
+#
+# Examples:
+# BLACKLISTED_PHRASES = ["test"]
+# Blocked: "hello this is a test", "testing123", "other_phrasetestother_phrase", "TEST", "hi test hi"
+# Allowed: "t e s t", "t est"
+#
+# BLACKLISTED_PHRASES = [" test "]
+# Blocked: "hi test hi", "TEST", "hello this is a test"
+# Allowed: "t e s t", "t est", "testing123", "other_phrasetestother_phrase"
+#
+# Take care with what phrases you blacklist and why!
+#
+# Default: []
+BLACKLISTED_PHRASES = []
