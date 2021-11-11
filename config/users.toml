@@ -6,6 +6,6 @@
 # Each user must have their own entry
 #
 # Schema
-# [<username>]
+# ["<username>"]
 # apply-api-rate-limit = <true/false>
 #

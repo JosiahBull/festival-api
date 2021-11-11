@@ -6,12 +6,12 @@ use std::{
 };
 
 use rocket::{
-    fairing::{self, Fairing, Kind},
+    fairing::AdHoc,
     request::{self, FromRequest},
-    Build, Request, Rocket,
+    Request,
 };
 
-use crate::models::Language;
+use crate::models::{Language, UserSettings};
 
 //General Todos
 //TODO: Macroise a lot of the initalisation code to clean it up.
@@ -23,26 +23,21 @@ use crate::models::Language;
 const CONFIG_LOCATION: &str = "./config/";
 
 /// The different config paths we can load from
-enum PathType {
+pub enum PathType {
     General,
     Langs,
-    // Users,
+    Users,
 }
 
 impl PathType {
-    fn get_path(&self) -> String {
+    pub fn get_path(&self) -> String {
         let name = match *self {
             PathType::General => "general",
             PathType::Langs => "langs",
-            // PathType::Users => "users",
+            PathType::Users => "users",
         };
 
-        let testing_file = format!("{}/{}-test.toml", CONFIG_LOCATION, name);
-        if std::path::Path::new(&testing_file).exists() {
-            testing_file
-        } else {
-            format!("{}/{}.toml", CONFIG_LOCATION, name)
-        }
+        format!("{}/{}.toml", CONFIG_LOCATION, name)
     }
 }
 
@@ -93,34 +88,12 @@ macro_rules! load_env {
             let env_name: &str = $arg;
 
             //1. Attempt to load from env
-            //Attempt to load with truecase
             if let Ok(d) = var(env_name) {
                 return d.parse().expect("a parsed value");
             }
-            //Attempt to load with uppercase
-            if let Ok(d) = var(env_name.to_uppercase()) {
-                return d.parse().expect("a parsed value");
-            }
-            //Attempt to load with lowercase
-            if let Ok(d) = var(env_name.to_lowercase()) {
-                return d.parse().expect("a parsed value");
-            }
 
-            //2. Attempt to load from /config/general.toml
-            //Attempt to load with truecase
+            //2. Attempt to load from config location
             if let Ok(d) = load_from_toml(&env_name) {
-                if let Ok(v) = d.try_into() {
-                    return v;
-                }
-            }
-            //Attempt to load with uppercase
-            if let Ok(d) = load_from_toml(&env_name.to_uppercase()) {
-                if let Ok(v) = d.try_into() {
-                    return v;
-                }
-            }
-            //Attempt to load lowercase
-            if let Ok(d) = load_from_toml(&env_name.to_lowercase()) {
                 if let Ok(v) = d.try_into() {
                     return v;
                 }
@@ -135,8 +108,8 @@ macro_rules! load_env {
 
         load_val()
     }};
-    ($($arg:tt)*) => {
-        compile_error!("Too many arguments provided to load_env macro!");
+    ($arg:tt) => {
+        compile_error!("Type Not provided to macro!");
     };
 }
 
@@ -323,6 +296,42 @@ fn load_blacklisted_phrases() -> Vec<String> {
     res
 }
 
+fn load_custom_user_settings() -> HashMap<String, UserSettings> {
+    let file_path = PathType::Users.get_path();
+    let data = std::fs::read_to_string(&file_path)
+        .unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
+    let f = data
+        .parse::<toml::Value>()
+        .unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
+    let table = f
+        .as_table()
+        .unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
+
+    let mut res: HashMap<String, UserSettings> = HashMap::default();
+
+    for (name, _) in table {
+        let user_table = table
+            .get(name)
+            .expect("success")
+            .as_table()
+            .expect("a table");
+
+        let apply_api_rate_limit = user_table
+            .get("apply-api-rate-limit")
+            .expect("")
+            .as_bool()
+            .expect("");
+
+        let settings: UserSettings = UserSettings {
+            apply_api_rate_limit,
+        };
+
+        res.insert(name.to_string(), settings);
+    }
+
+    res
+}
+
 pub struct Config {
     /// The secret used for fast-hashing JWT's for validation.
     jwt_secret: String,
@@ -365,6 +374,9 @@ pub struct Config {
 
     /// A list of phrases that are not allowed on this api.
     blacklisted_phrases: Vec<String>,
+
+    /// A (short!) list of custom user settings. This should be used for lectures/tutors who need higher api rate limits for example.
+    user_settings: HashMap<String, UserSettings>,
 }
 
 impl Default for Config {
@@ -384,11 +396,13 @@ impl Default for Config {
             allowed_formats: load_allowed_formats(),
             allowed_chars: load_allowed_chars(),
             blacklisted_phrases: load_blacklisted_phrases(),
+            user_settings: load_custom_user_settings(),
         }
     }
 }
 
 //TODO make a getter macro which can automatically generate all these
+#[allow(non_snake_case)]
 impl Config {
     pub fn JWT_SECRET(&self) -> &str {
         &self.jwt_secret
@@ -445,32 +459,23 @@ impl Config {
     pub fn BLACKLISTED_PHRASES(&self) -> &[String] {
         &self.blacklisted_phrases
     }
+
+    pub fn USER_SETTINGS(&self) -> &HashMap<String, UserSettings> {
+        &self.user_settings
+    }
 }
 
 impl Config {
-    pub fn fairing() -> impl Fairing {
-        Config::default()
-    }
-}
+    pub fn fairing() -> AdHoc {
+        AdHoc::on_ignite("Custom Configuration Loader", |rocket| {
+            Box::pin(async move {
+                //Generate Config
+                let config = Config::default();
 
-#[async_trait]
-impl Fairing for Config {
-    fn info(&self) -> rocket::fairing::Info {
-        fairing::Info {
-            name: "Custom Configuration Loader",
-            kind: Kind::Ignite,
-        }
-    }
-
-    async fn on_ignite(&self, rocket: Rocket<Build>) -> fairing::Result {
-        //Generate Config
-        let config = Config::default();
-
-        //Save to State
-        let new_rocket = rocket.manage(config);
-
-        //Return our succesfully attached fairing!
-        fairing::Result::Ok(new_rocket)
+                //Save to State
+                rocket.manage(config)
+            })
+        })
     }
 }
 
@@ -478,23 +483,22 @@ impl Fairing for Config {
 impl<'r> FromRequest<'r> for &'r Config {
     type Error = Infallible;
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Infallible> {
-        let state = req.rocket().state::<Config>().unwrap();
+        let state = req
+            .rocket()
+            .state::<Config>()
+            .expect("Configuration Fairing Not Attached!");
         request::Outcome::Success(state)
     }
 }
 
-// #[cfg(test)]
-// #[cfg(not(tarpaulin_include))]
-// mod tests {
-//     use lazy_static::lazy_static;
-//     use load_env;
+#[cfg(test)]
+#[cfg(not(tarpaulin_include))]
+mod tests {
+    use load_env;
 
-//     #[test]
-//     #[should_panic]
-//     fn test_failed_env_load() {
-//         lazy_static! {
-//             static ref U: String = load_env!("this_value_does_not_exist123");
-//         }
-//         lazy_static::initialize(&U);
-//     }
-// }
+    #[test]
+    #[should_panic]
+    fn test_failed_env_load() {
+        let _: String = load_env!("this_value_does_not_exist123", String);
+    }
+}

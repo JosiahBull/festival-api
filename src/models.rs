@@ -10,6 +10,11 @@ use rocket::request::{self, FromRequest, Request};
 use rocket::serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// A struct which represents settings for a specific user.
+pub struct UserSettings {
+    pub apply_api_rate_limit: bool,
+}
+
 /// User credentials, to be used when logging in or creating a new account
 #[derive(Deserialize, Serialize, Insertable)]
 #[table_name = "users"]

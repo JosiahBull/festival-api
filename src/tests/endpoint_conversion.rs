@@ -1,22 +1,136 @@
 use super::common::*;
-use crate::config::Config;
+use crate::config::{Config, PathType};
 use crate::rocket;
 use rocket::http::{ContentType, Header, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
 
+/// Test that whitelisting users from the api ratelimits works correctly
 #[test]
-#[ignore]
-fn blacklist_filter() {
-    //HACK
-    //Note that this test *must* run first. lazy_statics pollute the global environment when they run.
-    //This means that if this test runs after another test which initalizes BLACKLISTED_PHRASES, it will fail.
-    //I'm looking into a way to mitigate this -lazy_static- *really* shouldn't function this way in my opinion.
-    //Note that this can be fixed by wrapping all config options in RwLocks. However that can happen when:
+fn ratelimit_whitelist_disabled() {
+    // Generate a client, create custom settings for them
+    let test_client = Client::tracked(rocket()).expect("valid rocket instance");
+    let (creds, _, token) = create_test_account(&test_client);
+    let replace_search = "# apply-api-rate-limit = <true/false>";
+    let replace_data = format!("\"{}\" = {{ apply-api-rate-limit = false }}", creds.usr);
 
+    let _t = AlteredToml::new(replace_search, &replace_data, PathType::Users);
+
+    let client = Client::tracked(rocket()).expect("valid rocket instance");
+
+    // Begin test, this user should be exempt from rate limits now!
+    let cfg: &Config = client.rocket().state::<Config>().unwrap();
+
+    let body = "{
+        \"word\": \"The University of Auckland\",
+        \"lang\": \"en\",
+        \"speed\": 1.0,
+        \"fmt\": \"wav\"
+    }";
+
+    for _ in 0..cfg.MAX_REQUESTS_ACC_THRESHOLD()+5 {
+        //Test the generation of the .wav file
+        let response = client
+            .post(uri!("/api/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token.clone()))
+            .body(&body)
+            .dispatch();
+        let status = response.status();
+        if status != Status::Ok {
+            panic!(
+                "Failed with status {} \nBody: \n{}\n",
+                status,
+                response.into_string().unwrap()
+            );
+        }
+        assert_eq!(status, Status::Ok);
+    }
+
+    let response = client
+        .post(uri!("/api/convert"))
+        .header(ContentType::new("application", "json"))
+        .header(Header::new("Authorisation", token))
+        .body(&body)
+        .dispatch();
+
+    let status = response.status();
+    if status != Status::Ok {
+        panic!(
+            "Failed with status {} \nBody: \n{}\n",
+            status,
+            response.into_string().unwrap()
+        );
+    }
+
+    //Validate that the ratelimit still applies for another user
+    test_limits()
+}
+
+#[test]
+fn ratelimit_whitelist_success() {
+    // Generate a client, create custom settings for them
+    let test_client = Client::tracked(rocket()).expect("valid rocket instance");
+    let (creds, _, token) = create_test_account(&test_client);
+    let replace_search = "# apply-api-rate-limit = <true/false>";
+    let replace_data = format!("\"{}\" = {{ apply-api-rate-limit = true }}", creds.usr);
+
+    let _t = AlteredToml::new(replace_search, &replace_data, PathType::Users);
+
+    let client = Client::tracked(rocket()).expect("valid rocket instance");
+
+    // Begin test, this user should be exempt from rate limits now!
+    let cfg: &Config = client.rocket().state::<Config>().unwrap();
+
+    let body = "{
+        \"word\": \"The University of Auckland\",
+        \"lang\": \"en\",
+        \"speed\": 1.0,
+        \"fmt\": \"wav\"
+    }";
+
+    for _ in 0..cfg.MAX_REQUESTS_ACC_THRESHOLD() {
+        //Test the generation of the .wav file
+        let response = client
+            .post(uri!("/api/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token.clone()))
+            .body(&body)
+            .dispatch();
+        let status = response.status();
+        if status != Status::Ok {
+            panic!(
+                "Failed with status {} \nBody: \n{}\n",
+                status,
+                response.into_string().unwrap()
+            );
+        }
+        assert_eq!(status, Status::Ok);
+    }
+
+    let response = client
+        .post(uri!("/api/convert"))
+        .header(ContentType::new("application", "json"))
+        .header(Header::new("Authorisation", token))
+        .body(&body)
+        .dispatch();
+
+    let status = response.status();
+    if status != Status::TooManyRequests {
+        panic!(
+            "Failed with status {} \nBody: \n{}\n",
+            status,
+            response.into_string().unwrap()
+        );
+    }
+}
+
+/// Test that the word blacklist works correctly
+#[test]
+fn blacklist_filter() {
     let replace_search = "BLACKLISTED_PHRASES = []";
     let replace_data = "BLACKLISTED_PHRASES = [\"test\", \" things \", \" stuff \"]";
-    let _t = AlteredToml::new(replace_search, replace_data);
+    let _t = AlteredToml::new(replace_search, replace_data, PathType::General);
 
     let test_client = Client::tracked(rocket()).expect("valid rocket instance");
     let (_, _, token) = create_test_account(&test_client);

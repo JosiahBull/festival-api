@@ -11,8 +11,8 @@ use rand::{thread_rng, Rng};
 use rocket::http::Status;
 use sha2::Digest;
 
-use crate::DbConn;
 use crate::{config::Config, macros::failure};
+use crate::{macros::reject, DbConn};
 use response::{Data, Response};
 
 /// Hash a string with a random salt to be stored in the database. Utilizing the argon2id algorithm
@@ -160,6 +160,18 @@ pub async fn is_user_timed_out(conn: &DbConn, usr_id: i32, cfg: &Config) -> Resu
     let reqs: Vec<crate::models::GenerationRequest> =
         load_recent_requests(conn, usr_id, cfg.MAX_REQUESTS_ACC_THRESHOLD()).await?;
     if reqs.len() >= cfg.MAX_REQUESTS_ACC_THRESHOLD() {
+        //If this user is exempt from rate limits, enforce that now!
+        let user = find_user_in_db(conn, SearchItem::Id(usr_id)).await?;
+        if let Some(user) = user {
+            if let Some(settings) = cfg.USER_SETTINGS().get(&user.usr) {
+                if !settings.apply_api_rate_limit {
+                    return Ok(());
+                }
+            }
+        } else {
+            reject!("User does not exist!");
+        }
+
         //Validate that this user hasn't made too many requests
         let earliest_req_time = get_time_since(reqs.last().unwrap().crt);
         let max_req_time_duration =

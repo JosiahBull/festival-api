@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use crate::config::PathType;
 use crate::models::UserCredentials;
 use crate::rocket;
 use rand::{thread_rng, Rng};
@@ -27,24 +28,35 @@ pub fn create_test_account(client: &Client) -> (UserCredentials, String, String)
 }
 
 /// A simple struct which allows a property on toml to be changed.
-pub struct AlteredToml(String);
+pub struct AlteredToml(PathType, String);
 
 impl AlteredToml {
     // TODO make this smarter by allowing a key-value replace, rather than a specific string.
-    // This should maek the test more robust.
-    pub fn new(search: &str, replace: &str) -> Self {
-        let path = "./config/general.toml";
-        let data = std::fs::read_to_string(path).unwrap();
+    // This should make the test more robust.
+    pub fn new(search: &str, replace: &str, p_type: PathType) -> Self {
+        let path = p_type.get_path();
+        let data = std::fs::read_to_string(&path).unwrap();
 
         //Search through data
         let new_str = data.replace(search, replace);
 
-        std::fs::write("./config/general-test.toml", new_str).unwrap();
+        //Save data
+        std::fs::write(&path, new_str).unwrap();
 
         //Save and return
-        AlteredToml(data)
+        AlteredToml(p_type, data)
     }
 }
+
+impl Drop for AlteredToml {
+    fn drop(&mut self) {
+        let path = self.0.get_path();
+        std::fs::write(&path, &self.1).unwrap_or_else(|e| {
+            panic!("Unable to reset file {} after test due to error {}", path, e)
+        })
+    }
+}
+
 
 /// Generate a randomised alphanumeric (base 62) string of a requested length.
 pub fn generate_random_alphanumeric(length: usize) -> String {
@@ -67,12 +79,5 @@ fn test_generate_random_alphanumeric() {
             panic!("Duplicate key found in set");
         }
         set.insert(s);
-    }
-}
-
-impl Drop for AlteredToml {
-    fn drop(&mut self) {
-        std::fs::remove_file("./config/general-test.toml")
-            .expect("unable to remove general-test.toml after test! Please delete manually");
     }
 }
