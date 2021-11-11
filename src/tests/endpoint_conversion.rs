@@ -1,9 +1,9 @@
+use super::common::*;
+use crate::config::Config;
 use crate::rocket;
-use crate::{ALLOWED_FORMATS, BLACKLISTED_PHRASES, MAX_REQUESTS_ACC_THRESHOLD};
 use rocket::http::{ContentType, Header, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
-use super::common::*;
 
 #[test]
 #[ignore]
@@ -18,10 +18,6 @@ fn blacklist_filter() {
     let replace_data = "BLACKLISTED_PHRASES = [\"test\", \" things \", \" stuff \"]";
     let _t = AlteredToml::new(replace_search, replace_data);
 
-    lazy_static::initialize(&BLACKLISTED_PHRASES);
-
-    assert_eq!((*BLACKLISTED_PHRASES).len(), 3);
-
     let test_client = Client::tracked(rocket()).expect("valid rocket instance");
     let (_, _, token) = create_test_account(&test_client);
 
@@ -35,7 +31,7 @@ fn blacklist_filter() {
     }";
 
     let response = test_client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorisation", token.clone()))
         .body(&body)
@@ -56,7 +52,7 @@ fn blacklist_filter() {
     }";
 
     let response = test_client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorisation", token.clone()))
         .body(&body)
@@ -77,7 +73,7 @@ fn blacklist_filter() {
     }";
 
     let response = test_client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorisation", token.clone()))
         .body(&body)
@@ -98,7 +94,7 @@ fn blacklist_filter() {
     }";
 
     let response = test_client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorisation", token.clone()))
         .body(&body)
@@ -119,7 +115,7 @@ fn blacklist_filter() {
     }";
 
     let response = test_client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorisation", token.clone()))
         .body(&body)
@@ -146,7 +142,7 @@ fn success_conversion() {
 
     //Test the generation of the .wav file
     let response = client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorisation", token))
         .body(&body)
@@ -210,7 +206,7 @@ fn invalid_conversion_strings() {
         );
 
         let response = client
-            .post(uri!("/api/v1/convert"))
+            .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
             .header(Header::new("Authorisation", token.clone()))
             .body(&body)
@@ -235,10 +231,12 @@ fn test_limits() {
         generate_random_alphanumeric(5)
     );
 
-    for _ in 0..*MAX_REQUESTS_ACC_THRESHOLD {
+    let cfg: &Config = client.rocket().state::<Config>().unwrap();
+
+    for _ in 0..cfg.MAX_REQUESTS_ACC_THRESHOLD() {
         //Test the generation of the .wav file
         let response = client
-            .post(uri!("/api/v1/convert"))
+            .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
             .header(Header::new("Authorisation", token.clone()))
             .body(&body)
@@ -262,7 +260,7 @@ fn test_limits() {
     }";
 
     let response = client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorisation", token))
         .body(&body)
@@ -287,7 +285,8 @@ fn test_limits() {
 /// Validate that all file format options work as intended
 #[test]
 fn test_every_format() {
-    for format in ALLOWED_FORMATS.iter() {
+    let cfg: Config = Config::default();
+    for format in cfg.ALLOWED_FORMATS().iter() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let (_, _, token) = create_test_account(&client);
 
@@ -303,7 +302,7 @@ fn test_every_format() {
 
         //Generate a 'generic' file and validate the response is correct
         let response = client
-            .post(uri!("/api/v1/convert"))
+            .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
             .header(Header::new("Authorisation", token))
             .body(&body)
@@ -346,7 +345,7 @@ fn test_invalid_auth_tokens() {
 
     //Test No Header
     let response = client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .body(&body)
         .dispatch();
@@ -362,7 +361,7 @@ fn test_invalid_auth_tokens() {
     let bad_token = format!("a{}", &token);
 
     let response = client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorisation", bad_token))
         .body(&body)
@@ -373,7 +372,7 @@ fn test_invalid_auth_tokens() {
 
     //Test Invalid Header
     let response = client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorizationadf", token))
         .body(&body)
@@ -401,7 +400,7 @@ fn test_invalid_formats() {
 
     //Generate a 'generic' file and validate the response is correct
     let response = client
-        .post(uri!("/api/v1/convert"))
+        .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
         .header(Header::new("Authorisation", token))
         .body(&body)

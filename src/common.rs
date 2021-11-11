@@ -11,10 +11,9 @@ use rand::{thread_rng, Rng};
 use rocket::http::Status;
 use sha2::Digest;
 
-use crate::macros::failure;
-use response::{Data, Response};
 use crate::DbConn;
-use crate::config::{MAX_REQUESTS_ACC_THRESHOLD, MAX_REQUESTS_TIME_PERIOD_MINUTES};
+use crate::{config::Config, macros::failure};
+use response::{Data, Response};
 
 /// Hash a string with a random salt to be stored in the database. Utilizing the argon2id algorithm
 /// Followed best practices as laid out here: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
@@ -157,14 +156,14 @@ pub async fn load_recent_requests(
 /// Returns Ok(()) if the user is not timed out.
 /// If the user is timed out returns Err(Response) with a custom message containing
 /// the number of seconds the user has left before becoming non-timed out.
-pub async fn is_user_timed_out(conn: &DbConn, usr_id: i32) -> Result<(), Response> {
+pub async fn is_user_timed_out(conn: &DbConn, usr_id: i32, cfg: &Config) -> Result<(), Response> {
     let reqs: Vec<crate::models::GenerationRequest> =
-        load_recent_requests(conn, usr_id, *MAX_REQUESTS_ACC_THRESHOLD).await?;
-    if reqs.len() >= *MAX_REQUESTS_ACC_THRESHOLD {
+        load_recent_requests(conn, usr_id, cfg.MAX_REQUESTS_ACC_THRESHOLD()).await?;
+    if reqs.len() >= cfg.MAX_REQUESTS_ACC_THRESHOLD() {
         //Validate that this user hasn't made too many requests
         let earliest_req_time = get_time_since(reqs.last().unwrap().crt);
         let max_req_time_duration =
-            chrono::Duration::minutes(*MAX_REQUESTS_TIME_PERIOD_MINUTES as i64);
+            chrono::Duration::minutes(cfg.MAX_REQUESTS_TIME_PERIOD_MINUTES() as i64);
 
         if earliest_req_time < max_req_time_duration {
             return Err(Response::TextErr(Data {

@@ -1,9 +1,10 @@
+use super::common::*;
+use crate::config::Config;
 use crate::models::{Claims, UserCredentials};
 use crate::rocket;
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
-use super::common::*;
 
 #[test]
 fn login_success() {
@@ -12,7 +13,7 @@ fn login_success() {
 
     //Attempt to login
     let response = client
-        .post(uri!("/api/v1/login"))
+        .post(uri!("/api/login"))
         .header(ContentType::new("application", "json"))
         .body(&body_json)
         .dispatch();
@@ -26,8 +27,10 @@ fn login_success() {
         "text/plain; charset=utf-8"
     );
 
+    let cfg: &Config = client.rocket().state::<Config>().unwrap();
+
     let token = response.into_string().unwrap();
-    let _ = Claims::parse_token(&token).expect("a valid token");
+    let _ = Claims::parse_token(&token, cfg).expect("a valid token");
 }
 
 #[test]
@@ -40,7 +43,7 @@ fn login_failures() {
 
     //Login with incorrect username
     let response = client
-        .post(uri!("/api/v1/login"))
+        .post(uri!("/api/login"))
         .header(ContentType::new("application", "json"))
         .body(&wrong_username_body)
         .dispatch();
@@ -59,7 +62,7 @@ fn login_failures() {
     );
 
     let response = client
-        .post(uri!("/api/v1/login"))
+        .post(uri!("/api/login"))
         .header(ContentType::new("application", "json"))
         .body(&wrong_password_body)
         .dispatch();
@@ -95,7 +98,7 @@ fn create_failure_password_short() {
 
     //Create the account we wish to log into
     let response = client
-        .post(uri!("/api/v1/create"))
+        .post(uri!("/api/create"))
         .header(ContentType::new("application", "json"))
         .body(&body_json)
         .dispatch();
@@ -122,7 +125,7 @@ fn create_failure_password_long() {
 
     //Create the account we wish to log into
     let response = client
-        .post(uri!("/api/v1/create"))
+        .post(uri!("/api/create"))
         .header(ContentType::new("application", "json"))
         .body(&body_json)
         .dispatch();
@@ -149,7 +152,7 @@ fn create_failure_taken() {
 
     //Create an account - shoudl succeed
     let response = client
-        .post(uri!("/api/v1/create"))
+        .post(uri!("/api/create"))
         .header(ContentType::new("application", "json"))
         .body(&body_json)
         .dispatch();
@@ -170,12 +173,14 @@ fn create_failure_taken() {
         "text/plain; charset=utf-8"
     );
 
+    let cfg: &Config = client.rocket().state::<Config>().unwrap();
+
     let token = response.into_string().unwrap();
-    let _ = Claims::parse_token(&token).expect("a valid token");
+    let _ = Claims::parse_token(&token, cfg).expect("a valid token");
 
     //Attempt to create account with same username - should fail
     let response = client
-        .post(uri!("/api/v1/create"))
+        .post(uri!("/api/create"))
         .header(ContentType::new("application", "json"))
         .body(&body_json)
         .dispatch();

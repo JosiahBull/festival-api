@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::models::UserCredentials;
 use crate::rocket;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
@@ -17,7 +17,7 @@ pub fn create_test_account(client: &Client) -> (UserCredentials, String, String)
 
     //Create the account we wish to log into
     let create_response = client
-        .post(uri!("/api/v1/create"))
+        .post(uri!("/api/create"))
         .header(ContentType::new("application", "json"))
         .body(&body_json)
         .dispatch();

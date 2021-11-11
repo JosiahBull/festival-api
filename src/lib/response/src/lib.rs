@@ -1,7 +1,6 @@
 mod response;
 pub use crate::response::*;
 
-
 #[cfg(not(tarpaulin_include))]
 #[cfg(test)]
 mod tests {

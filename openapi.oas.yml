@@ -50,7 +50,7 @@ paths:
       responses:
         '200':
           description: A webpage containing information about the api.
-  /api/v1/convert:
+  /api/convert:
     post:
       summary: Convert a phrase into a .wav or .mp3 file.
       parameters:
@@ -104,7 +104,7 @@ paths:
         '500':
           description: Panic! Something has gone horribly wrong on our end. Please open an issue at https://github.com/JosiahBull/festival-api.
 
-  /api/v1/login:
+  /api/login:
     post:
       summary: Login to your account, and collect an access token in the form of a JWT.
       requestBody:
@@ -137,7 +137,7 @@ paths:
         '500':
           description: Panic! Something has gone horribly wrong on our end. Please open an issue at https://github.com/JosiahBull/festival-api.
 
-  /api/v1/create:
+  /api/create:
     post:
       summary: Create a new account, for now this does not require anything special but may require a special token in the future.
       requestBody:

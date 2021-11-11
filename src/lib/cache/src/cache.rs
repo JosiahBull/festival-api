@@ -12,9 +12,9 @@
 //! The API for this cache is designed to be flexible and reusable, so it makes extensive use of generics.
 //! This means that to use it expect to have to implement functions to pass into the api.
 
+use async_trait::async_trait;
 use priority_queue::DoublePriorityQueue;
 use std::{collections::HashMap, hash::Hash, io::ErrorKind, marker::PhantomData};
-use async_trait::async_trait;
 
 /// The number of bytes in a mb.
 const BYTES_IN_MB: usize = 1_000_000;
@@ -283,9 +283,9 @@ mod test {
     use priority_queue::DoublePriorityQueue;
 
     use super::{Cachable, Cache, Info};
-    use tokio;
-    use std::{collections::HashMap, marker::PhantomData};
     use async_trait::async_trait;
+    use std::{collections::HashMap, marker::PhantomData};
+    use tokio;
 
     #[derive(Debug, PartialEq, Clone)]
     struct Item {

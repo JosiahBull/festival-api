@@ -1,14 +1,15 @@
 //! Various objects, including database objects, for the api.
+use crate::config::Config;
 use crate::macros::reject;
-use response::{Data, Response};
 use crate::schema::*;
-use crate::config::*;
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use response::{Data, Response};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest, Request};
 use rocket::serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
+
 /// User credentials, to be used when logging in or creating a new account
 #[derive(Deserialize, Serialize, Insertable)]
 #[table_name = "users"]
@@ -77,13 +78,14 @@ impl PhrasePackage {
     /// - Phrase too long
     /// - Phrase contains invalid chars (TBD) //TODO
     /// - Phrase contains invalid phrases
-    pub fn validated(&mut self) -> Result<(), Response> {
+    pub fn validated(&mut self, cfg: &Config) -> Result<(), Response> {
         //Attempt to correct speed values
-        if self.speed > *SPEED_MAX_VAL {
-            self.speed = *SPEED_MAX_VAL;
+
+        if self.speed > cfg.SPEED_MAX_VAL() {
+            self.speed = cfg.SPEED_MAX_VAL();
         }
-        if self.speed < *SPEED_MIN_VAL {
-            self.speed = *SPEED_MIN_VAL;
+        if self.speed < cfg.SPEED_MIN_VAL() {
+            self.speed = cfg.SPEED_MIN_VAL();
         }
         if self.speed % 0.5 != 0.0 {
             self.speed *= 2.0;
@@ -92,7 +94,7 @@ impl PhrasePackage {
         }
 
         //Check language selection is valid
-        if !SUPPORTED_LANGS.contains_key(&self.lang) {
+        if !cfg.SUPPORTED_LANGS().contains_key(&self.lang) {
             reject!(
                 "Provided lang ({}) is not supported by this api!",
                 &self.lang
@@ -100,7 +102,7 @@ impl PhrasePackage {
         }
 
         //Validate fild format selection
-        if !ALLOWED_FORMATS.contains(&self.fmt) {
+        if !cfg.ALLOWED_FORMATS().contains(&self.fmt) {
             reject!(
                 "Requested format ({}) is not supported by this api!",
                 &self.fmt
@@ -108,10 +110,10 @@ impl PhrasePackage {
         }
 
         //Check that provided phrase is valid
-        if self.word.len() > *WORD_LENGTH_LIMIT {
+        if self.word.len() > cfg.WORD_LENGTH_LIMIT() {
             reject!(
                 "Phrase is too long! Greater than {} chars",
-                *WORD_LENGTH_LIMIT
+                cfg.WORD_LENGTH_LIMIT()
             )
         }
         if self.word.is_empty() {
@@ -120,7 +122,7 @@ impl PhrasePackage {
 
         //Validate that the nothing from the blacklist is present
         let match_phrase = format!(" {} ", self.word);
-        for phrase in BLACKLISTED_PHRASES.iter() {
+        for phrase in cfg.BLACKLISTED_PHRASES().iter() {
             if match_phrase.contains(phrase) {
                 reject!(
                     "Blacklisted word! Phrase ({}) is not allowed!",
@@ -130,7 +132,7 @@ impl PhrasePackage {
         }
 
         for c in self.word.chars() {
-            if !ALLOWED_CHARS.contains(&c) {
+            if !cfg.ALLOWED_CHARS().contains(&c) {
                 reject!(
                     "Char ({}) is not allowed to be sent to this api! Please try again.",
                     c
@@ -163,29 +165,29 @@ pub struct Claims {
 
 impl Claims {
     /// Create a new JWT, when provided with the id of the user.
-    pub fn new_token(sub: i32) -> String {
+    pub fn new_token(sub: i32, cfg: &Config) -> String {
         let curr_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards!")
             .as_secs() as usize;
         let c: Claims = Claims {
-            exp: curr_time + *JWT_EXPIRY_TIME_HOURS * 60 * 60,
+            exp: curr_time + cfg.JWT_EXPIRY_TIME_HOURS() * 60 * 60,
             iat: curr_time,
             sub,
         };
         encode(
             &Header::default(),
             &c,
-            &EncodingKey::from_secret((*JWT_SECRET).as_ref()),
+            &EncodingKey::from_secret(cfg.JWT_SECRET().as_ref()),
         )
         .unwrap() //TODO fix unwraps
     }
 
     ///Attempt to parse claims from a token
-    pub fn parse_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    pub fn parse_token(token: &str, cfg: &Config) -> Result<Claims, jsonwebtoken::errors::Error> {
         decode::<Claims>(
             token,
-            &DecodingKey::from_secret((*JWT_SECRET).as_ref()),
+            &DecodingKey::from_secret(cfg.JWT_SECRET().as_ref()),
             &Validation::default(),
         )
         .map(|o| o.claims)
@@ -205,7 +207,7 @@ impl<'r> FromRequest<'r> for Claims {
             if ACCEPTED_HEADERS.contains(&&header.name().as_str().trim().to_lowercase()[..]) {
                 auth_header = Some(header.value.to_string());
             }
-        };
+        }
 
         if auth_header.is_none() {
             return request::Outcome::Failure((
@@ -217,7 +219,9 @@ impl<'r> FromRequest<'r> for Claims {
             ));
         }
 
-        match Claims::parse_token(&auth_header.unwrap()) {
+        let cfg: &Config = req.rocket().state::<Config>().unwrap(); //HACK
+
+        match Claims::parse_token(&auth_header.unwrap(), cfg) {
             Ok(t) => {
                 //TODO validate the user hasn't been deleted (check db)
                 request::Outcome::Success(t)
@@ -237,16 +241,18 @@ impl<'r> FromRequest<'r> for Claims {
 #[cfg(not(tarpaulin_include))]
 mod tests {
     use super::{Claims, PhrasePackage};
-    use super::{ALLOWED_FORMATS, SPEED_MAX_VAL, SPEED_MIN_VAL, WORD_LENGTH_LIMIT};
     use crate::common::generate_random_alphanumeric;
+    use crate::config::Config;
 
     #[test]
     fn create_new_token() {
         let _time_tolerance_seconds = 2;
 
+        let cfg = Config::default();
+
         let usr_id = 459;
-        let token = Claims::new_token(usr_id);
-        let claims = Claims::parse_token(&token).expect("a valid token");
+        let token = Claims::new_token(usr_id, &cfg);
+        let claims = Claims::parse_token(&token, &cfg).expect("a valid token");
 
         assert_eq!(claims.sub, usr_id);
         //TODO validate time claims on the token
@@ -254,69 +260,72 @@ mod tests {
 
     #[test]
     fn validate_success_package() {
-        let mut pack = PhrasePackage {
-            word: String::from("Hello, world!"),
-            lang: String::from("en"),
-            speed: *SPEED_MAX_VAL,
-            fmt: String::from("mp3"),
-        };
-        pack.validated().expect("a valid package");
+        let cfg = Config::default();
 
         let mut pack = PhrasePackage {
             word: String::from("Hello, world!"),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL,
+            speed: cfg.SPEED_MAX_VAL(),
             fmt: String::from("mp3"),
         };
-        pack.validated().expect("a valid package");
+        pack.validated(&cfg).expect("a valid package");
+
+        let mut pack = PhrasePackage {
+            word: String::from("Hello, world!"),
+            lang: String::from("en"),
+            speed: cfg.SPEED_MIN_VAL(),
+            fmt: String::from("mp3"),
+        };
+        pack.validated(&cfg).expect("a valid package");
 
         let mut pack = PhrasePackage {
             word: String::from("H"),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL,
+            speed: cfg.SPEED_MIN_VAL(),
             fmt: String::from("mp3"),
         };
-        pack.validated().expect("a valid package");
+        pack.validated(&cfg).expect("a valid package");
 
         let mut pack = PhrasePackage {
-            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT),
+            word: generate_random_alphanumeric(cfg.WORD_LENGTH_LIMIT()),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL,
+            speed: cfg.SPEED_MIN_VAL(),
             fmt: String::from("mp3"),
         };
-        pack.validated().expect("a valid package");
+        pack.validated(&cfg).expect("a valid package");
     }
 
     #[test]
     #[allow(clippy::float_cmp)]
     fn validate_correction_package() {
+        let cfg = Config::default();
         // Validate the min value correct is in place!
 
         //We can't run this test if the min value is 0.0!
-        if *SPEED_MIN_VAL <= 0.0 {
+        if cfg.SPEED_MIN_VAL() <= 0.0 {
             panic!("WARNING: TEST UNABLE TO BE RUN AS SPEED_MIN_VAL < 0.0!");
         }
 
         let mut pack = PhrasePackage {
             word: String::from("Hello, world!"),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL - 0.1,
+            speed: cfg.SPEED_MIN_VAL() - 0.1,
             fmt: String::from("mp3"),
         };
 
         // Validate the max value correct is in place!
-        pack.validated().expect("a valid package");
-        assert_eq!(pack.speed, *SPEED_MIN_VAL);
+        pack.validated(&cfg).expect("a valid package");
+        assert_eq!(pack.speed, cfg.SPEED_MIN_VAL());
 
         let mut pack = PhrasePackage {
             word: String::from("Hello, world!"),
             lang: String::from("en"),
-            speed: *SPEED_MAX_VAL + 0.1,
+            speed: cfg.SPEED_MAX_VAL() + 0.1,
             fmt: String::from("mp3"),
         };
 
-        pack.validated().expect("a valid package");
-        assert_eq!(pack.speed, *SPEED_MAX_VAL);
+        pack.validated(&cfg).expect("a valid package");
+        assert_eq!(pack.speed, cfg.SPEED_MAX_VAL());
 
         // Validate the 0.5 rounding is in place!
         for i in 0..100 {
@@ -327,7 +336,7 @@ mod tests {
                 fmt: String::from("mp3"),
             };
 
-            pack.validated().expect("a valid package");
+            pack.validated(&cfg).expect("a valid package");
 
             assert_eq!(pack.speed % 0.5, 0.0);
         }
@@ -335,46 +344,50 @@ mod tests {
 
     #[test]
     fn validate_failure_package() {
+        let cfg = Config::default();
+
         // Validate that empty string fails
         let mut pack = PhrasePackage {
             word: String::from(""),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL,
+            speed: cfg.SPEED_MIN_VAL(),
             fmt: String::from("mp3"),
         };
 
-        pack.validated().expect_err("should be too short");
+        pack.validated(&cfg).expect_err("should be too short");
 
         //Test string too long
         let mut pack = PhrasePackage {
-            word: generate_random_alphanumeric(*WORD_LENGTH_LIMIT + 1),
+            word: generate_random_alphanumeric(cfg.WORD_LENGTH_LIMIT() + 1),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL,
+            speed: cfg.SPEED_MIN_VAL(),
             fmt: String::from("mp3"),
         };
 
-        pack.validated().expect_err("should be too long");
+        pack.validated(&cfg).expect_err("should be too long");
 
         //Test unsupported lang
         let mut pack = PhrasePackage {
             word: String::from("a wiord"),
             lang: String::from("adfadlfjalk"),
-            speed: *SPEED_MIN_VAL,
+            speed: cfg.SPEED_MIN_VAL(),
             fmt: String::from("mp3"),
         };
 
-        pack.validated().expect_err("should be invalid lang");
+        pack.validated(&cfg).expect_err("should be invalid lang");
     }
 
     #[test]
     fn invalid_file_formats() {
+        let cfg = Config::default();
+
         let mut pack = PhrasePackage {
             word: String::from("hello"),
             lang: String::from("en"),
-            speed: *SPEED_MIN_VAL,
+            speed: cfg.SPEED_MIN_VAL(),
             fmt: String::from("format"),
         };
-        match pack.validated().unwrap_err() {
+        match pack.validated(&cfg).unwrap_err() {
             response::Response::TextErr(data) => {
                 let inner: String = data.data().to_owned();
                 assert_eq!(
@@ -388,15 +401,17 @@ mod tests {
 
     #[test]
     fn valid_file_formats() {
-        for format in ALLOWED_FORMATS.iter() {
+        let cfg = Config::default();
+
+        for format in cfg.ALLOWED_FORMATS().iter() {
             let mut pack = PhrasePackage {
                 word: String::from("hello"),
                 lang: String::from("en"),
-                speed: *SPEED_MIN_VAL,
+                speed: cfg.SPEED_MIN_VAL(),
                 fmt: format.clone(),
             };
 
-            pack.validated().expect("a valid pack");
+            pack.validated(&cfg).expect("a valid pack");
         }
     }
 }

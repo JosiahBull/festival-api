@@ -323,7 +323,6 @@ dependencies = [
  "diesel",
  "futures",
  "jsonwebtoken",
- "lazy_static",
  "rand",
  "rand_core",
  "response",

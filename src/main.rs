@@ -11,9 +11,9 @@ mod tests;
 mod schema;
 
 mod common;
+mod config;
 mod macros;
 mod models;
-mod config;
 
 #[macro_use]
 extern crate rocket;
@@ -25,12 +25,12 @@ use std::{
     process::{Command, Stdio},
 };
 
+use crate::config::*;
 use diesel::prelude::*;
 use macros::{failure, reject};
 use models::UserCredentials;
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
-use crate::config::*;
 
 #[cfg(not(target_os = "linux"))]
 compile_error!("Unable to compile for your platform! This API is only available for Linux due to dependence on Bash commands.");
@@ -47,8 +47,8 @@ pub struct DbConn(diesel::PgConnection);
 
 /// The base url of the program. This is just a catch-all for those who stumble across the api without knowing what it does.
 #[get("/")]
-fn index() -> String {
-    format!("Welcome to {} API for converting text into downloadable wav files! Please make a request to /docs for documentation.", *API_NAME)
+fn index(cfg: &Config) -> String {
+    format!("Welcome to {} API for converting text into downloadable wav files! Please make a request to /docs for documentation.", cfg.API_NAME())
 }
 
 /// Returns the OAS docs for this api in an easily downloadable file.
@@ -59,7 +59,11 @@ fn docs() -> String {
 
 /// Attempts to login a student with provided credentials.
 #[post("/login", data = "<creds>", format = "application/json")]
-async fn login(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, Response> {
+async fn login(
+    conn: DbConn,
+    creds: Json<UserCredentials>,
+    cfg: &Config,
+) -> Result<Response, Response> {
     let creds = creds.into_inner();
 
     //Locate the user that is attempting to login
@@ -85,14 +89,18 @@ async fn login(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, R
     .await?;
 
     Ok(Response::TextOk(Data {
-        data: models::Claims::new_token(user.id),
+        data: models::Claims::new_token(user.id, &cfg),
         status: Status::Ok,
     }))
 }
 
 /// Attempt to create a new user account
 #[post("/create", data = "<creds>", format = "application/json")]
-async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, Response> {
+async fn create(
+    conn: DbConn,
+    creds: Json<UserCredentials>,
+    cfg: &Config,
+) -> Result<Response, Response> {
     let creds = creds.into_inner();
 
     //Validate password requirements, for now all we check is length
@@ -129,7 +137,7 @@ async fn create(conn: DbConn, creds: Json<UserCredentials>) -> Result<Response, 
 
     //Return token to user
     Ok(Response::TextOk(Data {
-        data: models::Claims::new_token(r.unwrap().id),
+        data: models::Claims::new_token(r.unwrap().id, &cfg),
         status: Status::Created,
     }))
 }
@@ -142,15 +150,16 @@ async fn convert(
     token: Result<models::Claims, Response>,
     conn: DbConn,
     mut phrase_package: Json<models::PhrasePackage>,
+    cfg: &Config,
 ) -> Result<Response, Response> {
     //Validate token
     let token = token?;
 
     // Validate PhrasePackage
-    phrase_package.validated()?;
+    phrase_package.validated(cfg)?;
 
     // Validate that this user hasn't been timed out
-    common::is_user_timed_out(&conn, token.sub).await?;
+    common::is_user_timed_out(&conn, token.sub, cfg).await?;
 
     // Log this request
     common::log_request(&conn, token.sub, &phrase_package).await?;
@@ -165,7 +174,7 @@ async fn convert(
     );
     let file_name_base: String = common::sha_512_hash(&temp);
 
-    let file_name_wav = format!("{}/{}.wav", *CACHE_PATH, &file_name_base,);
+    let file_name_wav = format!("{}/{}.wav", cfg.CACHE_PATH(), &file_name_base,);
 
     if !Path::new(&file_name_wav).exists() {
         // Generate a wav file if this file does not already exist.
@@ -184,7 +193,7 @@ async fn convert(
             .arg("-eval")
             .arg(format!(
                 "({})",
-                &SUPPORTED_LANGS
+                cfg.SUPPORTED_LANGS()
                     .get(&phrase_package.lang)
                     .unwrap()
                     .festival_code
@@ -225,7 +234,9 @@ async fn convert(
         //Carry out conversion
         converted_file = format!(
             "{}/temp/{}.{}",
-            *CACHE_PATH, &file_name_base, phrase_package.fmt
+            cfg.CACHE_PATH(),
+            &file_name_base,
+            phrase_package.fmt
         );
 
         let con = Command::new("sox")
@@ -278,10 +289,9 @@ async fn convert(
 #[doc(hidden)]
 #[launch]
 fn rocket() -> _ {
-    initalize_globals();
-    
     rocket::build()
         .mount("/", routes![index, docs])
-        .mount("/api/v1/", routes![login, create, convert])
+        .mount("/api/", routes![login, create, convert])
+        .attach(Config::fairing())
         .attach(DbConn::fairing())
 }

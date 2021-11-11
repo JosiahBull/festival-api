@@ -1,7 +1,15 @@
 //! Configuration module for the api. This handles the loading, parsing, and updating of configuration options for the api.
 
-use std::collections::{HashMap, HashSet};
-use lazy_static::lazy_static;
+use std::{
+    collections::{HashMap, HashSet},
+    convert::Infallible,
+};
+
+use rocket::{
+    fairing::{self, Fairing, Kind},
+    request::{self, FromRequest},
+    Build, Request, Rocket,
+};
 
 use crate::models::Language;
 
@@ -47,8 +55,8 @@ fn load_from_toml(name: &str) -> Result<toml::Value, String> {
     return if let Some(k) = f.get(name) {
         Ok(k.to_owned())
     } else {
-        Err(String::from("Key Not found in ./config/general.toml"))
-    }
+        Err(String::from("Key Not found in ./config/general.toml")) //FIXME
+    };
 }
 
 /// A macro to load configuration from the environment.
@@ -78,24 +86,24 @@ macro_rules! load_env {
     () => {
         compile_error!("String must be provided to load_env macro!");
     };
-    ($arg:tt) => {
-        {
-            use std::env::var;
+    ($arg:tt, $type:ty) => {{
+        fn load_val() -> $type {
             use crate::config::load_from_toml;
+            use std::env::var;
             let env_name: &str = $arg;
 
             //1. Attempt to load from env
             //Attempt to load with truecase
             if let Ok(d) = var(env_name) {
-                return d.parse().expect("a parsed value")
+                return d.parse().expect("a parsed value");
             }
             //Attempt to load with uppercase
             if let Ok(d) = var(env_name.to_uppercase()) {
-                return d.parse().expect("a parsed value")
+                return d.parse().expect("a parsed value");
             }
             //Attempt to load with lowercase
             if let Ok(d) = var(env_name.to_lowercase()) {
-                return d.parse().expect("a parsed value")
+                return d.parse().expect("a parsed value");
             }
 
             //2. Attempt to load from /config/general.toml
@@ -119,236 +127,374 @@ macro_rules! load_env {
             }
 
             //3. Failure
-            panic!("Env {} not found in environment, ./.env or /config/general.toml. Program start failed.", env_name)
+            panic!(
+                "Env {} not found in environment or /config/general.toml. Program start failed.",
+                env_name
+            ); //FIXME
         }
-    };
+
+        load_val()
+    }};
     ($($arg:tt)*) => {
         compile_error!("Too many arguments provided to load_env macro!");
     };
 }
 
-lazy_static! {
-    /// The secret used for fast-hashing JWT's for validation.
-    pub static ref JWT_SECRET: String = load_env!("JWT_SECRET");
-    
-    /// The number of hours that a JWT may be used before expiring and forcing the user to revalidate.
-    pub static ref JWT_EXPIRY_TIME_HOURS: usize = load_env!("JWT_EXPIRY_TIME_HOURS");
-    
-    /// The name of the api which is sent with certain requests.
-    pub static ref API_NAME: String = load_env!("API_NAME");
-    
-    /// The path to the cache for storing .wav files.
-    pub static ref CACHE_PATH: String = load_env!("CACHE_PATH");
-    
-    /// The path where temporary files are stored, and should be deleted from on a crash.
-    pub static ref TEMP_PATH: String = load_env!("TEMP_PATH");
-    
-    /// The maximum length of a phrase that the api will process.
-    pub static ref WORD_LENGTH_LIMIT: usize = load_env!("WORD_LENGTH_LIMIT");
-    
-    /// The maximum speed at which a phrase can be read.
-    pub static ref SPEED_MAX_VAL: f32 = load_env!("SPEED_MAX_VAL");
-    
-    /// The lowerest speed at which a phrase can be read.
-    pub static ref SPEED_MIN_VAL: f32 = load_env!("SPEED_MIN_VAL");
-    
-    /// The maximum requests that an account can make in a given time period established by `MAX_REQUESTS_TIME_PERIOD_MINUTES`
-    pub static ref MAX_REQUESTS_ACC_THRESHOLD: usize = load_env!("MAX_REQUESTS_ACC_THRESHOLD");
-    
-    /// The time period for timing out users who make too many requests.
-    pub static ref MAX_REQUESTS_TIME_PERIOD_MINUTES:usize = load_env!("MAX_REQUESTS_TIME_PERIOD_MINUTES");
+fn load_supported_langs() -> HashMap<String, Language> {
+    let file_path = PathType::Langs.get_path();
+    let data = std::fs::read_to_string(&file_path)
+        .unwrap_or_else(|_| panic!("Unable to find {}", file_path));
+    let f = data
+        .parse::<toml::Value>()
+        .unwrap_or_else(|_| panic!("Unable to parse `{}`", file_path));
 
-    /// A list of supported speech languages by this api.
-    pub static ref SUPPORTED_LANGS: HashMap<String, Language> = {
-        let file_path = PathType::Langs.get_path();
-        let data = std::fs::read_to_string(&file_path).unwrap_or_else(|_| panic!("Unable to find {}", file_path));
-        let f = data.parse::<toml::Value>().unwrap_or_else(|_| panic!("Unable to parse `{}`", file_path));
+    let languages: &toml::value::Table = f
+        .get("lang")
+        .unwrap_or_else(|| panic!("Unable to parse {}, no langs provided!", file_path))
+        .as_table()
+        .unwrap_or_else(|| panic!("lang tag is not a table in {}", file_path));
 
-        let languages: &toml::value::Table = f.get("lang")
-            .unwrap_or_else(|| panic!("Unable to parse {}, no langs provided!", file_path))
+    let mut map: HashMap<String, Language> = HashMap::default();
+    let keys: Vec<&String> = languages.keys().into_iter().collect();
+    for key in keys {
+        let lang = languages
+            .get(key)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Unable to parse lang {} from {}, is it correctly formatted?",
+                    key, file_path
+                )
+            })
             .as_table()
-            .unwrap_or_else(|| panic!("lang tag is not a table in {}", file_path));
+            .unwrap_or_else(|| panic!("Unable to prase {} as table from {}", key, file_path));
 
-        let mut map: HashMap<String, Language> = HashMap::default();
-        let keys: Vec<&String> = languages.keys().into_iter().collect();
-        for key in keys {
-            let lang = languages
-                .get(key)
-                .unwrap_or_else(|| panic!("Unable to parse lang {} from {}, is it correctly formatted?", key, file_path))
-                .as_table()
-                .unwrap_or_else(|| panic!("Unable to prase {} as table from {}", key, file_path));
+        let enabled = lang
+            .get("enabled")
+            .unwrap_or_else(|| panic!("Unable to parse enabled on {} from {}", key, file_path))
+            .as_bool()
+            .unwrap_or_else(|| panic!("{}'s enabled is not a boolean in {}", key, file_path));
 
-            let enabled = lang
-                .get("enabled")
-                .unwrap_or_else(|| panic!("Unable to parse enabled on {} from {}", key, file_path))
-                .as_bool()
-                .unwrap_or_else(|| panic!("{}'s enabled is not a boolean in {}", key, file_path));
+        let festival_code = lang
+            .get("festival_code")
+            .unwrap_or_else(|| {
+                panic!(
+                    "Unable to parse festival_code on {} from {}",
+                    key, file_path
+                )
+            })
+            .as_str()
+            .unwrap_or_else(|| panic!("{}'s festival_code is not a string in {}", key, file_path))
+            .to_owned();
 
-            let festival_code = lang
-                .get("festival_code")
-                .unwrap_or_else(|| panic!("Unable to parse festival_code on {} from {}", key, file_path))
-                .as_str()
-                .unwrap_or_else(|| panic!("{}'s festival_code is not a string in {}", key, file_path))
-                .to_owned();
+        let iso_691_code = lang
+            .get("iso_691-1_code")
+            .unwrap_or_else(|| {
+                panic!(
+                    "Unable to parse iso-691-1_code on {} from {}",
+                    key, file_path
+                )
+            })
+            .as_str()
+            .unwrap_or_else(|| panic!("{}'s iso_691-1_code is not a string in {}", key, file_path))
+            .to_owned();
 
-            let iso_691_code = lang
-                .get("iso_691-1_code")
-                .unwrap_or_else(|| panic!("Unable to parse iso-691-1_code on {} from {}", key, file_path))
-                .as_str()
-                .unwrap_or_else(|| panic!("{}'s iso_691-1_code is not a string in {}", key, file_path))
-                .to_owned();
-
-            map.insert(iso_691_code.clone(), Language {
+        map.insert(
+            iso_691_code.clone(),
+            Language {
                 display_name: key.clone(),
                 enabled,
                 festival_code,
                 iso_691_code,
-            });
-        }
+            },
+        );
+    }
 
-        map
-    };
+    map
+}
 
-    /// The list of supported file-formats, note that wav is the preferred format due to lower cpu usage.
-    pub static ref ALLOWED_FORMATS: HashSet<String> = {
-        let file_path = PathType::General.get_path();
-        let data = std::fs::read_to_string(&file_path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
-        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
+fn load_allowed_formats() -> HashSet<String> {
+    let file_path = PathType::General.get_path();
+    let data = std::fs::read_to_string(&file_path)
+        .unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
+    let f = data
+        .parse::<toml::Value>()
+        .unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
 
-        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
+    let table = f
+        .as_table()
+        .unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
 
-        let formats = table.get("ALLOWED_FORMATS")
-            .unwrap_or_else(|| panic!("Unable to find ALLOWED_FORMATS in {}", file_path))
-            .as_array()
-            .unwrap_or_else(|| panic!("ALLOWED_FORMATS in {} is not an array of strings!", file_path));
-
-        let mut res = HashSet::default();
-
-        for format in formats {
-            let string = format
-                .as_str()
-                .unwrap_or_else(|| panic!("ALLOWED_FORMATS in {} is not an array of strings!", file_path))
-                .to_owned();
-            res.insert(string);
-        }
-
-        res
-    };
-
-    /// A hashset of chars that the api will accept as input.
-    pub static ref ALLOWED_CHARS: HashSet<char> = {
-        let file_path = PathType::General.get_path();
-        let data = std::fs::read_to_string(&file_path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
-        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
-
-        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
-
-        let raw_string: String = table.get("ALLOWED_CHARS")
-            .unwrap_or_else(|| panic!("Unable to find ALLOWED_CHARS in {}", file_path))
-            .as_str()
-            .unwrap_or_else(|| panic!("ALLOWED_CHARS in {} is not a string!", file_path))
-            .to_owned();
-
-        let mut res = HashSet::default();
-
-        raw_string.chars().for_each(|c| {
-            res.insert(c);
+    let formats = table
+        .get("ALLOWED_FORMATS")
+        .unwrap_or_else(|| panic!("Unable to find ALLOWED_FORMATS in {}", file_path))
+        .as_array()
+        .unwrap_or_else(|| {
+            panic!(
+                "ALLOWED_FORMATS in {} is not an array of strings!",
+                file_path
+            )
         });
 
-        res
-    };
+    let mut res = HashSet::default();
+
+    for format in formats {
+        let string = format
+            .as_str()
+            .unwrap_or_else(|| {
+                panic!(
+                    "ALLOWED_FORMATS in {} is not an array of strings!",
+                    file_path
+                )
+            })
+            .to_owned();
+        res.insert(string);
+    }
+
+    res
+}
+
+fn load_allowed_chars() -> HashSet<char> {
+    let file_path = PathType::General.get_path();
+    let data = std::fs::read_to_string(&file_path)
+        .unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
+    let f = data
+        .parse::<toml::Value>()
+        .unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
+
+    let table = f
+        .as_table()
+        .unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
+
+    let raw_string: String = table
+        .get("ALLOWED_CHARS")
+        .unwrap_or_else(|| panic!("Unable to find ALLOWED_CHARS in {}", file_path))
+        .as_str()
+        .unwrap_or_else(|| panic!("ALLOWED_CHARS in {} is not a string!", file_path))
+        .to_owned();
+
+    let mut res = HashSet::default();
+
+    raw_string.chars().for_each(|c| {
+        res.insert(c);
+    });
+
+    res
+}
+
+fn load_blacklisted_phrases() -> Vec<String> {
+    let file_path = PathType::General.get_path();
+
+    let data = std::fs::read_to_string(&file_path)
+        .unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
+    let f = data
+        .parse::<toml::Value>()
+        .unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
+
+    let table = f
+        .as_table()
+        .unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
+
+    let phrases = table
+        .get("BLACKLISTED_PHRASES")
+        .unwrap_or_else(|| panic!("Unable to find BLACKLISTED_PHRASES in {}", file_path))
+        .as_array()
+        .unwrap_or_else(|| {
+            panic!(
+                "BLACKLISTED_PHRASES in {} is not an array of strings!",
+                file_path
+            )
+        });
+
+    let mut res = vec![];
+
+    for phrase in phrases {
+        let string = phrase
+            .as_str()
+            .unwrap_or_else(|| {
+                panic!(
+                    "BLACKLISTED_PHRASES in {} is not an array of strings!",
+                    file_path
+                )
+            })
+            .to_owned();
+        res.push(string);
+    }
+
+    res
+}
+
+pub struct Config {
+    /// The secret used for fast-hashing JWT's for validation.
+    jwt_secret: String,
+
+    /// The number of hours that a JWT may be used before expiring and forcing the user to revalidate.
+    jwt_expiry_time_hours: usize,
+
+    /// The name of the api which is sent with certain requests.
+    api_name: String,
+
+    /// The path to the cache for storing .wav files.
+    cache_path: String,
+
+    /// The path where temporary files are stored, and should be deleted from on a crash.
+    temp_path: String,
+
+    /// The maximum length of a phrase that the api will process.
+    word_length_limit: usize,
+
+    /// The maximum speed at which a phrase can be read.
+    speed_max_val: f32,
+
+    /// The lowerest speed at which a phrase can be read.
+    speed_min_val: f32,
+
+    /// The maximum requests that an account can make in a given time period established by `MAX_REQUESTS_TIME_PERIOD_MINUTES`
+    max_requests_acc_threshold: usize,
+
+    /// The time period for timing out users who make too many requests.
+    max_requests_time_period_minutes: usize,
+
+    /// A list of supported speech languages by this api.
+    supported_langs: HashMap<String, Language>,
+
+    /// The list of supported file-formats, note that wav is the preferred format due to lower cpu usage.
+    allowed_formats: HashSet<String>,
+
+    /// A hashset of chars that the api will accept as input.
+    allowed_chars: HashSet<char>,
 
     /// A list of phrases that are not allowed on this api.
-    pub static ref BLACKLISTED_PHRASES: Vec<String> = {
-        let file_path = PathType::General.get_path();
-
-        let data = std::fs::read_to_string(&file_path).unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
-        let f = data.parse::<toml::Value>().unwrap_or_else(|e| panic!("Unable to parse `{}` due to error {}", file_path, e));
-
-        let table = f.as_table().unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path));
-
-        let phrases = table.get("BLACKLISTED_PHRASES")
-            .unwrap_or_else(|| panic!("Unable to find BLACKLISTED_PHRASES in {}", file_path))
-            .as_array()
-            .unwrap_or_else(|| panic!("BLACKLISTED_PHRASES in {} is not an array of strings!", file_path));
-
-        let mut res = vec![];
-
-        for phrase in phrases {
-            let string = phrase
-                .as_str()
-                .unwrap_or_else(|| panic!("BLACKLISTED_PHRASES in {} is not an array of strings!", file_path))
-                .to_owned();
-            res.push(string);
-        }
-
-        res
-    };
+    blacklisted_phrases: Vec<String>,
 }
 
-pub fn initalize_globals() {
-    lazy_static::initialize(&JWT_SECRET);
-    lazy_static::initialize(&JWT_EXPIRY_TIME_HOURS);
-    lazy_static::initialize(&API_NAME);
-    lazy_static::initialize(&CACHE_PATH);
-    lazy_static::initialize(&TEMP_PATH);
-    lazy_static::initialize(&SPEED_MAX_VAL);
-    lazy_static::initialize(&SPEED_MIN_VAL);
-    lazy_static::initialize(&MAX_REQUESTS_ACC_THRESHOLD);
-    lazy_static::initialize(&MAX_REQUESTS_TIME_PERIOD_MINUTES);
-    lazy_static::initialize(&SUPPORTED_LANGS);
-    lazy_static::initialize(&ALLOWED_FORMATS);
-    lazy_static::initialize(&ALLOWED_CHARS);
-    lazy_static::initialize(&BLACKLISTED_PHRASES);
-}
-
-#[cfg(test)]
-#[cfg(not(tarpaulin_include))]
-mod tests {
-    use load_env;
-    use lazy_static::lazy_static;
-
-    #[test]
-    #[should_panic]
-    fn test_failed_env_load() {
-        lazy_static! {
-            static ref U: String = load_env!("this_value_does_not_exist123");
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            jwt_secret: load_env!("JWT_SECRET", String),
+            jwt_expiry_time_hours: load_env!("JWT_EXPIRY_TIME_HOURS", usize),
+            api_name: load_env!("API_NAME", String),
+            cache_path: load_env!("CACHE_PATH", String),
+            temp_path: load_env!("TEMP_PATH", String),
+            word_length_limit: load_env!("WORD_LENGTH_LIMIT", usize),
+            speed_max_val: load_env!("SPEED_MAX_VAL", f32),
+            speed_min_val: load_env!("SPEED_MIN_VAL", f32),
+            max_requests_acc_threshold: load_env!("MAX_REQUESTS_ACC_THRESHOLD", usize),
+            max_requests_time_period_minutes: load_env!("MAX_REQUESTS_TIME_PERIOD_MINUTES", usize),
+            supported_langs: load_supported_langs(),
+            allowed_formats: load_allowed_formats(),
+            allowed_chars: load_allowed_chars(),
+            blacklisted_phrases: load_blacklisted_phrases(),
         }
-        lazy_static::initialize(&U);
     }
 }
 
+//TODO make a getter macro which can automatically generate all these
+impl Config {
+    pub fn JWT_SECRET(&self) -> &str {
+        &self.jwt_secret
+    }
 
-// This could be a solid implementation to allow general editing of these configuration options.
-// This would only really be useful for testing purposes though... so is it worth the overhead?
+    pub fn JWT_EXPIRY_TIME_HOURS(&self) -> usize {
+        self.jwt_expiry_time_hours
+    }
 
-// struct ConfigItem<T> {
-//     data: RwLock<T>
-// }
+    pub fn API_NAME(&self) -> &str {
+        &self.api_name
+    }
 
-// impl<T> ConfigItem<T> 
-// where
-//     T: Clone,
-// {
-//     async fn set(&self, s: T) {
-//         let mut d = self.data.write().await;
-//         *d = s;
-//     }
+    pub fn CACHE_PATH(&self) -> &str {
+        &self.cache_path
+    }
 
-//     async fn get(&self) -> &T {
-//         self.data.read().await.as_ref()
-//     }
-// }
+    pub fn TEMP_PATH(&self) -> &str {
+        &self.temp_path
+    }
 
-// lazy_static! {
-//     static ref TEST: ConfigItem<String> = {
-//         ConfigItem {
-//             data: RwLock::new(String::from("hello"))
+    pub fn WORD_LENGTH_LIMIT(&self) -> usize {
+        self.word_length_limit
+    }
+
+    pub fn SPEED_MAX_VAL(&self) -> f32 {
+        self.speed_max_val
+    }
+
+    pub fn SPEED_MIN_VAL(&self) -> f32 {
+        self.speed_min_val
+    }
+
+    pub fn MAX_REQUESTS_ACC_THRESHOLD(&self) -> usize {
+        self.max_requests_acc_threshold
+    }
+
+    pub fn MAX_REQUESTS_TIME_PERIOD_MINUTES(&self) -> usize {
+        self.max_requests_time_period_minutes
+    }
+
+    pub fn SUPPORTED_LANGS(&self) -> &HashMap<String, Language> {
+        &self.supported_langs
+    }
+
+    pub fn ALLOWED_FORMATS(&self) -> &HashSet<String> {
+        &self.allowed_formats
+    }
+
+    pub fn ALLOWED_CHARS(&self) -> &HashSet<char> {
+        &self.allowed_chars
+    }
+
+    pub fn BLACKLISTED_PHRASES(&self) -> &[String] {
+        &self.blacklisted_phrases
+    }
+}
+
+impl Config {
+    pub fn fairing() -> impl Fairing {
+        Config::default()
+    }
+}
+
+#[async_trait]
+impl Fairing for Config {
+    fn info(&self) -> rocket::fairing::Info {
+        fairing::Info {
+            name: "Custom Configuration Loader",
+            kind: Kind::Ignite,
+        }
+    }
+
+    async fn on_ignite(&self, rocket: Rocket<Build>) -> fairing::Result {
+        //Generate Config
+        let config = Config::default();
+
+        //Save to State
+        let new_rocket = rocket.manage(config);
+
+        //Return our succesfully attached fairing!
+        fairing::Result::Ok(new_rocket)
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for &'r Config {
+    type Error = Infallible;
+    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Infallible> {
+        let state = req.rocket().state::<Config>().unwrap();
+        request::Outcome::Success(state)
+    }
+}
+
+// #[cfg(test)]
+// #[cfg(not(tarpaulin_include))]
+// mod tests {
+//     use lazy_static::lazy_static;
+//     use load_env;
+
+//     #[test]
+//     #[should_panic]
+//     fn test_failed_env_load() {
+//         lazy_static! {
+//             static ref U: String = load_env!("this_value_does_not_exist123");
 //         }
-//     };
-// }
-
-// async fn do_things() {
-//     TEST.set(String::from("hello")).await;
-
+//         lazy_static::initialize(&U);
+//     }
 // }
