@@ -12,8 +12,9 @@ use rocket::http::Status;
 use sha2::Digest;
 
 use crate::macros::failure;
-use crate::response::{Data, Response};
-use crate::{DbConn, MAX_REQUESTS_ACC_THRESHOLD, MAX_REQUESTS_TIME_PERIOD_MINUTES};
+use response::{Data, Response};
+use crate::DbConn;
+use crate::config::{MAX_REQUESTS_ACC_THRESHOLD, MAX_REQUESTS_TIME_PERIOD_MINUTES};
 
 /// Hash a string with a random salt to be stored in the database. Utilizing the argon2id algorithm
 /// Followed best practices as laid out here: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
@@ -280,7 +281,7 @@ mod test {
         // upon an error being encountered.
         let result = compare_hashed_strings(pwd, String::from("")).expect_err("failed comparison");
         match result {
-            crate::response::Response::TextErr(data) => {
+            response::Response::TextErr(data) => {
                 assert_eq!(data.status(), Status::InternalServerError);
                 assert_eq!(
                     data.data(),

@@ -1,11 +1,8 @@
 //! Various objects, including database objects, for the api.
 use crate::macros::reject;
-use crate::response::{Data, Response};
+use response::{Data, Response};
 use crate::schema::*;
-use crate::{
-    ALLOWED_CHARS, ALLOWED_FORMATS, BLACKLISTED_PHRASES, JWT_EXPIRY_TIME_HOURS, JWT_SECRET,
-    SPEED_MAX_VAL, SPEED_MIN_VAL, SUPPORTED_LANGS, WORD_LENGTH_LIMIT,
-};
+use crate::config::*;
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rocket::http::Status;
@@ -378,7 +375,7 @@ mod tests {
             fmt: String::from("format"),
         };
         match pack.validated().unwrap_err() {
-            crate::response::Response::TextErr(data) => {
+            response::Response::TextErr(data) => {
                 let inner: String = data.data().to_owned();
                 assert_eq!(
                     inner,

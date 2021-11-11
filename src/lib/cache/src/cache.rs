@@ -14,13 +14,14 @@
 
 use priority_queue::DoublePriorityQueue;
 use std::{collections::HashMap, hash::Hash, io::ErrorKind, marker::PhantomData};
+use async_trait::async_trait;
 
 /// The number of bytes in a mb.
 const BYTES_IN_MB: usize = 1_000_000;
 
 /// A type indicating that this return type may be cached properly in the api.
 /// These methods are required to save and load from the disk.
-#[rocket::async_trait]
+#[async_trait]
 trait Cachable<U> {
     /// Load the underlying file from the disk, or generate it fresh if it's not there.
     async fn load_underlying(&self) -> Result<U, std::io::Error>;
@@ -282,15 +283,16 @@ mod test {
     use priority_queue::DoublePriorityQueue;
 
     use super::{Cachable, Cache, Info};
-    use crate::rocket::tokio;
+    use tokio;
     use std::{collections::HashMap, marker::PhantomData};
+    use async_trait::async_trait;
 
     #[derive(Debug, PartialEq, Clone)]
     struct Item {
         data: i64,
     }
 
-    #[rocket::async_trait]
+    #[async_trait]
     impl Cachable<i64> for Item {
         async fn load_underlying(&self) -> Result<i64, std::io::Error> {
             Ok(self.data)
@@ -310,7 +312,7 @@ mod test {
     }
 
     /// Test that an initally inserted item which has been cached can be decached by a newer more popular item.
-    #[rocket::tokio::test]
+    #[tokio::test]
     async fn popularity_caching() {
         let mut cache: Cache<String, Item, i64> = Cache::new(1, 1000);
 
@@ -368,7 +370,7 @@ mod test {
     /// Ensure cache size limits work correctly, both for number and size of files.
     /// Will create a cache that can store 5 files, of up to 100 bytes total.
     /// Files are cleaned up at the conclusion (or failure) of the test.
-    #[rocket::tokio::test]
+    #[tokio::test]
     async fn size_limits_num_items() {
         let mut cache: Cache<String, Item, i64> = Cache::new(5, 100);
 
@@ -392,7 +394,7 @@ mod test {
     }
 
     /// Validate that we will not store too great a size of files.
-    #[rocket::tokio::test]
+    #[tokio::test]
     async fn test_size_limits_total_size() {
         let mut cache: Cache<String, Item, i64> = Cache::new(1000, 5);
 
@@ -417,7 +419,7 @@ mod test {
 
     /// Ensures the basic functionality of the caching system.
     /// Inserting items, checking that those items exist, and so on.
-    #[rocket::tokio::test]
+    #[tokio::test]
     async fn basic_functionality() {
         let mut cache: Cache<String, Item, i64> = Cache::default();
 
@@ -470,7 +472,7 @@ mod test {
     }
 
     /// Ensure that inserting a duplicate key into the cache causes a failure.
-    #[rocket::tokio::test]
+    #[tokio::test]
     async fn duplicate_key() {
         let mut cache: Cache<String, Item, i64> = Cache::default();
 
@@ -493,7 +495,7 @@ mod test {
     }
 
     /// Test getting the backing HashMap.
-    #[rocket::tokio::test]
+    #[tokio::test]
     async fn underlying() {
         let mut cache: Cache<String, Item, i64> = Cache::default();
 
@@ -544,7 +546,7 @@ mod test {
     }
 
     /// Test that the default insertion is good
-    #[rocket::tokio::test]
+    #[tokio::test]
     async fn test_inserted_defaults() {
         let mut cache: Cache<String, Item, i64> = Cache::new(0, 0);
 
@@ -588,16 +590,16 @@ mod test {
 // }
 // }
 
-// #[rocket::async_trait]
-// impl rocket::fairing::Fairing for TestCache {
-// fn info(&self) -> rocket::fairing::Info {
-//     rocket::fairing::Info {
+// #[async_trait]
+// impl fairing::Fairing for TestCache {
+// fn info(&self) -> fairing::Info {
+//     fairing::Info {
 //         name: "Test Cache Implementation",
 //         kind: Kind::Ignite
 //     }
 // }
 
-// async fn on_ignite(&self, rocket: rocket::Rocket<rocket::Build>) -> rocket::fairing::Result {
+// async fn on_ignite(&self, rocket: Rocket<Build>) -> fairing::Result {
 //     //Get a db instance
 //     let db = DbConn::get_one(&rocket).await.unwrap();
 
@@ -611,7 +613,7 @@ mod test {
 //     let new_rocket = rocket.manage(cache);
 
 //     //Return our succesfully attached fairing!
-//     rocket::fairing::Result::Ok(new_rocket)
+//     fairing::Result::Ok(new_rocket)
 // }
 // }
 
@@ -627,7 +629,7 @@ mod test {
 /////fairing cache implemntation tests/////
 // .attach(testcache)
 // .manage(friend)
-// .attach(rocket::fairing::AdHoc::on_liftoff("Freds", |rocket| {
+// .attach(fairing::AdHoc::on_liftoff("Freds", |rocket| {
 //     Box::pin(async move {
 //         friend.fetch_update(std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed, |_| Some(4));
 //     })
