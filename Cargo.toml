@@ -5,7 +5,16 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = [
+    "src/lib/cache/",
+    "src/lib/response/",
+]
+
 [dependencies]
+cache = { path = "src/lib/cache/" }
+response = { path = "src/lib/response/" }
+
 rocket = {version = "0.5.0-rc.1", features=["json"]}
 diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono"] } 
 rocket_sync_db_pools = { version = "0.1.0-rc.1", default-features = false, features = ["diesel_postgres_pool"] }
@@ -14,12 +23,9 @@ serde_json = "1.0.64"
 argon2 = { version = "0.3.1", features = ["alloc"] }
 rand_core = { version = "0.6", features = ["std"] }
 jsonwebtoken = { version = "7.2.0" }
-lazy_static = "1.4.0"
 toml = "0.5.8"
 chrono = { version = "0.4.19", features = ["serde"] }
 rand = { version = "0.8.4" }
-dotenv = "0.15.0"
-priority-queue = { version = "1.2.0" }
 sha2 = "0.9.8"
 
 [dev-dependencies]
