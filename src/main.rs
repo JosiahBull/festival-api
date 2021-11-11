@@ -167,7 +167,7 @@ lazy_static! {
 
         res
     };
-
+    /// A list of phrases that are not allowed on this api.
     static ref BLACKLISTED_PHRASES: Vec<String> = {
         let mut file_path = "./config/general.toml";
         if std::path::Path::new("./config/general-test.toml").exists() {
