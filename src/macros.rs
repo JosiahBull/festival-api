@@ -30,7 +30,7 @@ macro_rules! reject {
     };
     ($arg:tt) => {
         {
-            use crate::response::{Data, Response};
+            use response::{Data, Response};
             return Err(Response::TextErr(Data {
                 data: String::from($arg),
                 status: Status::BadRequest,
@@ -39,7 +39,7 @@ macro_rules! reject {
     };
     ($($arg:tt)*) => {
         {
-            use crate::response::{Data, Response};
+            use response::{Data, Response};
             return Err(Response::TextErr(Data {
                 data: format!($($arg)*),
                 status: Status::BadRequest,
@@ -85,7 +85,7 @@ macro_rules! failure {
     };
     ($($arg:tt)*) => {
         {
-            use crate::response::{Data, Response};
+            use response::{Data, Response};
             return Err(Response::TextErr(Data {
                 data: format!($($arg)*),
                 status: Status::InternalServerError,
@@ -94,106 +94,4 @@ macro_rules! failure {
     };
 }
 
-/// A macro to load configuration from the environment.
-///
-/// Attempts to load from multiple sources falling back in this order:
-/// 1. Load from environment
-/// 2. Load from `./config/general.toml`
-/// 3. panic!
-///
-/// This macro recommend for use in conjunction with lazy static, as these variables like to be loaded/parsed
-/// at runtime, not at compile-time.
-///
-/// **Example**
-/// ```rust
-///     lazy_static! {
-///         static ref NUMBER_SHOES: usize = load_env!("NUMBER_SHOES");
-///     }
-///
-///     lazy_static::initialize(&NUMBER_SHOES);
-///     println!("The number of shoes is {}", *NUMBER_SHOES);
-///     / ```
-/// A vay of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.
-///
-/// Internally this macro relies on `toml::value::Value.try_into()` for type conversion.
-///
-macro_rules! load_env {
-    () => {
-        compile_error!("String must be provided to load_env macro!");
-    };
-    ($arg:tt) => {
-        {
-            use std::env::var;
-            let env_name: &str = $arg;
-
-            //1. Attempt to load from env
-            //Attempt to load with truecase
-            if let Ok(d) = var(env_name) {
-                return d.parse().expect("a parsed value")
-            }
-            //Attempt to load with uppercase
-            if let Ok(d) = var(env_name.to_uppercase()) {
-                return d.parse().expect("a parsed value")
-            }
-            //Attempt to load with lowercase
-            if let Ok(d) = var(env_name.to_lowercase()) {
-                return d.parse().expect("a parsed value")
-            }
-
-            //2. Attempt to load from /config/general.toml
-            fn load_from_toml(name: &str) -> Result<toml::Value, String> {
-                let file_path = "./config/general.toml";
-                let data = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;
-                let f = data.parse::<toml::Value>().map_err(|e| e.to_string())?;
-
-                return if let Some(k) = f.get(name) {
-                    Ok(k.to_owned())
-                } else {
-                    Err(String::from("Key Not found in ./config/general.toml"))
-                }
-            }
-            //Attempt to load with truecase
-            if let Ok(d) = load_from_toml(&env_name) {
-                if let Ok(v) = d.try_into() {
-                    return v;
-                }
-            }
-            //Attempt to load with uppercase
-            if let Ok(d) = load_from_toml(&env_name.to_uppercase()) {
-                if let Ok(v) = d.try_into() {
-                    return v;
-                }
-            }
-            //Attempt to load lowercase
-            if let Ok(d) = load_from_toml(&env_name.to_lowercase()) {
-                if let Ok(v) = d.try_into() {
-                    return v;
-                }
-            }
-
-            //3. Failure
-            panic!("Env {} not found in environment, ./.env or /config/general.toml. Program start failed.", env_name)
-        }
-    };
-    ($($arg:tt)*) => {
-        compile_error!("Too many arguments provided to load_env macro!");
-    };
-}
-
-pub(crate) use {failure, load_env, reject};
-
-#[cfg(test)]
-#[cfg(not(tarpaulin_include))]
-mod tests {
-    use super::load_env;
-    use lazy_static::lazy_static;
-
-    #[test]
-    #[should_panic]
-    fn test_failed_env_load() {
-        lazy_static! {
-            static ref U: String = load_env!("this_value_does_not_exist123");
-        }
-        lazy_static::initialize(&U);
-    }
-}
+pub(crate) use {failure, reject};

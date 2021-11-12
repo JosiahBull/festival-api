@@ -41,19 +41,18 @@ SPEED_MIN_VAL = 0.5
 # over a time period of MAX_REQUESTS_TIME_PERIOD_MINUTES before we return
 # 429 responses to requests from that user.
 # This can be set fairly aggressively.
-# //TODO The API will eventually support whitelisting User's from this rate limit.
 # //TODO Setting this to -1 will disable ACC rate limiting.
-# Default: 2
-MAX_REQUESTS_ACC_THRESHOLD = 2
+# Default: 40
+MAX_REQUESTS_ACC_THRESHOLD = 40
 
 # The time period over which request rate limits apply.
 # Default: 5
-MAX_REQUESTS_TIME_PERIOD_MINUTES = 1
+MAX_REQUESTS_TIME_PERIOD_MINUTES = 2
 
 # The number of hours a JWT token should be valid for before we require the user to 
 # revalidate their token.
-# Default: 200
-JWT_EXPIRY_TIME_HOURS = 200
+# Default: 720
+JWT_EXPIRY_TIME_HOURS = 720
 
 # The file formats that may be returned by the api.
 # A user may request their file in any one of these formats.
@@ -63,3 +62,38 @@ JWT_EXPIRY_TIME_HOURS = 200
 # Supported formats can be found here: http://sox.sourceforge.net/AudioFormats-6.html
 # Default: [ "wav", "mp3", "aif" ]
 ALLOWED_FORMATS = [ "wav", "mp3", "aif" ]
+
+# The list of allowed chars that the user may provided in a phrase.
+# If the user attempts to send a char that is not present in this list, the request will be rejected
+# with a 400 response. 
+# Note that while you may add any chars, care should be taken to avoid certain chars, such as \, (), 
+# {}. These should *theoretically* work and be esacped correctly, but introduce security concerns.
+# TODO make "" allow all chars
+# Default: "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'_-()ĀāĒēĪīŌōŪū "
+ALLOWED_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,?!@#%$/'_-()ĀāĒēĪīŌōŪū "
+
+# A list of strings that the api will return 400 errors for if they are recieved in whole or part
+# as an attempted conversion phrase.
+#
+# You may choose between strict or loose blocking as shown below. Strings are matched exactly. 
+# Note that if one of your blocked strings contains a char which is not allowed as above, the api 
+# will ignore this blocked phrase upon startup.
+#
+# By default matches are case insensitive.
+#
+# Commonly, users may choose to block vulgar language. A good source for a word list is Uk's Ofcom:
+# https://www.ofcom.org.uk/__data/assets/pdf_file/0023/91625/OfcomQRG-AOC.pdf
+#
+# Examples:
+# BLACKLISTED_PHRASES = ["test"]
+# Blocked: "hello this is a test", "testing123", "other_phrasetestother_phrase", "TEST", "hi test hi"
+# Allowed: "t e s t", "t est"
+#
+# BLACKLISTED_PHRASES = [" test "]
+# Blocked: "hi test hi", "TEST", "hello this is a test"
+# Allowed: "t e s t", "t est", "testing123", "other_phrasetestother_phrase"
+#
+# Take care with what phrases you blacklist and why!
+#
+# Default: []
+BLACKLISTED_PHRASES = []

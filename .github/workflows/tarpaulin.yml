@@ -8,7 +8,7 @@ on:
 
 jobs:
   check:
-    name: Rust project
+    name: Code Coverage
     runs-on: ubuntu-latest
 
     services:
@@ -47,7 +47,7 @@ jobs:
         uses: actions-rs/tarpaulin@v0.1
         with:
           version: '0.15.0'
-          args: '-- --test-threads 1'
+          args: '--all -- --test-threads 1'
         env:
           ROCKET_DATABASES: '{postgres_database={url=postgres://postgres:postgres@localhost/fest_api}}'
           JWT_SECRET: nevergonnagiveyouup

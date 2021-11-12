@@ -3,7 +3,7 @@ CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     usr TEXT NOT NULL,
     pwd TEXT NOT NULL, -- Will be hashed
-    lckdwn timestamp with time zone DEFAULT (now() at time zone 'utc') NOT NULL, -- If this is a date in the future, this user should get 429 until then.
+    lckdwn timestamp with time zone DEFAULT (now() at time zone 'utc') NOT NULL, --//TODO If this is a date in the future, this user should get 429 until then. 
     crt timestamp with time zone DEFAULT (now() at time zone 'utc') NOT NULL,
     last_accessed timestamp with time zone DEFAULT (now() at time zone 'utc') NOT NULL
 );

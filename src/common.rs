@@ -5,13 +5,16 @@ use argon2::{
     Argon2,
 };
 use chrono::Utc;
+use config::Config;
 use diesel::prelude::*;
+#[cfg(test)]
 use rand::{thread_rng, Rng};
 use rocket::http::Status;
+use sha2::Digest;
 
 use crate::macros::failure;
-use crate::response::{Data, Response};
-use crate::{DbConn, MAX_REQUESTS_ACC_THRESHOLD, MAX_REQUESTS_TIME_PERIOD_MINUTES};
+use crate::{macros::reject, DbConn};
+use response::{Data, Response};
 
 /// Hash a string with a random salt to be stored in the database. Utilizing the argon2id algorithm
 /// Followed best practices as laid out here: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
@@ -154,14 +157,26 @@ pub async fn load_recent_requests(
 /// Returns Ok(()) if the user is not timed out.
 /// If the user is timed out returns Err(Response) with a custom message containing
 /// the number of seconds the user has left before becoming non-timed out.
-pub async fn is_user_timed_out(conn: &DbConn, usr_id: i32) -> Result<(), Response> {
+pub async fn is_user_timed_out(conn: &DbConn, usr_id: i32, cfg: &Config) -> Result<(), Response> {
     let reqs: Vec<crate::models::GenerationRequest> =
-        load_recent_requests(conn, usr_id, *MAX_REQUESTS_ACC_THRESHOLD).await?;
-    if reqs.len() >= *MAX_REQUESTS_ACC_THRESHOLD {
+        load_recent_requests(conn, usr_id, cfg.MAX_REQUESTS_ACC_THRESHOLD()).await?;
+    if reqs.len() >= cfg.MAX_REQUESTS_ACC_THRESHOLD() {
+        //If this user is exempt from rate limits, enforce that now!
+        let user = find_user_in_db(conn, SearchItem::Id(usr_id)).await?;
+        if let Some(user) = user {
+            if let Some(settings) = cfg.USER_SETTINGS().get(&user.usr) {
+                if !settings.apply_api_rate_limit {
+                    return Ok(());
+                }
+            }
+        } else {
+            reject!("User does not exist!");
+        }
+
         //Validate that this user hasn't made too many requests
         let earliest_req_time = get_time_since(reqs.last().unwrap().crt);
         let max_req_time_duration =
-            chrono::Duration::minutes(*MAX_REQUESTS_TIME_PERIOD_MINUTES as i64);
+            chrono::Duration::minutes(cfg.MAX_REQUESTS_TIME_PERIOD_MINUTES() as i64);
 
         if earliest_req_time < max_req_time_duration {
             return Err(Response::TextErr(Data {
@@ -213,12 +228,23 @@ pub fn get_time_since(time: chrono::DateTime<Utc>) -> chrono::Duration {
 }
 
 /// Generate a randomised alphanumeric (base 62) string of a requested length.
+#[cfg(test)]
 pub fn generate_random_alphanumeric(length: usize) -> String {
     thread_rng()
         .sample_iter(rand::distributions::Alphanumeric)
         .take(length)
         .map(char::from)
         .collect()
+}
+
+/// Takes an input reference string, and hashes it using the sha512 algorithm.
+/// The resultant value is returned as a string in hexadecmial - meaning it is url and i/o safe.
+/// The choice of sha512 over sha256 is that sha512 tends to perform better at  longer strings - which we are likely to
+/// encounter with this api. Users the sha2 crate internally for hashing.
+pub fn sha_512_hash(input: &str) -> String {
+    let mut hasher = sha2::Sha512::new();
+    hasher.update(input);
+    format!("{:x}", hasher.finalize())
 }
 
 #[cfg(test)]
@@ -267,7 +293,7 @@ mod test {
         // upon an error being encountered.
         let result = compare_hashed_strings(pwd, String::from("")).expect_err("failed comparison");
         match result {
-            crate::response::Response::TextErr(data) => {
+            response::Response::TextErr(data) => {
                 assert_eq!(data.status(), Status::InternalServerError);
                 assert_eq!(
                     data.data(),

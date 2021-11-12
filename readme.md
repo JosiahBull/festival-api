@@ -21,7 +21,7 @@ Detailed documentation on how to use the API can be found [here](https://josiahb
 
 ```sh
 git clone https://github.com/JosiahBull/festival-api
-cd ./https://github.com/JosiahBull/festival-api
+cd ./festival-api
 cp .example.env .env
 nano .env #Update required configuration options for TLS encryption
 
@@ -74,7 +74,7 @@ This api also depends on Postgres, Sox, and Festival, and the festvox_cmu_us_aew
 ### Development
 ```sh
 # Spawn a postgres backing db
-docker run --name fest-db -p 5432:5432 -e POSTGRES_PASSWORD=postgres -d postgres
+docker run --name fest-db -p 5432:5432 -e POSTGRES_PASSWORD=postgres -d postgres -N 500
 export DATABASE_URL=postgres://postgres:postgres@localhost/fest_api
 
 # Run migration to configure db ready for api
