@@ -1,6 +1,6 @@
 use super::common::*;
-use crate::config::{Config, PathType};
 use crate::rocket;
+use config::{Config, PathType};
 use rocket::http::{ContentType, Header, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
@@ -28,7 +28,7 @@ fn ratelimit_whitelist_disabled() {
         \"fmt\": \"wav\"
     }";
 
-    for _ in 0..cfg.MAX_REQUESTS_ACC_THRESHOLD()+5 {
+    for _ in 0..cfg.MAX_REQUESTS_ACC_THRESHOLD() + 5 {
         //Test the generation of the .wav file
         let response = client
             .post(uri!("/api/convert"))
@@ -399,7 +399,7 @@ fn test_limits() {
 /// Validate that all file format options work as intended
 #[test]
 fn test_every_format() {
-    let cfg: Config = Config::default();
+    let cfg: Config = Config::new().unwrap();
     for format in cfg.ALLOWED_FORMATS().iter() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let (_, _, token) = create_test_account(&client);

@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use crate::config::PathType;
 use crate::models::UserCredentials;
 use crate::rocket;
+use config::PathType;
 use rand::{thread_rng, Rng};
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
@@ -52,11 +52,13 @@ impl Drop for AlteredToml {
     fn drop(&mut self) {
         let path = self.0.get_path();
         std::fs::write(&path, &self.1).unwrap_or_else(|e| {
-            panic!("Unable to reset file {} after test due to error {}", path, e)
+            panic!(
+                "Unable to reset file {} after test due to error {}",
+                path, e
+            )
         })
     }
 }
-
 
 /// Generate a randomised alphanumeric (base 62) string of a requested length.
 pub fn generate_random_alphanumeric(length: usize) -> String {

@@ -190,6 +190,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "config"
+version = "0.1.0"
+dependencies = [
+ "proc-macros",
+ "rocket",
+ "toml",
+]
+
+[[package]]
 name = "const_fn"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -320,18 +329,17 @@ dependencies = [
  "argon2",
  "cache",
  "chrono",
+ "config",
  "diesel",
  "futures",
  "jsonwebtoken",
  "rand",
- "rand_core",
  "response",
  "rocket",
  "rocket_sync_db_pools",
  "serde",
  "serde_json",
  "sha2",
- "toml",
 ]
 
 [[package]]
@@ -950,6 +958,10 @@ dependencies = [
  "version_check",
  "yansi",
 ]
+
+[[package]]
+name = "proc-macros"
+version = "0.1.0"
 
 [[package]]
 name = "quote"

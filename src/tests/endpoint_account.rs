@@ -1,7 +1,7 @@
 use super::common::*;
-use crate::config::Config;
 use crate::models::{Claims, UserCredentials};
 use crate::rocket;
+use config::Config;
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;

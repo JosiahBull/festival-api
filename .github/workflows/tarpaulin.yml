@@ -8,7 +8,7 @@ on:
 
 jobs:
   check:
-    name: Rust project
+    name: Code Coverage
     runs-on: ubuntu-latest
 
     services:

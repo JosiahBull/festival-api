@@ -5,13 +5,14 @@ use argon2::{
     Argon2,
 };
 use chrono::Utc;
+use config::Config;
 use diesel::prelude::*;
 #[cfg(test)]
 use rand::{thread_rng, Rng};
 use rocket::http::Status;
 use sha2::Digest;
 
-use crate::{config::Config, macros::failure};
+use crate::macros::failure;
 use crate::{macros::reject, DbConn};
 use response::{Data, Response};
 

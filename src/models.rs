@@ -1,19 +1,14 @@
 //! Various objects, including database objects, for the api.
-use crate::config::Config;
 use crate::macros::reject;
 use crate::schema::*;
 use chrono::Utc;
+use config::Config;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use response::{Data, Response};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest, Request};
 use rocket::serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-
-/// A struct which represents settings for a specific user.
-pub struct UserSettings {
-    pub apply_api_rate_limit: bool,
-}
 
 /// User credentials, to be used when logging in or creating a new account
 #[derive(Deserialize, Serialize, Insertable)]
@@ -149,14 +144,6 @@ impl PhrasePackage {
     }
 }
 
-/// Represents a possible language that the api may convert text into.
-/// This is loaded on boot from `./config/langs.toml`.
-pub struct Language {
-    pub display_name: String,
-    pub iso_691_code: String,
-    pub festival_code: String,
-    pub enabled: bool,
-}
 /// The claims held by the JWT used for authentication
 #[derive(Serialize, Deserialize)]
 pub struct Claims {
@@ -185,7 +172,7 @@ impl Claims {
             &c,
             &EncodingKey::from_secret(cfg.JWT_SECRET().as_ref()),
         )
-        .unwrap() //TODO fix unwraps
+        .expect("Failed to generate token")
     }
 
     ///Attempt to parse claims from a token
@@ -203,9 +190,7 @@ impl Claims {
 impl<'r> FromRequest<'r> for Claims {
     type Error = Response;
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Response> {
-        //TODO improve the headers here, so we will check for Authorization along with Authorisation.
-        //Should help the americanally challenged of us...
-        const ACCEPTED_HEADERS: [&'static str; 3] = ["authorisation", "authorization", "auth"];
+        const ACCEPTED_HEADERS: [&str; 3] = ["authorisation", "authorization", "auth"];
         let mut auth_header: Option<String> = None;
 
         for header in req.headers().iter() {
@@ -224,13 +209,21 @@ impl<'r> FromRequest<'r> for Claims {
             ));
         }
 
-        let cfg: &Config = req.rocket().state::<Config>().unwrap(); //HACK
+        let cfg: &Config = match req.rocket().state::<Config>() {
+            Some(f) => f,
+            None => {
+                return request::Outcome::Failure((
+                    Status::InternalServerError,
+                    Response::TextErr(Data {
+                        data: String::from("Configuration Not Initalised"),
+                        status: Status::InternalServerError,
+                    }),
+                ))
+            }
+        };
 
         match Claims::parse_token(&auth_header.unwrap(), cfg) {
-            Ok(t) => {
-                //TODO validate the user hasn't been deleted (check db)
-                request::Outcome::Success(t)
-            }
+            Ok(t) => request::Outcome::Success(t),
             Err(_) => request::Outcome::Failure((
                 Status::Unauthorized,
                 Response::TextErr(Data {
@@ -247,13 +240,13 @@ impl<'r> FromRequest<'r> for Claims {
 mod tests {
     use super::{Claims, PhrasePackage};
     use crate::common::generate_random_alphanumeric;
-    use crate::config::Config;
+    use config::Config;
 
     #[test]
     fn create_new_token() {
         let _time_tolerance_seconds = 2;
 
-        let cfg = Config::default();
+        let cfg = Config::new().unwrap();
 
         let usr_id = 459;
         let token = Claims::new_token(usr_id, &cfg);
@@ -265,7 +258,7 @@ mod tests {
 
     #[test]
     fn validate_success_package() {
-        let cfg = Config::default();
+        let cfg = Config::new().unwrap();
 
         let mut pack = PhrasePackage {
             word: String::from("Hello, world!"),
@@ -303,7 +296,7 @@ mod tests {
     #[test]
     #[allow(clippy::float_cmp)]
     fn validate_correction_package() {
-        let cfg = Config::default();
+        let cfg = Config::new().unwrap();
         // Validate the min value correct is in place!
 
         //We can't run this test if the min value is 0.0!
@@ -349,7 +342,7 @@ mod tests {
 
     #[test]
     fn validate_failure_package() {
-        let cfg = Config::default();
+        let cfg = Config::new().unwrap();
 
         // Validate that empty string fails
         let mut pack = PhrasePackage {
@@ -384,7 +377,7 @@ mod tests {
 
     #[test]
     fn invalid_file_formats() {
-        let cfg = Config::default();
+        let cfg = Config::new().unwrap();
 
         let mut pack = PhrasePackage {
             word: String::from("hello"),
@@ -406,7 +399,7 @@ mod tests {
 
     #[test]
     fn valid_file_formats() {
-        let cfg = Config::default();
+        let cfg = Config::new().unwrap();
 
         for format in cfg.ALLOWED_FORMATS().iter() {
             let mut pack = PhrasePackage {

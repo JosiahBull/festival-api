@@ -11,6 +11,7 @@ use rocket::{
     Request,
 };
 
+use crate::error::ConfigError;
 use crate::models::{Language, UserSettings};
 
 //General Todos
@@ -20,7 +21,7 @@ use crate::models::{Language, UserSettings};
 // at the bottom of this page
 
 /// The location of all config files on the system.
-const CONFIG_LOCATION: &str = "./config/";
+const CONFIG_LOCATION: &str = "./config";
 
 /// The different config paths we can load from
 pub enum PathType {
@@ -44,13 +45,13 @@ impl PathType {
 /// Opens a toml file, and attempts to load the toml::value as specified in the provided &str.
 fn load_from_toml(name: &str) -> Result<toml::Value, String> {
     let file_path = PathType::General.get_path();
-    let data = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;
+    let data = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
     let f = data.parse::<toml::Value>().map_err(|e| e.to_string())?;
 
     return if let Some(k) = f.get(name) {
         Ok(k.to_owned())
     } else {
-        Err(String::from("Key Not found in ./config/general.toml")) //FIXME
+        Err(format!("Key Not found in {}", file_path))
     };
 }
 
@@ -66,14 +67,11 @@ fn load_from_toml(name: &str) -> Result<toml::Value, String> {
 ///
 /// **Example**
 /// ```rust
-///     lazy_static! {
-///         static ref NUMBER_SHOES: usize = load_env!("NUMBER_SHOES");
-///     }
-///
-///     lazy_static::initialize(&NUMBER_SHOES);
-///     println!("The number of shoes is {}", *NUMBER_SHOES);
-///     / ```
-/// A vay of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.
+///     let num_shoes: usize = load_env!("NUMBER_SHOES");
+///     assert_eq!(num_shoes, 5);
+///     println!("The number of shoes is {}", num_shoes);
+/// ```
+/// A variety of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.
 ///
 /// Internally this macro relies on `toml::value::Value.try_into()` for type conversion.
 ///
@@ -82,28 +80,30 @@ macro_rules! load_env {
         compile_error!("String must be provided to load_env macro!");
     };
     ($arg:tt, $type:ty) => {{
-        fn load_val() -> $type {
-            use crate::config::load_from_toml;
+        use crate::error::ConfigError;
+        fn load_val() -> Result<$type, ConfigError> {
+            use crate::config::{load_from_toml, PathType};
             use std::env::var;
             let env_name: &str = $arg;
 
             //1. Attempt to load from env
             if let Ok(d) = var(env_name) {
-                return d.parse().expect("a parsed value");
+                return Ok(d.parse().expect("a parsed value"));
             }
 
             //2. Attempt to load from config location
             if let Ok(d) = load_from_toml(&env_name) {
                 if let Ok(v) = d.try_into() {
-                    return v;
+                    return Ok(v);
                 }
             }
 
             //3. Failure
             panic!(
-                "Env {} not found in environment or /config/general.toml. Program start failed.",
-                env_name
-            ); //FIXME
+                "Env {} not found in environment or {}. Program start failed.",
+                env_name,
+                PathType::General.get_path()
+            );
         }
 
         load_val()
@@ -113,19 +113,26 @@ macro_rules! load_env {
     };
 }
 
-fn load_supported_langs() -> HashMap<String, Language> {
-    let file_path = PathType::Langs.get_path();
+fn load_table(file_path: &str, table_name: &str) -> Result<toml::value::Table, ConfigError> {
     let data = std::fs::read_to_string(&file_path)
         .unwrap_or_else(|_| panic!("Unable to find {}", file_path));
     let f = data
         .parse::<toml::Value>()
         .unwrap_or_else(|_| panic!("Unable to parse `{}`", file_path));
 
-    let languages: &toml::value::Table = f
-        .get("lang")
+    let table: toml::value::Table = f
+        .get(table_name)
         .unwrap_or_else(|| panic!("Unable to parse {}, no langs provided!", file_path))
         .as_table()
-        .unwrap_or_else(|| panic!("lang tag is not a table in {}", file_path));
+        .unwrap_or_else(|| panic!("lang tag is not a table in {}", file_path))
+        .to_owned();
+
+    Ok(table)
+}
+
+fn load_supported_langs() -> Result<HashMap<String, Language>, ConfigError> {
+    let file_path = PathType::Langs.get_path();
+    let languages = load_table(&file_path, "lang")?;
 
     let mut map: HashMap<String, Language> = HashMap::default();
     let keys: Vec<&String> = languages.keys().into_iter().collect();
@@ -182,10 +189,10 @@ fn load_supported_langs() -> HashMap<String, Language> {
         );
     }
 
-    map
+    Ok(map)
 }
 
-fn load_allowed_formats() -> HashSet<String> {
+fn load_allowed_formats() -> Result<HashSet<String>, ConfigError> {
     let file_path = PathType::General.get_path();
     let data = std::fs::read_to_string(&file_path)
         .unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
@@ -223,10 +230,10 @@ fn load_allowed_formats() -> HashSet<String> {
         res.insert(string);
     }
 
-    res
+    Ok(res)
 }
 
-fn load_allowed_chars() -> HashSet<char> {
+fn load_allowed_chars() -> Result<HashSet<char>, ConfigError> {
     let file_path = PathType::General.get_path();
     let data = std::fs::read_to_string(&file_path)
         .unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
@@ -251,10 +258,10 @@ fn load_allowed_chars() -> HashSet<char> {
         res.insert(c);
     });
 
-    res
+    Ok(res)
 }
 
-fn load_blacklisted_phrases() -> Vec<String> {
+fn load_blacklisted_phrases() -> Result<Vec<String>, ConfigError> {
     let file_path = PathType::General.get_path();
 
     let data = std::fs::read_to_string(&file_path)
@@ -293,10 +300,10 @@ fn load_blacklisted_phrases() -> Vec<String> {
         res.push(string);
     }
 
-    res
+    Ok(res)
 }
 
-fn load_custom_user_settings() -> HashMap<String, UserSettings> {
+fn load_custom_user_settings() -> Result<HashMap<String, UserSettings>, ConfigError> {
     let file_path = PathType::Users.get_path();
     let data = std::fs::read_to_string(&file_path)
         .unwrap_or_else(|e| panic!("Unable to find `{}` due to error {}", file_path, e));
@@ -329,7 +336,7 @@ fn load_custom_user_settings() -> HashMap<String, UserSettings> {
         res.insert(name.to_string(), settings);
     }
 
-    res
+    Ok(res)
 }
 
 pub struct Config {
@@ -379,25 +386,25 @@ pub struct Config {
     user_settings: HashMap<String, UserSettings>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            jwt_secret: load_env!("JWT_SECRET", String),
-            jwt_expiry_time_hours: load_env!("JWT_EXPIRY_TIME_HOURS", usize),
-            api_name: load_env!("API_NAME", String),
-            cache_path: load_env!("CACHE_PATH", String),
-            temp_path: load_env!("TEMP_PATH", String),
-            word_length_limit: load_env!("WORD_LENGTH_LIMIT", usize),
-            speed_max_val: load_env!("SPEED_MAX_VAL", f32),
-            speed_min_val: load_env!("SPEED_MIN_VAL", f32),
-            max_requests_acc_threshold: load_env!("MAX_REQUESTS_ACC_THRESHOLD", usize),
-            max_requests_time_period_minutes: load_env!("MAX_REQUESTS_TIME_PERIOD_MINUTES", usize),
-            supported_langs: load_supported_langs(),
-            allowed_formats: load_allowed_formats(),
-            allowed_chars: load_allowed_chars(),
-            blacklisted_phrases: load_blacklisted_phrases(),
-            user_settings: load_custom_user_settings(),
-        }
+impl Config {
+    pub fn new() -> Result<Self, ConfigError> {
+        Ok(Self {
+            jwt_secret: load_env!("JWT_SECRET", String)?,
+            jwt_expiry_time_hours: load_env!("JWT_EXPIRY_TIME_HOURS", usize)?,
+            api_name: load_env!("API_NAME", String)?,
+            cache_path: load_env!("CACHE_PATH", String)?,
+            temp_path: load_env!("TEMP_PATH", String)?,
+            word_length_limit: load_env!("WORD_LENGTH_LIMIT", usize)?,
+            speed_max_val: load_env!("SPEED_MAX_VAL", f32)?,
+            speed_min_val: load_env!("SPEED_MIN_VAL", f32)?,
+            max_requests_acc_threshold: load_env!("MAX_REQUESTS_ACC_THRESHOLD", usize)?,
+            max_requests_time_period_minutes: load_env!("MAX_REQUESTS_TIME_PERIOD_MINUTES", usize)?,
+            supported_langs: load_supported_langs()?,
+            allowed_formats: load_allowed_formats()?,
+            allowed_chars: load_allowed_chars()?,
+            blacklisted_phrases: load_blacklisted_phrases()?,
+            user_settings: load_custom_user_settings()?,
+        })
     }
 }
 
@@ -470,7 +477,7 @@ impl Config {
         AdHoc::on_ignite("Custom Configuration Loader", |rocket| {
             Box::pin(async move {
                 //Generate Config
-                let config = Config::default();
+                let config = Config::new().unwrap();
 
                 //Save to State
                 rocket.manage(config)
@@ -496,9 +503,11 @@ impl<'r> FromRequest<'r> for &'r Config {
 mod tests {
     use load_env;
 
+    use crate::error::ConfigError;
+
     #[test]
     #[should_panic]
     fn test_failed_env_load() {
-        let _: String = load_env!("this_value_does_not_exist123", String);
+        let _: Result<String, ConfigError> = load_env!("this_value_does_not_exist123", String);
     }
 }

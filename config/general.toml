@@ -41,14 +41,13 @@ SPEED_MIN_VAL = 0.5
 # over a time period of MAX_REQUESTS_TIME_PERIOD_MINUTES before we return
 # 429 responses to requests from that user.
 # This can be set fairly aggressively.
-# //TODO The API will eventually support whitelisting User's from this rate limit.
 # //TODO Setting this to -1 will disable ACC rate limiting.
 # Default: 40
 MAX_REQUESTS_ACC_THRESHOLD = 40
 
 # The time period over which request rate limits apply.
 # Default: 5
-MAX_REQUESTS_TIME_PERIOD_MINUTES = 5
+MAX_REQUESTS_TIME_PERIOD_MINUTES = 2
 
 # The number of hours a JWT token should be valid for before we require the user to 
 # revalidate their token.
@@ -69,8 +68,9 @@ ALLOWED_FORMATS = [ "wav", "mp3", "aif" ]
 # with a 400 response. 
 # Note that while you may add any chars, care should be taken to avoid certain chars, such as \, (), 
 # {}. These should *theoretically* work and be esacped correctly, but introduce security concerns.
+# TODO make "" allow all chars
 # Default: "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'_-()ĀāĒēĪīŌōŪū "
-ALLOWED_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'_-()ĀāĒēĪīŌōŪū "
+ALLOWED_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,?!@#%$/'_-()ĀāĒēĪīŌōŪū "
 
 # A list of strings that the api will return 400 errors for if they are recieved in whole or part
 # as an attempted conversion phrase.

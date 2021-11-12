@@ -7,7 +7,7 @@ env:
 
 jobs:
   build:
-    name: Rust propject
+    name: Build & Test Project
     runs-on: ubuntu-latest
     services:
       postgres:

@@ -11,7 +11,6 @@ mod tests;
 mod schema;
 
 mod common;
-mod config;
 mod macros;
 mod models;
 
@@ -25,7 +24,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::config::*;
+use config::Config;
 use diesel::prelude::*;
 use macros::{failure, reject};
 use models::UserCredentials;
@@ -89,7 +88,7 @@ async fn login(
     .await?;
 
     Ok(Response::TextOk(Data {
-        data: models::Claims::new_token(user.id, &cfg),
+        data: models::Claims::new_token(user.id, cfg),
         status: Status::Ok,
     }))
 }
@@ -137,7 +136,7 @@ async fn create(
 
     //Return token to user
     Ok(Response::TextOk(Data {
-        data: models::Claims::new_token(r.unwrap().id, &cfg),
+        data: models::Claims::new_token(r.unwrap().id, cfg),
         status: Status::Created,
     }))
 }
