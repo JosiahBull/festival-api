@@ -305,6 +305,32 @@
 <span id="305">305</span>
 <span id="306">306</span>
 <span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Common functions used in endpoints. Varied between db interactions and general processing.</span>
 
 <span class="kw">use</span> <span class="ident">argon2</span>::{
@@ -312,13 +338,16 @@
     <span class="ident">Argon2</span>,
 };
 <span class="kw">use</span> <span class="ident">chrono::Utc</span>;
+<span class="kw">use</span> <span class="ident">config::Config</span>;
 <span class="kw">use</span> <span class="ident">diesel::prelude</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">thread_rng</span>, <span class="ident">Rng</span>};
 <span class="kw">use</span> <span class="ident">rocket::http::Status</span>;
+<span class="kw">use</span> <span class="ident">sha2::Digest</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::macros::failure</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::response</span>::{<span class="ident">Data</span>, <span class="ident">Response</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">DbConn</span>, <span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>, <span class="ident">MAX_REQUESTS_TIME_PERIOD_MINUTES</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">macros::reject</span>, <span class="ident">DbConn</span>};
+<span class="kw">use</span> <span class="ident">response</span>::{<span class="ident">Data</span>, <span class="ident">Response</span>};
 
 <span class="doccomment">/// Hash a string with a random salt to be stored in the database. Utilizing the argon2id algorithm</span>
 <span class="doccomment">/// Followed best practices as laid out here: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html</span>
@@ -461,14 +490,26 @@
 <span class="doccomment">/// Returns Ok(()) if the user is not timed out.</span>
 <span class="doccomment">/// If the user is timed out returns Err(Response) with a custom message containing</span>
 <span class="doccomment">/// the number of seconds the user has left before becoming non-timed out.</span>
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">is_user_timed_out</span>(<span class="ident">conn</span>: <span class="kw-2">&amp;</span><span class="ident">DbConn</span>, <span class="ident">usr_id</span>: <span class="ident">i32</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Response</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">is_user_timed_out</span>(<span class="ident">conn</span>: <span class="kw-2">&amp;</span><span class="ident">DbConn</span>, <span class="ident">usr_id</span>: <span class="ident">i32</span>, <span class="ident">cfg</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Response</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">reqs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident"><span class="kw">crate</span>::models::GenerationRequest</span><span class="op">&gt;</span> <span class="op">=</span>
-        <span class="ident">load_recent_requests</span>(<span class="ident">conn</span>, <span class="ident">usr_id</span>, <span class="kw-2">*</span><span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">if</span> <span class="ident">reqs</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span> {
+        <span class="ident">load_recent_requests</span>(<span class="ident">conn</span>, <span class="ident">usr_id</span>, <span class="ident">cfg</span>.<span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">if</span> <span class="ident">reqs</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">cfg</span>.<span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>() {
+        <span class="comment">//If this user is exempt from rate limits, enforce that now!</span>
+        <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">find_user_in_db</span>(<span class="ident">conn</span>, <span class="ident">SearchItem::Id</span>(<span class="ident">usr_id</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">user</span>) <span class="op">=</span> <span class="ident">user</span> {
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">settings</span>) <span class="op">=</span> <span class="ident">cfg</span>.<span class="ident">USER_SETTINGS</span>().<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">user</span>.<span class="ident">usr</span>) {
+                <span class="kw">if</span> <span class="op">!</span><span class="ident">settings</span>.<span class="ident">apply_api_rate_limit</span> {
+                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+                }
+            }
+        } <span class="kw">else</span> {
+            <span class="macro">reject!</span>(<span class="string">&quot;User does not exist!&quot;</span>);
+        }
+
         <span class="comment">//Validate that this user hasn&#39;t made too many requests</span>
         <span class="kw">let</span> <span class="ident">earliest_req_time</span> <span class="op">=</span> <span class="ident">get_time_since</span>(<span class="ident">reqs</span>.<span class="ident">last</span>().<span class="ident">unwrap</span>().<span class="ident">crt</span>);
         <span class="kw">let</span> <span class="ident">max_req_time_duration</span> <span class="op">=</span>
-            <span class="ident">chrono::Duration::minutes</span>(<span class="kw-2">*</span><span class="ident">MAX_REQUESTS_TIME_PERIOD_MINUTES</span> <span class="kw">as</span> <span class="ident">i64</span>);
+            <span class="ident">chrono::Duration::minutes</span>(<span class="ident">cfg</span>.<span class="ident">MAX_REQUESTS_TIME_PERIOD_MINUTES</span>() <span class="kw">as</span> <span class="ident">i64</span>);
 
         <span class="kw">if</span> <span class="ident">earliest_req_time</span> <span class="op">&lt;</span> <span class="ident">max_req_time_duration</span> {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Response::TextErr</span>(<span class="ident">Data</span> {
@@ -520,12 +561,23 @@
 }
 
 <span class="doccomment">/// Generate a randomised alphanumeric (base 62) string of a requested length.</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">generate_random_alphanumeric</span>(<span class="ident">length</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
     <span class="ident">thread_rng</span>()
         .<span class="ident">sample_iter</span>(<span class="ident">rand::distributions::Alphanumeric</span>)
         .<span class="ident">take</span>(<span class="ident">length</span>)
         .<span class="ident">map</span>(<span class="ident">char::from</span>)
         .<span class="ident">collect</span>()
+}
+
+<span class="doccomment">/// Takes an input reference string, and hashes it using the sha512 algorithm.</span>
+<span class="doccomment">/// The resultant value is returned as a string in hexadecmial - meaning it is url and i/o safe.</span>
+<span class="doccomment">/// The choice of sha512 over sha256 is that sha512 tends to perform better at  longer strings - which we are likely to</span>
+<span class="doccomment">/// encounter with this api. Users the sha2 crate internally for hashing.</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sha_512_hash</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hasher</span> <span class="op">=</span> <span class="ident">sha2::Sha512::new</span>();
+    <span class="ident">hasher</span>.<span class="ident">update</span>(<span class="ident">input</span>);
+    <span class="macro">format!</span>(<span class="string">&quot;{:x}&quot;</span>, <span class="ident">hasher</span>.<span class="ident">finalize</span>())
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
@@ -574,7 +626,7 @@
         <span class="comment">// upon an error being encountered.</span>
         <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">compare_hashed_strings</span>(<span class="ident">pwd</span>, <span class="ident">String::from</span>(<span class="string">&quot;&quot;</span>)).<span class="ident">expect_err</span>(<span class="string">&quot;failed comparison&quot;</span>);
         <span class="kw">match</span> <span class="ident">result</span> {
-            <span class="ident"><span class="kw">crate</span>::response::Response::TextErr</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="ident">response::Response::TextErr</span>(<span class="ident">data</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">assert_eq!</span>(<span class="ident">data</span>.<span class="ident">status</span>(), <span class="ident">Status::InternalServerError</span>);
                 <span class="macro">assert_eq!</span>(
                     <span class="ident">data</span>.<span class="ident">data</span>(),

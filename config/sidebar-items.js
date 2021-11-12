@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["PathType","The different config paths we can load from"]],"struct":[["Config",""]]});

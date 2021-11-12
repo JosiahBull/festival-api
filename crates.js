@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["festival_api"];
+window.ALL_CRATES = ["cache","config","festival_api","proc_macros","response"];
