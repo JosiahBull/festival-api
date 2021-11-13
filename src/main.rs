@@ -19,10 +19,7 @@ extern crate rocket;
 #[macro_use]
 extern crate diesel;
 
-use std::{
-    path::Path,
-    process::{Command, Stdio},
-};
+use std::{path::Path, process::{Command, Stdio}};
 
 use config::Config;
 use diesel::prelude::*;
@@ -31,8 +28,8 @@ use models::UserCredentials;
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
 
-#[cfg(not(target_os = "linux"))]
-compile_error!("Unable to compile for your platform! This API is only available for Linux due to dependence on Bash commands.");
+// #[cfg(not(target_os = "linux"))]
+// compile_error!("Unable to compile for your platform! This API is only available for Linux due to dependence on Bash commands.");
 
 /// Database connection
 #[rocket_sync_db_pools::database("postgres_database")]
@@ -41,6 +38,7 @@ pub struct DbConn(diesel::PgConnection);
 // General Todos
 // TODO Implement timeouts for repeated failed login attempts.
 // TODO the api shouldn't charge for serving files from the cache. If we also provide an endpoint for finding out which
+// TODO create proc-macro for generating fallback endpoints
 // words are cached, we could allow users to more smartly choose which phrases they wish to display.
 // This should also reduce load on the api significant as it'll encourage users to pull common words!
 
@@ -93,6 +91,17 @@ async fn login(
     }))
 }
 
+#[post("/login", data = "<creds>", rank = 2)]
+fn fallback_login(creds: Option<Json<UserCredentials>>) -> &'static str {
+    if creds.is_none() {
+        return "Credentials not provided, please provide a body with your request!"
+    }
+
+    // While we are not *explicitly* checking for this, if we get this far it is the only thing
+    // that could be wrong with their request.
+    "Remember to specify your content type as application/json!"
+}
+
 /// Attempt to create a new user account
 #[post("/create", data = "<creds>", format = "application/json")]
 async fn create(
@@ -139,6 +148,19 @@ async fn create(
         data: models::Claims::new_token(r.unwrap().id, cfg),
         status: Status::Created,
     }))
+}
+
+/// A fallback function in the event the users request fails to hit the main create endpoint.
+#[doc(hidden)]
+#[post("/create", data = "<creds>", rank = 2)]
+fn fallback_create(creds: Option<Json<UserCredentials>>) -> &'static str {
+    if creds.is_none() {
+        return "Credentials not provided, please provide a body with your request!"
+    }
+
+    // While we are not *explicitly* checking for this, if we get this far it is the only thing
+    // that could be wrong with their request.
+    "Remember to specify your content type as application/json!"
 }
 
 /// Expects a phrase package, attempts to convert it to a sound file to be returned to the user.
@@ -285,12 +307,22 @@ async fn convert(
     )))
 }
 
+#[post("/convert", data = "<phrase_package>", rank = 2)]
+fn fallback_convert(phrase_package: Option<Json<models::PhrasePackage>>) -> &'static str {
+    if phrase_package.is_none() {
+        return "Phrase package not provided, please provide a body with your request!"
+    }
+
+    "Remember to specify your content type as application/json!"    
+}
+
 #[doc(hidden)]
 #[launch]
 fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![index, docs])
-        .mount("/api/", routes![login, create, convert])
+        .mount("/api/", routes![login, create, convert]) //Main endpoints
+        .mount("/api/", routes![fallback_login, fallback_create, fallback_convert]) //Fallback endpoints
         .attach(Config::fairing())
         .attach(DbConn::fairing())
 }
