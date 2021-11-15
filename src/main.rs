@@ -23,13 +23,13 @@ use std::{path::Path, process::{Command, Stdio}};
 
 use config::Config;
 use diesel::prelude::*;
-use macros::{failure, reject};
-use models::UserCredentials;
+use macros::{failure, reject, json, unwrap_json};
+use models::{UserCredentials, PhrasePackage};
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
 
-// #[cfg(not(target_os = "linux"))]
-// compile_error!("Unable to compile for your platform! This API is only available for Linux due to dependence on Bash commands.");
+#[cfg(not(target_os = "linux"))]
+compile_error!("Unable to compile for your platform! This API is only available for Linux due to dependence on Bash commands.");
 
 /// Database connection
 #[rocket_sync_db_pools::database("postgres_database")]
@@ -38,9 +38,9 @@ pub struct DbConn(diesel::PgConnection);
 // General Todos
 // TODO Implement timeouts for repeated failed login attempts.
 // TODO the api shouldn't charge for serving files from the cache. If we also provide an endpoint for finding out which
-// TODO create proc-macro for generating fallback endpoints
 // words are cached, we could allow users to more smartly choose which phrases they wish to display.
 // This should also reduce load on the api significant as it'll encourage users to pull common words!
+// TODO create proc-macro for generating fallback endpoints
 
 /// The base url of the program. This is just a catch-all for those who stumble across the api without knowing what it does.
 #[get("/")]
@@ -58,10 +58,11 @@ fn docs() -> String {
 #[post("/login", data = "<creds>", format = "application/json")]
 async fn login(
     conn: DbConn,
-    creds: Json<UserCredentials>,
+    creds: json!(UserCredentials),
     cfg: &Config,
 ) -> Result<Response, Response> {
-    let creds = creds.into_inner();
+    //Validate that the provided user data is correct.
+    let creds = unwrap_json!(creds);
 
     //Locate the user that is attempting to login
     let user: Option<models::User> =
@@ -91,25 +92,26 @@ async fn login(
     }))
 }
 
-#[post("/login", data = "<creds>", rank = 2)]
-fn fallback_login(creds: Option<Json<UserCredentials>>) -> &'static str {
-    if creds.is_none() {
-        return "Credentials not provided, please provide a body with your request!"
-    }
-
-    // While we are not *explicitly* checking for this, if we get this far it is the only thing
-    // that could be wrong with their request.
-    "Remember to specify your content type as application/json!"
+/// A fallback endpoint, this is called if the user provides and incorrect content type on their request 
+/// e.g. not application/json.
+//TODO Generate with procedural macro
+#[post("/login", rank = 2)]
+fn fallback_login() -> Response {
+    Response::TextErr(Data {
+        data: String::from("Remember to specify your content type as application/json!"),
+        status: Status::UnsupportedMediaType
+    })
 }
 
 /// Attempt to create a new user account
 #[post("/create", data = "<creds>", format = "application/json")]
 async fn create(
     conn: DbConn,
-    creds: Json<UserCredentials>,
+    creds: json!(UserCredentials),
     cfg: &Config,
 ) -> Result<Response, Response> {
-    let creds = creds.into_inner();
+    //Validate that the provided user data is correct.
+    let creds = unwrap_json!(creds);
 
     //Validate password requirements, for now all we check is length
     if creds.pwd.len() < 8 {
@@ -150,17 +152,15 @@ async fn create(
     }))
 }
 
-/// A fallback function in the event the users request fails to hit the main create endpoint.
-#[doc(hidden)]
-#[post("/create", data = "<creds>", rank = 2)]
-fn fallback_create(creds: Option<Json<UserCredentials>>) -> &'static str {
-    if creds.is_none() {
-        return "Credentials not provided, please provide a body with your request!"
-    }
-
-    // While we are not *explicitly* checking for this, if we get this far it is the only thing
-    // that could be wrong with their request.
-    "Remember to specify your content type as application/json!"
+/// A fallback endpoint, this is called if the user provides and incorrect content type on their request 
+/// e.g. not application/json.
+//TODO Generate with procedural macro
+#[post("/create", rank = 2)]
+fn fallback_create() -> Response {
+    Response::TextErr(Data {
+        data: String::from("Remember to specify your content type as application/json!"),
+        status: Status::UnsupportedMediaType
+    })
 }
 
 /// Expects a phrase package, attempts to convert it to a sound file to be returned to the user.
@@ -170,11 +170,14 @@ fn fallback_create(creds: Option<Json<UserCredentials>>) -> &'static str {
 async fn convert(
     token: Result<models::Claims, Response>,
     conn: DbConn,
-    mut phrase_package: Json<models::PhrasePackage>,
+    phrase_package: json!(PhrasePackage),
     cfg: &Config,
 ) -> Result<Response, Response> {
-    //Validate token
+    // Validate token
     let token = token?;
+
+    // Validate that the phrase_package is valid json
+    let mut phrase_package = unwrap_json!(phrase_package);
 
     // Validate PhrasePackage
     phrase_package.validated(cfg)?;
@@ -307,13 +310,21 @@ async fn convert(
     )))
 }
 
-#[post("/convert", data = "<phrase_package>", rank = 2)]
-fn fallback_convert(phrase_package: Option<Json<models::PhrasePackage>>) -> &'static str {
-    if phrase_package.is_none() {
-        return "Phrase package not provided, please provide a body with your request!"
-    }
 
-    "Remember to specify your content type as application/json!"    
+#[post("/convert", rank = 2)]
+fn fallback_convert() -> Response {
+    Response::TextErr(Data {
+        data: String::from("Remember to specify your content type as application/json!"),
+        status: Status::UnsupportedMediaType
+    })
+}
+
+#[catch(404)]
+fn not_found_catcher(_status: Status, req: &rocket::Request) -> String {
+    //TODO write a catcher which can search endpoints and return a suggestion.
+    // If a user does "GET /login", we should return a 404 but with a message such as. "GET /login does not exist, but POST /login does! Try that?"
+    // This sort of feedback could be very useful for a learning user to interact with the api.
+    format!("Unable to find {}, double check that you are using the correct request method with a valid url!", req.uri())
 }
 
 #[doc(hidden)]
@@ -321,6 +332,7 @@ fn fallback_convert(phrase_package: Option<Json<models::PhrasePackage>>) -> &'st
 fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![index, docs])
+        .register("/", catchers![not_found_catcher])
         .mount("/api/", routes![login, create, convert]) //Main endpoints
         .mount("/api/", routes![fallback_login, fallback_create, fallback_convert]) //Fallback endpoints
         .attach(Config::fairing())

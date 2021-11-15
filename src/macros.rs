@@ -94,4 +94,44 @@ macro_rules! failure {
     };
 }
 
-pub(crate) use {failure, reject};
+/// Defines a JSON value to be received through the api
+/// This value will be automatically defined, to access the value inside of your function
+/// use the sister function `unwrap_json` to access the internal value.
+//TODO make this a proc macro so users are not required to manually unwrap things.
+/// Example
+/// ```rust
+///     #[get("/", data = "<item>")]
+///     fn index(item: json!(String)) -> Result<Response, Response> {
+///         unwrap_json!(item)
+///     }
+/// ```
+macro_rules! json {
+    ($arg:tt) => {
+        Result<Json<$arg>, rocket::serde::json::Error<'_>>
+    };
+}
+
+
+macro_rules! unwrap_json {
+    ($arg:tt) => {
+        {
+            if let Err(e) = $arg {
+                match e {
+                    rocket::serde::json::Error::Io(e) => failure!("Failed to parse request body due to an i/o error. This is usually a problem with the server, and not with your request. Try again later. \n {}", e),
+                    rocket::serde::json::Error::Parse(bdy, err) => {
+                        if bdy.is_empty() {
+                            reject!("No json body found!");    
+                        }
+                        return Err(Response::TextErr(Data {
+                            data: format!("Invalid json body {}", err),
+                            status: Status::UnprocessableEntity
+                        }));
+                    },
+                }
+            }
+            $arg.unwrap().into_inner()
+        }
+    };
+}
+
+pub(crate) use {failure, reject, json, unwrap_json};
