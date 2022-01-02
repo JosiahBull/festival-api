@@ -16,7 +16,7 @@ CACHE_PATH = "./cache"
 
 # Closely related to the above cache path.
 # This is a temporary location for files to be stored, i.e. if doing a conversion from .wav
-# to .mp4. This is also where .wavs that aren't cached will be stored after generation 
+# to .mp3. This is also where .wavs that aren't cached will be stored after generation
 # before being deleted. Files can be deleted from here when the server is shutdown without
 # risk.
 # Default: "./cache/temp"

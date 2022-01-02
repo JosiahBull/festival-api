@@ -7,13 +7,13 @@ edition = "2018"
 
 [workspace]
 members = [
-    "src/lib/cache/",
+    "src/lib/festvox/",
     "src/lib/response/",
     "src/lib/config/",
 ]
 
 [dependencies]
-cache = { path = "src/lib/cache/" }
+festvox = { path = "src/lib/festvox/" }
 response = { path = "src/lib/response/" }
 config = { path = "src/lib/config/" }
 
