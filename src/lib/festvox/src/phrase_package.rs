@@ -43,7 +43,7 @@ impl PhrasePackage {
             return Err(format!(
                 "Provided lang ({}) is not supported by this api!",
                 &self.lang
-            ))
+            ));
         }
 
         //Validate fild format selection
@@ -51,7 +51,7 @@ impl PhrasePackage {
             return Err(format!(
                 "Requested format ({}) is not supported by this api!",
                 &self.fmt
-            ))
+            ));
         }
 
         //Check that provided phrase is valid
@@ -59,10 +59,10 @@ impl PhrasePackage {
             return Err(format!(
                 "Phrase is too long! Greater than {} chars",
                 cfg.WORD_LENGTH_LIMIT()
-            ))
+            ));
         }
         if self.word.is_empty() {
-            return Err(format!("No word provided!"))
+            return Err(format!("No word provided!"));
         }
 
         //Validate that the nothing from the blacklist is present
@@ -72,7 +72,7 @@ impl PhrasePackage {
                 return Err(format!(
                     "Blacklisted word! Phrase ({}) is not allowed!",
                     phrase.trim()
-                ))
+                ));
             }
         }
 
@@ -81,7 +81,7 @@ impl PhrasePackage {
                 return Err(format!(
                     "Char ({}) is not allowed to be sent to this api! Please try again.",
                     c
-                ))
+                ));
             }
         }
 
@@ -91,9 +91,9 @@ impl PhrasePackage {
 
 #[cfg(test)]
 mod tests {
+    use crate::PhrasePackage;
     use config::Config;
     use utils::generate_random_alphanumeric;
-    use crate::PhrasePackage;
 
     #[test]
     fn validate_success_package() {

@@ -5,6 +5,4 @@ mod models;
 pub use crate::config::*;
 
 #[cfg(test)]
-mod tests {
-
-}
+mod tests {}

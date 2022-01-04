@@ -228,13 +228,11 @@ pub fn get_time_since(time: chrono::DateTime<Utc>) -> chrono::Duration {
 #[cfg(test)]
 #[cfg(not(tarpaulin_include))]
 mod test {
-    use super::{
-        compare_hashed_strings, get_time_since, hash_string_with_salt,
-    };
+    use super::{compare_hashed_strings, get_time_since, hash_string_with_salt};
     use chrono::Utc;
     use rocket::http::Status;
-    use utils::generate_random_alphanumeric;
     use std::collections::HashSet;
+    use utils::generate_random_alphanumeric;
 
     #[test]
     fn test_create_hash_password() {

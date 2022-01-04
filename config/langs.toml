@@ -4,15 +4,15 @@
 # Example
 # [lang.spanish]
 # iso_691-1_code = "es" #The code expected to be provided by the users to the api
-# festival_code = "es" #The code the api will use with festival to produce the sound file
+# festival_code = "voice_akl_mi_pk06_cg" #The code the api will use with festival to produce the sound file, or if using flite, the path to the flitevox file
 # enabled = false #Whether this Lang should currently be functional.
 
 [lang.english]
 iso_691-1_code = "en"
-festival_code = "voice_cmu_us_aew_cg"
+festival_code = "voices/akl_nz_cw.flitevox"
 enabled = true
 
 [lang.maori]
 iso_691-1_code = "mi"
-festival_code = "voice_akl_mi_pk06_cg"
+festival_code = "voices/akl_nz_cwsad.flitevox"
 enabled = false

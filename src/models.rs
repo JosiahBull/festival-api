@@ -149,7 +149,7 @@ impl<'r> FromRequest<'r> for Claims {
 #[cfg(test)]
 #[cfg(not(tarpaulin_include))]
 mod tests {
-    use super::{Claims};
+    use super::Claims;
     use config::Config;
 
     #[test]

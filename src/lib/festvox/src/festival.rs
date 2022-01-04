@@ -1,10 +1,14 @@
-use std::{path::{PathBuf, Path}, process::{Command, Stdio}, convert::Infallible};
+use crate::{PhrasePackage, TtsGenerator};
 use config::Config;
 use rocket::request::FromRequest;
-use serde::{Serialize, Deserialize};
-use crate::{PhrasePackage, TtsGenerator};
+use serde::{Deserialize, Serialize};
+use std::{
+    convert::Infallible,
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
+};
 
-#[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize, Clone)]
+#[derive(Debug)]
 pub enum FestivalError {
     ConversionError(String),
 }
@@ -16,15 +20,17 @@ impl std::fmt::Display for FestivalError {
 }
 
 //XXX
-impl std::error::Error for FestivalError { }
+impl std::error::Error for FestivalError {}
 
-#[derive(Debug, Default, Hash, PartialEq, Eq, Serialize, Deserialize, Copy, Clone)]
-pub struct Festival { }
+#[derive(Debug)]
+pub struct Festival {}
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for &'r Festival {
     type Error = Infallible;
-    async fn from_request(req: &'r rocket::Request<'_>) -> rocket::request::Outcome<Self, Self::Error> {
+    async fn from_request(
+        req: &'r rocket::Request<'_>,
+    ) -> rocket::request::Outcome<Self, Self::Error> {
         let state = req
             .rocket()
             .state::<Festival>()
@@ -38,10 +44,14 @@ impl<'r> TtsGenerator<'r> for Festival {
     type Error = FestivalError;
 
     fn new() -> Result<Self, Self::Error> {
-        Ok(Festival { })
+        Ok(Festival {})
     }
 
-    async fn generate(&self, details: &PhrasePackage, config: &Config) -> Result<PathBuf, <Self as TtsGenerator<'r>>::Error> {
+    async fn generate(
+        &self,
+        details: &PhrasePackage,
+        config: &Config,
+    ) -> Result<PathBuf, <Self as TtsGenerator<'r>>::Error> {
         // Create the basefile name to be stored on the system. The solution to this is to hash the provided
         // name into something that is always unique, but can be easily stored on the underlying system.
         let file_name_base: String = utils::sha_512_hash(&format!(
@@ -87,11 +97,10 @@ impl<'r> TtsGenerator<'r> for Festival {
             let word_gen = word_gen.wait_with_output();
 
             if let Err(e) = word_gen {
-                return Err(
-                    FestivalError::ConversionError(
-                        format!("Failed to generate wav from provided string. {}", e)
-                    )
-                )
+                return Err(FestivalError::ConversionError(format!(
+                    "Failed to generate wav from provided string. {}",
+                    e
+                )));
             }
             let word_gen = word_gen.unwrap();
 
@@ -105,7 +114,7 @@ impl<'r> TtsGenerator<'r> for Festival {
                     FestivalError::ConversionError(
                         format!("Failed to generate wav from provided string due to error.\nStdout: \n{}\nStderr: \n{}", stdout, stderr)
                     )
-                )
+                );
             }
         }
 
@@ -127,26 +136,23 @@ impl<'r> TtsGenerator<'r> for Festival {
                 .output();
 
             if let Err(e) = con {
-                return Err(
-                    FestivalError::ConversionError(
-                        format!("Failed to convert wav due to error. {}", e)
-                    )
-                )
+                return Err(FestivalError::ConversionError(format!(
+                    "Failed to convert wav due to error. {}",
+                    e
+                )));
             }
             let con = con.unwrap();
 
             if !con.status.success() {
-                let stdout =
-                    String::from_utf8(con.stdout).unwrap_or_else(|_| "Unable to parse stdout!".into());
-                let stderr =
-                    String::from_utf8(con.stderr).unwrap_or_else(|_| "Unable to parse stderr!".into());
+                let stdout = String::from_utf8(con.stdout)
+                    .unwrap_or_else(|_| "Unable to parse stdout!".into());
+                let stderr = String::from_utf8(con.stderr)
+                    .unwrap_or_else(|_| "Unable to parse stderr!".into());
 
-
-                return Err(
-                    FestivalError::ConversionError(
-                        format!("Failed to convert wav to format due to error.\nStdout: \n{}\nStderr: \n{}", stdout, stderr)
-                    )
-                )
+                return Err(FestivalError::ConversionError(format!(
+                    "Failed to convert wav to format due to error.\nStdout: \n{}\nStderr: \n{}",
+                    stdout, stderr
+                )));
             }
         }
 

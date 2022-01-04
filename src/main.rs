@@ -25,7 +25,7 @@ use std::{
 
 use config::Config;
 use diesel::prelude::*;
-use festvox::{PhrasePackage, Festival, TtsGenerator};
+use festvox::{Festival, PhrasePackage, TtsGenerator, Flite};
 use macros::{failure, reject};
 use models::UserCredentials;
 use response::{Data, Response};
@@ -149,21 +149,19 @@ async fn convert(
     token: Result<models::Claims, Response>,
     conn: DbConn,
     mut phrase_package: Json<PhrasePackage>,
-    generator: &Festival,
+    generator: &Flite,
     cfg: &Config,
 ) -> Result<Response, Response> {
     //Validate token
     let token = token?;
 
     // Validate PhrasePackage
-    phrase_package
-        .validated(cfg)
-        .map_err(|e| {
-            Response::TextErr(Data {
-                data: e,
-                status: Status::BadRequest
-            })
-        })?;
+    phrase_package.validated(cfg).map_err(|e| {
+        Response::TextErr(Data {
+            data: e,
+            status: Status::BadRequest,
+        })
+    })?;
 
     // Validate that this user hasn't been timed out
     common::is_user_timed_out(&conn, token.sub, cfg).await?;
@@ -172,17 +170,14 @@ async fn convert(
     common::log_request(&conn, token.sub, &phrase_package).await?;
 
     // Generate the phrase
-
     let generated_file = generator
-        .generate(
-            &phrase_package,
-            cfg,
-        ).await
+        .generate(&phrase_package, cfg)
+        .await
         .map_err(|e| {
             //XXX Displaying internal errors to users...?
             Response::TextErr(Data {
                 data: e.to_string(),
-                status: Status::InternalServerError
+                status: Status::InternalServerError,
             })
         })?;
 
@@ -191,6 +186,7 @@ async fn convert(
         Err(e) => failure!("Unable to open processed file {}", e),
     };
 
+    //XXX Make generator function return a filehandle which will destroy itself on drop :)
     //Remove the link on the filesystem, note that as we have an opened NamedFile, that should persist.
     //See https://github.com/SergioBenitez/Rocket/issues/610 for more info.
     // if file_name_wav != converted_file {
@@ -220,5 +216,5 @@ fn rocket() -> _ {
         .mount("/api/", routes![login, create, convert])
         .attach(Config::fairing())
         .attach(DbConn::fairing())
-        .attach(Festival::fairing())
+        .attach(Flite::fairing())
 }
