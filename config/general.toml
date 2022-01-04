@@ -96,4 +96,4 @@ ALLOWED_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.
 # Take care with what phrases you blacklist and why!
 #
 # Default: []
-BLACKLISTED_PHRASES = []
+BLACKLISTED_PHRASES = ["test", " things ", " stuff "]

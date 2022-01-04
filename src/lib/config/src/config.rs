@@ -478,7 +478,6 @@ impl Config {
             Box::pin(async move {
                 //Generate Config
                 let config = Config::new().unwrap();
-
                 //Save to State
                 rocket.manage(config)
             })

@@ -5,6 +5,7 @@ use config::Config;
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
+use utils::generate_random_alphanumeric;
 
 #[test]
 fn login_success() {

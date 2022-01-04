@@ -14,7 +14,7 @@
 ///     }
 /// ```
 ///
-/// /// ```rust
+/// ```rust
 ///     #[get("/")]
 ///     fn index() -> Response {
 ///         let reason: String = "tall";
@@ -24,6 +24,7 @@
 ///
 /// If you need more detail in your rejection, you should construct a Response
 /// manually for the user. This returns with `ContentType: Plain/Text;`.
+#[macro_export]
 macro_rules! reject {
     () => {
         compile_error!("String must be provided to rejection macro!");
@@ -31,6 +32,8 @@ macro_rules! reject {
     ($arg:tt) => {
         {
             use response::{Data, Response};
+            use rocket::http::Status;
+
             return Err(Response::TextErr(Data {
                 data: String::from($arg),
                 status: Status::BadRequest,
@@ -40,6 +43,7 @@ macro_rules! reject {
     ($($arg:tt)*) => {
         {
             use response::{Data, Response};
+            use rocket::http::Status;
             return Err(Response::TextErr(Data {
                 data: format!($($arg)*),
                 status: Status::BadRequest,
@@ -70,6 +74,7 @@ macro_rules! reject {
 ///
 /// If you need a more detailed failure response other htan 500 + a message
 /// please construct the response manually.
+#[macro_export]
 macro_rules! failure {
     () => {
         compile_error!("String must be provided to error macro!");
@@ -93,5 +98,3 @@ macro_rules! failure {
         }
     };
 }
-
-pub(crate) use {failure, reject};

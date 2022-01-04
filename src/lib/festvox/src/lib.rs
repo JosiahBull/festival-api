@@ -1,8 +1,7 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}
+mod tts;
+mod phrase_package;
+mod festival;
+
+pub use tts::TtsGenerator;
+pub use phrase_package::PhrasePackage;
+pub use festival::*;

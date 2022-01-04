@@ -4,6 +4,7 @@ use config::{Config, PathType};
 use rocket::http::{ContentType, Header, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
+use utils::generate_random_alphanumeric;
 
 /// Test that whitelisting users from the api ratelimits works correctly
 #[test]

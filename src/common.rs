@@ -7,13 +7,11 @@ use argon2::{
 use chrono::Utc;
 use config::Config;
 use diesel::prelude::*;
-#[cfg(test)]
-use rand::{thread_rng, Rng};
+use festvox::PhrasePackage;
+use macros::{failure, reject};
 use rocket::http::Status;
-use sha2::Digest;
 
-use crate::macros::failure;
-use crate::{macros::reject, DbConn};
+use crate::DbConn;
 use response::{Data, Response};
 
 /// Hash a string with a random salt to be stored in the database. Utilizing the argon2id algorithm
@@ -199,7 +197,7 @@ pub async fn is_user_timed_out(conn: &DbConn, usr_id: i32, cfg: &Config) -> Resu
 pub async fn log_request(
     conn: &DbConn,
     usr_id: i32,
-    phrase_package: &crate::models::PhrasePackage,
+    phrase_package: &PhrasePackage,
 ) -> Result<(), Response> {
     let req = crate::models::NewGenerationRequest {
         usr_id,
@@ -227,34 +225,15 @@ pub fn get_time_since(time: chrono::DateTime<Utc>) -> chrono::Duration {
     now.signed_duration_since(time)
 }
 
-/// Generate a randomised alphanumeric (base 62) string of a requested length.
-#[cfg(test)]
-pub fn generate_random_alphanumeric(length: usize) -> String {
-    thread_rng()
-        .sample_iter(rand::distributions::Alphanumeric)
-        .take(length)
-        .map(char::from)
-        .collect()
-}
-
-/// Takes an input reference string, and hashes it using the sha512 algorithm.
-/// The resultant value is returned as a string in hexadecmial - meaning it is url and i/o safe.
-/// The choice of sha512 over sha256 is that sha512 tends to perform better at  longer strings - which we are likely to
-/// encounter with this api. Users the sha2 crate internally for hashing.
-pub fn sha_512_hash(input: &str) -> String {
-    let mut hasher = sha2::Sha512::new();
-    hasher.update(input);
-    format!("{:x}", hasher.finalize())
-}
-
 #[cfg(test)]
 #[cfg(not(tarpaulin_include))]
 mod test {
     use super::{
-        compare_hashed_strings, generate_random_alphanumeric, get_time_since, hash_string_with_salt,
+        compare_hashed_strings, get_time_since, hash_string_with_salt,
     };
     use chrono::Utc;
     use rocket::http::Status;
+    use utils::generate_random_alphanumeric;
     use std::collections::HashSet;
 
     #[test]

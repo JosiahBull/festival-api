@@ -11,7 +11,6 @@ mod tests;
 mod schema;
 
 mod common;
-mod macros;
 mod models;
 
 #[macro_use]
@@ -26,6 +25,7 @@ use std::{
 
 use config::Config;
 use diesel::prelude::*;
+use festvox::{PhrasePackage, Festival, TtsGenerator};
 use macros::{failure, reject};
 use models::UserCredentials;
 use response::{Data, Response};
@@ -148,14 +148,22 @@ async fn create(
 async fn convert(
     token: Result<models::Claims, Response>,
     conn: DbConn,
-    mut phrase_package: Json<models::PhrasePackage>,
+    mut phrase_package: Json<PhrasePackage>,
+    generator: &Festival,
     cfg: &Config,
 ) -> Result<Response, Response> {
     //Validate token
     let token = token?;
 
     // Validate PhrasePackage
-    phrase_package.validated(cfg)?;
+    phrase_package
+        .validated(cfg)
+        .map_err(|e| {
+            Response::TextErr(Data {
+                data: e,
+                status: Status::BadRequest
+            })
+        })?;
 
     // Validate that this user hasn't been timed out
     common::is_user_timed_out(&conn, token.sub, cfg).await?;
@@ -165,117 +173,36 @@ async fn convert(
 
     // Generate the phrase
 
-    // Create the basefile name to be stored on the system. The solution to this is to hash the provided
-    // name into something that is always unique, but can be easily stored on the underlying system.
-    let temp = format!(
-        "{}_{}_{}",
-        &phrase_package.word, &phrase_package.lang, &phrase_package.speed
-    );
-    let file_name_base: String = common::sha_512_hash(&temp);
+    let generated_file = generator
+        .generate(
+            &phrase_package,
+            cfg,
+        ).await
+        .map_err(|e| {
+            //XXX Displaying internal errors to users...?
+            Response::TextErr(Data {
+                data: e.to_string(),
+                status: Status::InternalServerError
+            })
+        })?;
 
-    let file_name_wav = format!("{}/{}.wav", cfg.CACHE_PATH(), &file_name_base,);
-
-    if !Path::new(&file_name_wav).exists() {
-        // Generate a wav file if this file does not already exist.
-
-        let input = format!("\"{}\"", &phrase_package.word);
-
-        let echo_child = Command::new("echo")
-            .arg(input)
-            .stdout(Stdio::piped())
-            .spawn()
-            .expect("Failed to start echo process");
-
-        let echo_out = echo_child.stdout.expect("big sad");
-
-        let word_gen = Command::new("text2wave")
-            .arg("-eval")
-            .arg(format!(
-                "({})",
-                cfg.SUPPORTED_LANGS()
-                    .get(&phrase_package.lang)
-                    .unwrap()
-                    .festival_code
-            ))
-            .arg("-eval")
-            .arg(format!(
-                "(Parameter.set 'Duration_Stretch {})",
-                &phrase_package.speed
-            ))
-            .arg("-o")
-            .arg(&file_name_wav)
-            .stdin(Stdio::from(echo_out))
-            .spawn()
-            .expect("failed text2wave command");
-
-        let word_gen = word_gen.wait_with_output();
-
-        //TODO refactor this error handling into another function
-        if let Err(e) = word_gen {
-            failure!("Failed to generate wav from provided string. {}", e)
-        }
-        let word_gen = word_gen.unwrap();
-
-        if !word_gen.status.success() {
-            let stdout = String::from_utf8(word_gen.stdout)
-                .unwrap_or_else(|_| "Unable to parse stdout!".into());
-            let stderr = String::from_utf8(word_gen.stderr)
-                .unwrap_or_else(|_| "Unable to parse stderr!".into());
-
-            failure!("Failed to generate wav from provided string due to error.\nStdout: \n{}\nStderr: \n{}", stdout, stderr)
-        }
-    }
-
-    let mut converted_file = file_name_wav.clone();
-
-    //Format the file to the desired output
-    if phrase_package.fmt != "wav" {
-        //Carry out conversion
-        converted_file = format!(
-            "{}/temp/{}.{}",
-            cfg.CACHE_PATH(),
-            &file_name_base,
-            phrase_package.fmt
-        );
-
-        let con = Command::new("sox")
-            .arg(&file_name_wav)
-            .arg(&converted_file)
-            .output();
-
-        //TODO refactor this erorr handling into another function that can be tested individually
-        if let Err(e) = con {
-            failure!("Failed to generate wav from provided string. {}", e)
-        }
-        let con = con.unwrap();
-
-        if !con.status.success() {
-            let stdout =
-                String::from_utf8(con.stdout).unwrap_or_else(|_| "Unable to parse stdout!".into());
-            let stderr =
-                String::from_utf8(con.stderr).unwrap_or_else(|_| "Unable to parse stderr!".into());
-
-            failure!("Failed to generate wav from provided string due to error.\nStdout: \n{}\nStderr: \n{}", stdout, stderr)
-        }
-    }
-
-    let resp_file = match NamedFile::open(&converted_file).await {
+    let resp_file = match NamedFile::open(&generated_file).await {
         Ok(f) => f,
         Err(e) => failure!("Unable to open processed file {}", e),
     };
 
     //Remove the link on the filesystem, note that as we have an opened NamedFile, that should persist.
     //See https://github.com/SergioBenitez/Rocket/issues/610 for more info.
-    if file_name_wav != converted_file {
-        if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&converted_file)).await {
-            failure!(
-                "Unable to remove temporary file from system prior to response {}",
-                e
-            )
-        };
-    }
+    // if file_name_wav != converted_file {
+    //     if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&converted_file)).await {
+    //         failure!(
+    //             "Unable to remove temporary file from system prior to response {}",
+    //             e
+    //         )
+    //     };
+    // }
 
-    //Return the response
+    // Return the response
     Ok(Response::FileDownload((
         Data {
             data: resp_file,
@@ -293,4 +220,5 @@ fn rocket() -> _ {
         .mount("/api/", routes![login, create, convert])
         .attach(Config::fairing())
         .attach(DbConn::fairing())
+        .attach(Festival::fairing())
 }

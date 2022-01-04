@@ -3,10 +3,10 @@ use std::collections::HashSet;
 use crate::models::UserCredentials;
 use crate::rocket;
 use config::PathType;
-use rand::{thread_rng, Rng};
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
+use utils::generate_random_alphanumeric;
 
 //***** Helper Methods *****//
 pub fn create_test_account(client: &Client) -> (UserCredentials, String, String) {
@@ -58,15 +58,6 @@ impl Drop for AlteredToml {
             )
         })
     }
-}
-
-/// Generate a randomised alphanumeric (base 62) string of a requested length.
-pub fn generate_random_alphanumeric(length: usize) -> String {
-    thread_rng()
-        .sample_iter(rand::distributions::Alphanumeric)
-        .take(length)
-        .map(char::from)
-        .collect()
 }
 
 #[test]
