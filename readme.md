@@ -37,11 +37,21 @@ docker-compose --env-file .env up #This takes a long time
 
 # Development
 
+Main TODOs to a 0.3 release:
+- [ ] Remove temporary files from converter and generator (add configuration)
+- [ ] Update docker container, ci/cd to use ffmpeg instead of sox
+- [ ] Create a docker image which anyone can get easily
+- [ ] Host the project
+- [ ] Move tests to their own integration folder (i.e. ./tests, instead of ./src/tests)
+- [ ] Improve test coverage above 90%
+- [ ] Write documentation all over
+- [ ] Develop Maori Flite voices
+
 ## Fedora
 
 To develop this api, you must have [Rust](https://www.rust-lang.org/tools/install) installed.
 
-This api also depends on Postgres, Sox, and Festival, and the festvox_cmu_us_aew lang pack.
+This api also depends on Postgres, Ffmpeg, and Flite.
 
 ### Dependencies
 

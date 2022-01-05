@@ -1,6 +1,6 @@
 # Ignore
 /target
-/.env
+.env
 /cache/**/*
 /tarpaulin-report.html
 /lcov.info

@@ -1,5 +1,5 @@
 
-name: tarpaulin
+name: coverage
 on:
   push:
     branches: [ main ]
