@@ -1,4 +1,4 @@
-use std::{process::Command, path::PathBuf, convert::Infallible};
+use std::{convert::Infallible, path::PathBuf, process::Command};
 
 use rocket::request::FromRequest;
 
@@ -13,12 +13,19 @@ pub enum FliteError {
 
 impl std::fmt::Display for FliteError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        write!(f, "Error occured within generator")
     }
 }
 
-//XXX
-impl std::error::Error for FliteError {}
+impl std::error::Error for FliteError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match *self {
+            FliteError::UnableToStart(ref e) => Some(e),
+            FliteError::IoFailure(ref e) => Some(e),
+            _ => None,
+        }
+    }
+}
 
 pub struct Flite {}
 
@@ -49,22 +56,18 @@ impl<'r> TtsGenerator<'r> for Flite {
         details: &crate::PhrasePackage,
         config: &config::Config,
     ) -> Result<std::path::PathBuf, Self::Error> {
+        let file_name_base = utils::sha_512_hash(&format!("{}_{}", &details.word, &details.lang));
 
-        let file_name_base = utils::sha_512_hash(&format!(
-            "{}_{}",
-            &details.word, &details.lang
-        ));
-
-        let file_path = PathBuf::from(config.CACHE_PATH())
-            .join(format!("{}.wav", file_name_base));
+        let file_path = PathBuf::from(config.CACHE_PATH()).join(format!("{}.wav", file_name_base));
 
         let word_gen = Command::new("flite")
             .arg("-voice")
-            .arg(&config
-                .SUPPORTED_LANGS()
-                .get(&details.lang)
-                .unwrap()
-                .festival_code
+            .arg(
+                &config
+                    .SUPPORTED_LANGS()
+                    .get(&details.lang)
+                    .unwrap()
+                    .festival_code,
             )
             .arg("-t")
             .arg(format!("\"{}\"", &details.word))
@@ -74,11 +77,11 @@ impl<'r> TtsGenerator<'r> for Flite {
 
         let word_gen = match word_gen {
             Ok(f) => f.wait_with_output(),
-            Err(e) => return Err(FliteError::UnableToStart(e))
+            Err(e) => return Err(FliteError::UnableToStart(e)),
         };
 
         match word_gen {
-            Ok(f) if f.status.success() => { },
+            Ok(f) if f.status.success() => {}
             Ok(f) => {
                 let stdout = String::from_utf8(f.stdout)
                     .unwrap_or_else(|_| "Unable to parse stdout!".into());
@@ -91,7 +94,7 @@ impl<'r> TtsGenerator<'r> for Flite {
                     )
                 );
             }
-            Err(e) => return Err(FliteError::IoFailure(e))
+            Err(e) => return Err(FliteError::IoFailure(e)),
         }
 
         Ok(file_path)

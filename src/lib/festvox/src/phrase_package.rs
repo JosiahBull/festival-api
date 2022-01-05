@@ -62,7 +62,7 @@ impl PhrasePackage {
             ));
         }
         if self.word.is_empty() {
-            return Err(format!("No word provided!"));
+            return Err(String::from("No word provided!"));
         }
 
         //Validate that the nothing from the blacklist is present
@@ -91,13 +91,15 @@ impl PhrasePackage {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use crate::PhrasePackage;
     use config::Config;
     use utils::generate_random_alphanumeric;
 
     #[test]
     fn validate_success_package() {
-        let cfg = Config::new().unwrap();
+        let cfg = Config::new(PathBuf::from("../../../config")).unwrap();
 
         let mut pack = PhrasePackage {
             word: String::from("Hello, world!"),
@@ -135,7 +137,7 @@ mod tests {
     #[test]
     #[allow(clippy::float_cmp)]
     fn validate_correction_package() {
-        let cfg = Config::new().unwrap();
+        let cfg = Config::new(PathBuf::from("../../../config")).unwrap();
         // Validate the min value correct is in place!
 
         //We can't run this test if the min value is 0.0!
@@ -181,7 +183,7 @@ mod tests {
 
     #[test]
     fn validate_failure_package() {
-        let cfg = Config::new().unwrap();
+        let cfg = Config::new(PathBuf::from("../../../config")).unwrap();
 
         // Validate that empty string fails
         let mut pack = PhrasePackage {
@@ -216,7 +218,7 @@ mod tests {
 
     #[test]
     fn invalid_file_formats() {
-        let cfg = Config::new().unwrap();
+        let cfg = Config::new(PathBuf::from("../../../config")).unwrap();
 
         let mut pack = PhrasePackage {
             word: String::from("hello"),
@@ -236,7 +238,7 @@ mod tests {
 
     #[test]
     fn valid_file_formats() {
-        let cfg = Config::new().unwrap();
+        let cfg = Config::new(PathBuf::from("../../../config")).unwrap();
 
         for format in cfg.ALLOWED_FORMATS().iter() {
             let mut pack = PhrasePackage {

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use super::common::*;
 use crate::rocket;
 use config::{Config, PathType};
@@ -281,7 +283,7 @@ fn success_conversion() {
         response.headers().get_one("content-disposition").unwrap(),
         "attachment; filename=\"output.wav\""
     );
-    assert_eq!(response.into_bytes().unwrap().len(), 63840);
+    assert!(response.into_bytes().unwrap().len() > 30000);
 }
 
 #[test]
@@ -400,7 +402,7 @@ fn test_limits() {
 /// Validate that all file format options work as intended
 #[test]
 fn test_every_format() {
-    let cfg: Config = Config::new().unwrap();
+    let cfg: Config = Config::new(PathBuf::from("./config")).unwrap();
     for format in cfg.ALLOWED_FORMATS().iter() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let (_, _, token) = create_test_account(&client);

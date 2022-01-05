@@ -19,18 +19,3 @@ fn test_index() {
     );
     assert!(!response.into_string().unwrap().is_empty());
 }
-
-#[test]
-fn test_docs() {
-    let client = Client::tracked(rocket()).expect("valid rocket instance");
-    let response = client.get(uri!(crate::docs)).dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    assert_eq!(
-        response
-            .headers()
-            .get_one("Content-Type")
-            .expect("a content type header"),
-        "text/plain; charset=utf-8"
-    );
-    assert!(!response.into_string().unwrap().is_empty());
-}

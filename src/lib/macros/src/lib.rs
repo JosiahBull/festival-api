@@ -81,7 +81,7 @@ macro_rules! failure {
     };
     ($arg:tt) => {
         {
-            use crate::response::{Data, Response};
+            use response::{Data, Response};
             return Err(Response::TextErr(Data {
                 data: String::from($arg),
                 status: Status::InternalServerError,

@@ -1,7 +1,6 @@
 use crate::{PhrasePackage, TtsGenerator};
 use config::Config;
 use rocket::request::FromRequest;
-use serde::{Deserialize, Serialize};
 use std::{
     convert::Infallible,
     path::{Path, PathBuf},
@@ -118,45 +117,7 @@ impl<'r> TtsGenerator<'r> for Festival {
             }
         }
 
-        let mut converted_file = file_name_wav.clone();
-
-        //Format the file to the desired output
-        if details.fmt != "wav" {
-            //Carry out conversion
-            converted_file = format!(
-                "{}/temp/{}.{}",
-                config.CACHE_PATH(),
-                &file_name_base,
-                details.fmt
-            );
-
-            let con = Command::new("sox")
-                .arg(&file_name_wav)
-                .arg(&converted_file)
-                .output();
-
-            if let Err(e) = con {
-                return Err(FestivalError::ConversionError(format!(
-                    "Failed to convert wav due to error. {}",
-                    e
-                )));
-            }
-            let con = con.unwrap();
-
-            if !con.status.success() {
-                let stdout = String::from_utf8(con.stdout)
-                    .unwrap_or_else(|_| "Unable to parse stdout!".into());
-                let stderr = String::from_utf8(con.stderr)
-                    .unwrap_or_else(|_| "Unable to parse stderr!".into());
-
-                return Err(FestivalError::ConversionError(format!(
-                    "Failed to convert wav to format due to error.\nStdout: \n{}\nStderr: \n{}",
-                    stdout, stderr
-                )));
-            }
-        }
-
-        let output = PathBuf::from(converted_file);
+        let output = PathBuf::from(file_name_wav);
         Ok(output)
     }
 }

@@ -18,14 +18,10 @@ extern crate rocket;
 #[macro_use]
 extern crate diesel;
 
-use std::{
-    path::Path,
-    process::{Command, Stdio},
-};
-
 use config::Config;
+use converter::{Converter, Ffmpeg};
 use diesel::prelude::*;
-use festvox::{Festival, PhrasePackage, TtsGenerator, Flite};
+use festvox::{Flite, PhrasePackage, TtsGenerator};
 use macros::{failure, reject};
 use models::UserCredentials;
 use response::{Data, Response};
@@ -40,20 +36,11 @@ pub struct DbConn(diesel::PgConnection);
 
 // General Todos
 // TODO Implement timeouts for repeated failed login attempts.
-// TODO the api shouldn't charge for serving files from the cache. If we also provide an endpoint for finding out which
-// words are cached, we could allow users to more smartly choose which phrases they wish to display.
-// This should also reduce load on the api significant as it'll encourage users to pull common words!
 
 /// The base url of the program. This is just a catch-all for those who stumble across the api without knowing what it does.
 #[get("/")]
 fn index(cfg: &Config) -> String {
-    format!("Welcome to {} API for converting text into downloadable wav files! Please make a request to /docs for documentation.", cfg.API_NAME())
-}
-
-/// Returns the OAS docs for this api in an easily downloadable file.
-#[get("/docs")]
-fn docs() -> String {
-    "Api docs not yet setup with automated github actions. Feel free to implement that though if you're up for a challenge!".to_string()
+    format!("Welcome to {}'s TTS API.", cfg.API_NAME())
 }
 
 /// Attempts to login a student with provided credentials.
@@ -150,6 +137,7 @@ async fn convert(
     conn: DbConn,
     mut phrase_package: Json<PhrasePackage>,
     generator: &Flite,
+    converter: &Converter,
     cfg: &Config,
 ) -> Result<Response, Response> {
     //Validate token
@@ -162,6 +150,7 @@ async fn convert(
             status: Status::BadRequest,
         })
     })?;
+    let phrase_package = phrase_package.into_inner();
 
     // Validate that this user hasn't been timed out
     common::is_user_timed_out(&conn, token.sub, cfg).await?;
@@ -181,12 +170,34 @@ async fn convert(
             })
         })?;
 
-    let resp_file = match NamedFile::open(&generated_file).await {
-        Ok(f) => f,
-        Err(e) => failure!("Unable to open processed file {}", e),
-    };
+    // Convert the file
+    if !converter.is_supported(&phrase_package.fmt) {
+        failure!("requested file format is not available on this api, this is a misconfiguration of the deployment")
+    }
 
-    //XXX Make generator function return a filehandle which will destroy itself on drop :)
+    match converter.convert(
+        generated_file.clone(),
+        phrase_package.fmt.clone(),
+        cfg,
+    ).await {
+        Ok(f) => {
+            let resp_file = match NamedFile::open(&f).await {
+                Ok(f) => f,
+                Err(e) => failure!("Unable to open processed file {}", e),
+            };
+
+            Ok(Response::FileDownload((
+                Data {
+                    data: resp_file,
+                    status: Status::Ok,
+                },
+                format!("output.{}", phrase_package.fmt),
+            )))
+        },
+        Err(_) => failure!("unable to convert file to desired format due to internal error, try again with request as wav"),
+    }
+
+    //XXX Make generator function return a filehandle which will destroy itself on drop, or something similar
     //Remove the link on the filesystem, note that as we have an opened NamedFile, that should persist.
     //See https://github.com/SergioBenitez/Rocket/issues/610 for more info.
     // if file_name_wav != converted_file {
@@ -197,24 +208,18 @@ async fn convert(
     //         )
     //     };
     // }
-
-    // Return the response
-    Ok(Response::FileDownload((
-        Data {
-            data: resp_file,
-            status: Status::Ok,
-        },
-        format!("output.{}", phrase_package.fmt),
-    )))
 }
 
 #[doc(hidden)]
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .mount("/", routes![index, docs])
+        .mount("/", routes![index])
         .mount("/api/", routes![login, create, convert])
         .attach(Config::fairing())
         .attach(DbConn::fairing())
         .attach(Flite::fairing())
+        .attach(Converter::fairing(vec![Box::new(
+            Ffmpeg::new().expect("a valid ffmpeg instance"),
+        )]))
 }

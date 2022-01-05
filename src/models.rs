@@ -149,6 +149,8 @@ impl<'r> FromRequest<'r> for Claims {
 #[cfg(test)]
 #[cfg(not(tarpaulin_include))]
 mod tests {
+    use std::path::PathBuf;
+
     use super::Claims;
     use config::Config;
 
@@ -156,7 +158,7 @@ mod tests {
     fn create_new_token() {
         let _time_tolerance_seconds = 2;
 
-        let cfg = Config::new().unwrap();
+        let cfg = Config::new(PathBuf::from("./config")).unwrap();
 
         let usr_id = 459;
         let token = Claims::new_token(usr_id, &cfg);
