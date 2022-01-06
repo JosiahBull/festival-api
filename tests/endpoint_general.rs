@@ -1,14 +1,14 @@
-use crate::rocket;
 use rocket::http::Status;
 use rocket::local::blocking::Client;
 use rocket::uri;
+use festival_api::rocket;
 
 //***** Test Methods *****//
 
 #[test]
 fn test_index() {
     let client = Client::tracked(rocket()).expect("valid rocket instance");
-    let response = client.get(uri!(crate::index)).dispatch();
+    let response = client.get(uri!(festival_api::index)).dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
         response

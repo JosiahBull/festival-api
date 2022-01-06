@@ -1,17 +1,12 @@
 #![doc = include_str!("../readme.md")]
 
-#[cfg(test)]
-#[cfg(not(tarpaulin_include))]
-#[doc(hidden)]
-mod tests;
-
 #[cfg(not(tarpaulin_include))]
 #[doc(hidden)]
 #[rustfmt::skip]
 mod schema;
 
-mod common;
-mod models;
+pub mod common;
+pub mod models;
 
 #[macro_use]
 extern crate rocket;
@@ -39,13 +34,13 @@ pub struct DbConn(diesel::PgConnection);
 
 /// The base url of the program. This is just a catch-all for those who stumble across the api without knowing what it does.
 #[get("/")]
-fn index(cfg: &Config) -> String {
+pub fn index(cfg: &Config) -> String {
     format!("Welcome to {}'s TTS API.", cfg.API_NAME())
 }
 
 /// Attempts to login a student with provided credentials.
 #[post("/login", data = "<creds>", format = "application/json")]
-async fn login(
+pub async fn login(
     conn: DbConn,
     creds: Json<UserCredentials>,
     cfg: &Config,
@@ -82,7 +77,7 @@ async fn login(
 
 /// Attempt to create a new user account
 #[post("/create", data = "<creds>", format = "application/json")]
-async fn create(
+pub async fn create(
     conn: DbConn,
     creds: Json<UserCredentials>,
     cfg: &Config,
@@ -132,7 +127,7 @@ async fn create(
 /// Requires an authenticate user account to access. This endpoint also features strict rate limiting
 /// as generating .wav files is very resource intensive.
 #[post("/convert", data = "<phrase_package>", format = "application/json")]
-async fn convert(
+pub async fn convert(
     token: Result<models::Claims, Response>,
     conn: DbConn,
     mut phrase_package: Json<PhrasePackage>,
@@ -212,7 +207,7 @@ async fn convert(
 
 #[doc(hidden)]
 #[launch]
-fn rocket() -> _ {
+pub fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![index])
         .mount("/api/", routes![login, create, convert])

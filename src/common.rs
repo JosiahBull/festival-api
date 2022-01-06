@@ -18,10 +18,10 @@ use response::{Data, Response};
 /// Followed best practices as laid out here: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 /// Example Usage
 /// ```rust
-///
+/// # use festival_api::common::{compare_hashed_strings, hash_string_with_salt};
 /// let unhashed_string = String::from("your-text-here, maybe a password?");
-/// let hashed_string = hash_string_with_salt(unhashed_string.clone()).unwrap();
-/// let second_hashed_string = hash_string_with_salt(unhashed_string.clone()).unwrap();
+/// let hashed_string = hash_string_with_salt(unhashed_string.clone());
+/// let second_hashed_string = hash_string_with_salt(unhashed_string.clone());
 ///
 /// assert_ne!(unhashed_string, hashed_string);
 /// assert_ne!(unhashed_string, second_hashed_string);
@@ -42,15 +42,16 @@ pub fn hash_string_with_salt(s: String) -> String {
 /// which may be returned to the user.
 /// Example Usage:
 /// ```rust
+/// # use festival_api::common::{compare_hashed_strings, hash_string_with_salt};
 /// let original_string: String = String::from("hello, world");
-/// let hashed_string: String = hash_string_with_salt(original_string).unwrap();
+/// let hashed_string: String = hash_string_with_salt(original_string.clone());
 ///
 /// //A valid comparison
-/// let result = compare_hashed_strings(original_string, hashed_string);
+/// let result = compare_hashed_strings(original_string.clone(), hashed_string.clone()).unwrap();
 /// assert!(result);
 ///
 /// //An invalid comparison
-/// let result = compared_hashed_strings(String::from("other, string"). hashed_string);
+/// let result = compare_hashed_strings(String::from("other, string"), hashed_string.clone()).unwrap();
 /// assert!(!result);
 /// ```
 pub fn compare_hashed_strings(orignal: String, hashed: String) -> Result<bool, Response> {

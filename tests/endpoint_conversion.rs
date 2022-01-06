@@ -1,7 +1,7 @@
 use std::path::PathBuf;
-
-use super::common::*;
-use crate::rocket;
+mod common;
+use festival_api::rocket;
+use common::*;
 use config::{Config, PathType};
 use rocket::http::{ContentType, Header, Status};
 use rocket::local::blocking::Client;

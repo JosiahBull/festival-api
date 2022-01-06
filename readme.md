@@ -46,6 +46,7 @@ Main TODOs to a 0.3 release:
 - [ ] Improve test coverage above 90%
 - [ ] Write documentation all over
 - [ ] Develop Maori Flite voices
+- [ ] Reimplement speed selection + add a test for it
 
 ## Fedora
 
@@ -66,19 +67,11 @@ This api also depends on Postgres, Ffmpeg, and Flite.
     # Follow here: https://docs.docker.com/engine/install/fedora/
 
     # Install Dependencies
-    sudo dnf install festival sox libpq libpq-devel
+    sudo dnf install festival flite ffmpeg libpq libpq-devel
     cargo install diesel_cli --no-default-features --features postgres
     cargo install rustfmt #for automatic code formatting
     cargo install clippy #collection of useful lints
     cargo install cargo-tarpaulin #test coverage
-
-    #Install default language pack
-    wget http://www.festvox.org/packed/festival/2.5/voices/festvox_cmu_us_aew_cg.tar.gz
-    tar -xf festvox_cmu_us_aew_cg.tar.gz
-    sudo mkdir -p /usr/share/festival/voices/us/
-    sudo cp -r festival/lib/voices/us/cmu_us_aew_cg/ /usr/share/festival/voices/us/
-    rm -rd ./festival
-    rm festvox_cmu_us_aew_cg.tar.gz
 ```
 
 ### Development

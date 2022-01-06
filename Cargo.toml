@@ -36,3 +36,7 @@ chrono = { version = "0.4.19", features = ["serde"] }
 futures = { version = "0.3.17" }
 serde_json = "1.0.64"
 utils = { path = "src/lib/utils/" }
+
+[lib]
+name = "festival_api"
+path = "src/main.rs"

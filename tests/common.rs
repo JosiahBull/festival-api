@@ -1,9 +1,8 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-use crate::models::UserCredentials;
-use crate::rocket;
 use config::PathType;
+use festival_api::models::UserCredentials;
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
@@ -31,6 +30,7 @@ pub fn create_test_account(client: &Client) -> (UserCredentials, String, String)
 /// A simple struct which allows a property on toml to be changed.
 pub struct AlteredToml(PathType, String);
 
+#[allow(dead_code)]
 impl AlteredToml {
     // TODO make this smarter by allowing a key-value replace, rather than a specific string.
     // This should make the test more robust.
