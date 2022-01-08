@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use config::Config;
 use rocket::{error, fairing::AdHoc, request::FromRequest};
-use std::{collections::HashSet, convert::Infallible, path::PathBuf};
+use std::{collections::HashSet, convert::Infallible};
+use utils::FileHandle;
 
 #[derive(Debug)]
 pub enum ConversionError {
@@ -34,15 +35,16 @@ impl std::error::Error for ConversionError {
 }
 
 #[async_trait]
-pub trait ConverterSubprocess: Send + Sync {
+pub trait ConverterSubprocess: Send + Sync + std::fmt::Debug {
     fn name(&self) -> &str;
     fn supported_outputs(&self) -> HashSet<String>;
     async fn convert(
         &self,
-        input: PathBuf,
+        input: FileHandle,
+        target_speed: f32,
         output: &str,
         cfg: &Config,
-    ) -> Result<PathBuf, ConversionError>;
+    ) -> Result<FileHandle, ConversionError>;
 }
 
 pub struct Converter {
@@ -74,14 +76,14 @@ impl Converter {
     //XXX improve error responses
     pub async fn convert(
         &self,
-        input: PathBuf,
-        desired_format: String,
+        input: FileHandle,
+        desired_format: &str, //XXX accept any?
+        target_speed: f32,
         cfg: &Config,
-    ) -> Result<PathBuf, ()> {
+    ) -> Result<FileHandle, ()> {
         for sub in self.subs.iter() {
-            if sub.supported_outputs().contains(&desired_format) {
-                //attempt conversion with this sub processor
-                match sub.convert(input.clone(), &desired_format, cfg).await {
+            if sub.supported_outputs().contains(desired_format) {
+                match sub.convert(input.clone(), target_speed, desired_format, cfg).await {
                     Ok(res) => return Ok(res),
                     Err(e) => error!("Error in converter `{}` occured {:?}", e, sub.name()),
                 }
@@ -105,7 +107,7 @@ impl<'r> FromRequest<'r> for &'r Converter {
     }
 }
 
-mod tests {
-    #[test]
-    fn basic_functionality() {}
-}
+// mod tests {
+// #[test]
+// fn basic_functionality() {}
+// }

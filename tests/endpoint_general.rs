@@ -1,7 +1,7 @@
+use festival_api::rocket;
 use rocket::http::Status;
 use rocket::local::blocking::Client;
 use rocket::uri;
-use festival_api::rocket;
 
 //***** Test Methods *****//
 

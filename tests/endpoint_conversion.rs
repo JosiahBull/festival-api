@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 mod common;
-use festival_api::rocket;
 use common::*;
 use config::{Config, PathType};
+use festival_api::rocket;
 use rocket::http::{ContentType, Header, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
@@ -537,4 +537,59 @@ fn test_invalid_formats() {
         body,
         String::from("Requested format (this-will-never-exist) is not supported by this api!")
     );
+}
+
+#[test]
+fn test_speed() {
+    let cfg: Config = Config::new(PathBuf::from("./config")).unwrap();
+
+    for format in cfg.ALLOWED_FORMATS().iter() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let (_, _, token) = create_test_account(&client);
+
+        let normal = format!(
+            "{{
+            \"word\": \"The University of Auckland\",
+            \"lang\": \"en\",
+            \"speed\": 1.0,
+            \"fmt\": \"{}\"
+        }}",
+            format
+        );
+        let fast = format!(
+            "{{
+            \"word\": \"The University of Auckland\",
+            \"lang\": \"en\",
+            \"speed\": 2.0,
+            \"fmt\": \"{}\"
+        }}",
+            format
+        );
+
+        let response_normal = client
+            .post(uri!("/api/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token.clone()))
+            .body(&normal)
+            .dispatch();
+
+        let response_fast = client
+            .post(uri!("/api/convert"))
+            .header(ContentType::new("application", "json"))
+            .header(Header::new("Authorisation", token))
+            .body(&fast)
+            .dispatch();
+
+        let normal_size = response_normal.into_bytes().unwrap().len();
+        let fast_size = response_fast.into_bytes().unwrap().len();
+
+        let diff = (fast_size / normal_size) as f64 - 0.5;
+
+        println!(
+            "Testing format {} with diff: {}\nnorm:{} fast:{}",
+            format, diff, normal_size, fast_size
+        );
+
+        assert!(diff < 0.05);
+    }
 }

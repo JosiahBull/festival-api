@@ -171,12 +171,13 @@ pub async fn convert(
     }
 
     match converter.convert(
-        generated_file.clone(),
-        phrase_package.fmt.clone(),
+        generated_file,
+        &phrase_package.fmt,
+        phrase_package.speed,
         cfg,
     ).await {
         Ok(f) => {
-            let resp_file = match NamedFile::open(&f).await {
+            let resp_file = match NamedFile::open(f.underlying()).await {
                 Ok(f) => f,
                 Err(e) => failure!("Unable to open processed file {}", e),
             };

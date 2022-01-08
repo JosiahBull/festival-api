@@ -42,11 +42,11 @@ Main TODOs to a 0.3 release:
 - [ ] Update docker container, ci/cd to use ffmpeg instead of sox
 - [ ] Create a docker image which anyone can get easily
 - [ ] Host the project
-- [ ] Move tests to their own integration folder (i.e. ./tests, instead of ./src/tests)
-- [ ] Improve test coverage above 90%
+- [x] Move tests to their own integration folder (i.e. ./tests, instead of ./src/tests)
+- [x] Improve test coverage above 90%
 - [ ] Write documentation all over
 - [ ] Develop Maori Flite voices
-- [ ] Reimplement speed selection + add a test for it
+- [x] Reimplement speed selection + add a test for it
 
 ## Fedora
 

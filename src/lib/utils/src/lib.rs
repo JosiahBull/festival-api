@@ -1,4 +1,6 @@
 mod utils {
+    use std::{path::{Path, PathBuf}, ops::Deref, fmt::Debug};
+
     use rand::{thread_rng, Rng};
     use sha2::Digest;
 
@@ -19,6 +21,46 @@ mod utils {
         let mut hasher = sha2::Sha512::new();
         hasher.update(input);
         format!("{:x}", hasher.finalize())
+    }
+
+    /// A useful file handle for wrapping temporary files, without any form of validation or checking
+    #[derive(Debug, Clone)]
+    pub struct FileHandle {
+        path: PathBuf,
+        to_cache: bool,
+    }
+
+    impl std::fmt::Display for FileHandle {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            self.path.fmt(f)
+        }
+    }
+
+    impl FileHandle {
+        pub fn new(path: PathBuf, to_cache: bool,) -> Self {
+            Self { path, to_cache }
+        }
+
+        pub fn underlying(&self) -> &PathBuf {
+            &self.path
+        }
+    }
+
+    impl Drop for FileHandle {
+        #[allow(unused_must_use)]
+        fn drop(&mut self) {
+            if !self.to_cache {
+                std::fs::remove_file(Path::new(&self.path));
+            }
+        }
+    }
+
+    impl Deref for FileHandle {
+        type Target = PathBuf;
+
+        fn deref(&self) -> &Self::Target {
+            &self.path
+        }
     }
 }
 

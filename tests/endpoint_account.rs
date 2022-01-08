@@ -1,11 +1,14 @@
 mod common;
+use crate::common::create_test_account;
 use config::Config;
-use festival_api::{models::{Claims, UserCredentials}, rocket};
+use festival_api::{
+    models::{Claims, UserCredentials},
+    rocket,
+};
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
 use utils::generate_random_alphanumeric;
-use crate::common::create_test_account;
 
 #[test]
 fn login_success() {

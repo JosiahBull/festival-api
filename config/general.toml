@@ -63,11 +63,11 @@ JWT_EXPIRY_TIME_HOURS = 720
 # Default: [ "wav", "mp3", "aif" ]
 ALLOWED_FORMATS = [ "wav", "mp3", "aif" ]
 
-# The list of allowed chars that the user may provided in a phrase.
+# The list of allowed chars that the user may provide in a phrase.
 # If the user attempts to send a char that is not present in this list, the request will be rejected
 # with a 400 response. 
 # Note that while you may add any chars, care should be taken to avoid certain chars, such as \, (), 
-# {}. These should *theoretically* work and be esacped correctly, but introduce security concerns.
+# {}. These should *theoretically* work and are escaped correctly, but may introduce security concerns.
 # TODO make "" allow all chars
 # Default: "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'_-()ĀāĒēĪīŌōŪū "
 ALLOWED_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,?!@#%$/'_-()ĀāĒēĪīŌōŪū "

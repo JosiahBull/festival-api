@@ -5,9 +5,10 @@ use std::{collections::HashSet, ffi::OsStr, path::PathBuf, process::Command};
 use crate::{ConversionError, ConverterSubprocess};
 use async_trait::async_trait;
 use config::Config;
-use utils::generate_random_alphanumeric;
+use utils::{generate_random_alphanumeric, FileHandle};
 //TODO Setup temporary files to be cleared on file close.
 
+#[derive(Debug)]
 pub struct Ffmpeg {}
 
 impl Ffmpeg {
@@ -49,42 +50,48 @@ impl ConverterSubprocess for Ffmpeg {
 
     async fn convert(
         &self,
-        input: PathBuf,
+        input: FileHandle,
+        desired_speed: f32,
         output: &str,
         cfg: &Config,
-    ) -> Result<PathBuf, ConversionError> {
-        if !input.exists() {
+    ) -> Result<FileHandle, ConversionError> {
+        let pathbuf = input.underlying();
+
+        if !pathbuf.exists() {
             return Err(ConversionError::NotFound);
         }
-        if !input.is_file() {
+        if !pathbuf.is_file() {
             return Err(ConversionError::NotFile);
         }
-        match input.extension() {
-            Some(ext) if ext == output => return Ok(input),
-            Some(_) => {}
+        match pathbuf.extension() {
+            Some(ext) if ext == output && desired_speed == 1.0 => return Ok(input.to_owned()),
             None => return Err(ConversionError::NoExtension),
+            _ => {}
         }
 
         let converted_file_path = format!(
-            "{}/temp/{}_{}.{}",
+            "{}/temp/{}_{}_{}.{}",
             cfg.CACHE_PATH(),
-            input
+            pathbuf
                 .file_name()
                 .unwrap_or(OsStr::new(""))
                 .to_string_lossy(),
+            desired_speed,
             generate_random_alphanumeric(10),
             output,
         );
 
         let con = Command::new("ffmpeg")
             .arg("-i")
-            .arg(input)
+            .arg(pathbuf)
+            .arg("-filter:a")
+            .arg(format!("atempo={}", desired_speed)) //Change speed of audio
             .arg("-vn") //Strip & disable all video
             .arg(&converted_file_path)
             .output();
 
         match con {
-            Ok(o) if o.status.success() => Ok(PathBuf::from(converted_file_path)),
+            Ok(o) if o.status.success() => Ok(FileHandle::new(PathBuf::from(converted_file_path), false)),
             Ok(o) => {
                 let stdout = String::from_utf8(o.stdout)
                     .unwrap_or_else(|_| "Unable to parse stdout!".into());
