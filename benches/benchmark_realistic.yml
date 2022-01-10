@@ -1,0 +1,78 @@
+config:
+  target: "http://127.0.0.1:8000"
+  phases:
+    # - duration: 10
+    #   arrivalRate: 5
+    #   name: Warm up
+    # - duration: 60
+    #   arrivalRate: 5
+    #   rampTo: 45
+    #   name: Ramp up load
+    - duration: 600
+      arrivalRate: 150
+      name: Sustained load
+  ensure:
+    p95: 1000
+  payload:
+  -
+    path: "wordlist.csv"
+    fields:
+      - "keyword"
+  -
+    path: "wordlist.csv"
+    fields:
+      - "keyword2"
+
+scenarios:
+  - name: "generate new word"
+    flow:
+      - post:
+          url: "/api/convert"
+          headers:
+            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDQzOTA2NzEsImlhdCI6MTY0MTc5ODY3MSwic3ViIjoxfQ.nhtuA5-8gerR_PcevfLmqVQUyUrD-DutJmxKTg5n4wc
+          content-type: "application/json"
+          json:
+            word: "{{ keyword }} {{ keyword2 }}"
+            lang: "en"
+            speed: 1.0
+            fmt: "wav"
+    weight: 2
+  - name: "generate new word and convert"
+    flow:
+      - post:
+          url: "/api/convert"
+          headers:
+            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDQzOTA2NzEsImlhdCI6MTY0MTc5ODY3MSwic3ViIjoxfQ.nhtuA5-8gerR_PcevfLmqVQUyUrD-DutJmxKTg5n4wc
+          content-type: "application/json"
+          json:
+            word: "{{ keyword }} {{ keyword2 }}"
+            lang: "en"
+            speed: 1.0
+            fmt: "mp3"
+    weight: 2
+  - name: "get cached word"
+    flow:
+      - post:
+          url: "/api/convert"
+          headers:
+            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDQzOTA2NzEsImlhdCI6MTY0MTc5ODY3MSwic3ViIjoxfQ.nhtuA5-8gerR_PcevfLmqVQUyUrD-DutJmxKTg5n4wc
+          content-type: "application/json"
+          json:
+            word: "some word"
+            lang: "en"
+            speed: 1.0
+            fmt: "wav"
+    weight: 10
+  - name: "get cached word convert"
+    flow:
+      - post:
+          url: "/api/convert"
+          headers:
+            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDQzOTA2NzEsImlhdCI6MTY0MTc5ODY3MSwic3ViIjoxfQ.nhtuA5-8gerR_PcevfLmqVQUyUrD-DutJmxKTg5n4wc
+          content-type: "application/json"
+          json:
+            word: "some word"
+            lang: "en"
+            speed: 1.5
+            fmt: "wav"
+    weight: 10

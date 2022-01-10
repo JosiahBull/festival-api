@@ -3,7 +3,7 @@ CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     usr TEXT NOT NULL,
     pwd TEXT NOT NULL, -- Will be hashed
-    lckdwn timestamp with time zone DEFAULT (now() at time zone 'utc') NOT NULL, --//TODO If this is a date in the future, this user should get 429 until then. 
+    lckdwn timestamp with time zone DEFAULT (now() at time zone 'utc') NOT NULL,
     crt timestamp with time zone DEFAULT (now() at time zone 'utc') NOT NULL,
     last_accessed timestamp with time zone DEFAULT (now() at time zone 'utc') NOT NULL
 );
@@ -20,11 +20,8 @@ CREATE TABLE reqs (
     CONSTRAINT fk_users FOREIGN KEY(usr_id) REFERENCES users(id)
 );
 
--- A smart-cache, useful for caching the most popular x requests so we don't have to regenerate them.
-CREATE TABLE cache (
-    id SERIAL PRIMARY KEY,
-    crt timestamp with time zone DEFAULT (now() at time zone 'utc') NOT NULL,
-    nme TEXT NOT NULL,
-    word TEXT NOT NULL,
-    lang TEXT NOT NULL
-)
+-- Create relevant indexes
+CREATE INDEX user_id_index ON users (id);
+CREATE INDEX user_usr_index ON users (usr);
+CREATE INDEX req_crt_index ON reqs (crt);
+CREATE INDEX req_id_index ON reqs (id);

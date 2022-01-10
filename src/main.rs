@@ -13,6 +13,7 @@ extern crate rocket;
 #[macro_use]
 extern crate diesel;
 
+use cache_manager::Cache;
 use config::Config;
 use converter::{Converter, Ffmpeg};
 use diesel::prelude::*;
@@ -134,6 +135,7 @@ pub async fn convert(
     generator: &Flite,
     converter: &Converter,
     cfg: &Config,
+    cache: Cache,
 ) -> Result<Response, Response> {
     //Validate token
     let token = token?;
@@ -170,8 +172,9 @@ pub async fn convert(
         failure!("requested file format is not available on this api, this is a misconfiguration of the deployment")
     }
 
-    match converter.convert(
-        generated_file,
+    //Generate Response
+    let response = match converter.convert(
+        generated_file.clone(),
         &phrase_package.fmt,
         phrase_package.speed,
         cfg,
@@ -191,7 +194,15 @@ pub async fn convert(
             )))
         },
         Err(_) => failure!("unable to convert file to desired format due to internal error, try again with request as wav"),
+    };
+
+    //Cache File
+    if let Err(e) =  cache.used(generated_file.to_path_buf()).await {
+        error!("cache error {}", e);
+        failure!("cache failure");
     }
+
+    response
 }
 
 #[doc(hidden)]
@@ -206,4 +217,5 @@ pub fn rocket() -> _ {
         .attach(Converter::fairing(vec![Box::new(
             Ffmpeg::new().expect("a valid ffmpeg instance"),
         )]))
+        .attach(Cache::fairing())
 }

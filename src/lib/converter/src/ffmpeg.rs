@@ -1,6 +1,6 @@
 //! A wrapper for ffmpeg, a library for converting from one audio format to another (among other things).
 
-use std::{collections::HashSet, ffi::OsStr, path::PathBuf, process::Command};
+use std::{collections::HashSet, path::PathBuf, process::Command};
 
 use crate::{ConversionError, ConverterSubprocess};
 use async_trait::async_trait;
@@ -70,13 +70,9 @@ impl ConverterSubprocess for Ffmpeg {
         }
 
         let converted_file_path = format!(
-            "{}/{}_{}.{}",
+            "{}/{}.{}",
             cfg.TEMP_PATH(),
-            pathbuf
-                .file_name()
-                .unwrap_or(OsStr::new(&generate_random_alphanumeric(10)))
-                .to_string_lossy(),
-            desired_speed,
+            generate_random_alphanumeric(10),
             output,
         );
 

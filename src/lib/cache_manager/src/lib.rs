@@ -7,7 +7,6 @@ use rocket::{
     request::FromRequest,
     tokio::{
         self,
-        fs::remove_file,
         runtime::Runtime,
         sync::{
             mpsc::{self},
@@ -18,7 +17,7 @@ use rocket::{
 };
 use std::{
     collections::HashSet,
-    convert::{Infallible, TryInto},
+    convert::{Infallible},
     io::ErrorKind,
     os::unix::prelude::OsStrExt,
     path::PathBuf,
@@ -35,7 +34,6 @@ use std::{
 pub struct CacheManager {
     cache: PriorityQueue<[u8; 32], (i32, u32)>, //Hash -> (priority, file_size) // This means that biggers files will get removed over smaller ones
     cache_path: PathBuf,
-    temp_path: PathBuf,
     max_allowed_size_bytes: u64,
     current_size_bytes: u64,
     rx: mpsc::UnboundedReceiver<CacheAction>,
@@ -43,12 +41,11 @@ pub struct CacheManager {
 }
 
 impl CacheManager {
-    pub fn new(cache_path: PathBuf, temp_path: PathBuf, max_allowed_size_mb: u64) -> Result<(Self, mpsc::UnboundedSender<CacheAction>), Box<dyn std::error::Error>> {
+    pub fn new(cache_path: PathBuf, max_allowed_size_mb: u64) -> Result<(Self, mpsc::UnboundedSender<CacheAction>), Box<dyn std::error::Error>> {
         //Construct
         let (tx, rx) = mpsc::unbounded_channel();
         let mut res = CacheManager {
             cache_path,
-            temp_path,
             max_allowed_size_bytes: max_allowed_size_mb * 1_000_000,
             current_size_bytes: 0,
             rx,
@@ -56,6 +53,7 @@ impl CacheManager {
             restricted_files: vec![String::from(".gitkeep")].into_iter().collect(),
         };
 
+        //TODO: FIX
         //Get current total size of files
         let paths = match std::fs::read_dir(&res.cache_path) {
             Ok(f) => f,
@@ -89,35 +87,27 @@ impl CacheManager {
                     continue;
                 }
 
-                let hash_name: [u8; 32] = match entry.file_name().as_bytes().try_into() {
-                    Ok(f) => f,
-                    Err(_) => {
-                        error!("found unexpected file in cache {:?}", entry.file_name());
-                        continue;
-                    }
-                };
-                res.cache.push(hash_name, (i32::MAX, md.len() as u32));
+                let mut bytes: [u8;32] = [0;32];
+                if let Err(_) = hex::decode_to_slice(entry.file_name().as_bytes(),&mut bytes) {
+                    error!("found unexpected file in cache {:?}", entry.file_name());
+                    continue;
+                }
+                res.cache.push(bytes, (i32::MAX, md.len() as u32));
                 res.current_size_bytes += md.len();
             }
         }
         Ok((res, tx))
     }
 
-    /// A file has been used, increase it's probability of staying in the cache
-    pub fn used(&mut self, hash: [u8; 32], size: u32) {
-        self.current_size_bytes += size as u64;
-        match self.cache.get(&hash).is_some() {
-            true => self.cache.change_priority_by(&hash, |x| x.0 -= 1),
-            false => {
-                self.cache.push(hash, (i32::MAX, size));
-            }
-        }
-    }
-
     /// If the cache is greater than the maximum allowed size, trims files in the cache
     pub async fn enforce_cache_size(&mut self) {
+        println!("Enforcing cache size");
         //If greater than allowed, trim files
+        println!("Current size: {}", self.current_size_bytes);
+        println!("Max Allowed Size: {}", self.max_allowed_size_bytes);
+
         if self.current_size_bytes > self.max_allowed_size_bytes {
+            println!("cache size is ready for trimming");
             //Number of workers to carry out I/O Operations with
             const WORKER_COUNT: usize = 10;
 
@@ -134,37 +124,42 @@ impl CacheManager {
 
             //Create our i/o thread pool, execute until we succeed or run out of items to remove
             for _ in 0..WORKER_COUNT {
+                println!("Creating worker");
                 let size_removed = size_removed_master.clone();
                 let header = header_master.clone();
                 let removed = removed_master.clone();
                 handles.push(async move {
                     while size_removed.load(Ordering::Relaxed) < size_to_remove {
-                        if let Some((file_name, (priority, file_size))) =
-                            header.write().await.cache.pop()
-                        {
+                        println!("Worker processing...");
+                        let data = header.write().await.cache.pop();
+                        if let Some((hash, (priority, file_size))) = data {
+                            println!("Beginning!");
+                            let file_name = hex::encode(hash);
                             //Check if file exists, and if it does remove it
                             let file_name_string =
-                                format!("{}.wav", String::from_utf8_lossy(&file_name));
+                                format!("{}.wav", file_name);
                             let path = header.read().await.cache_path.join(&file_name_string);
                             let path = path.as_path();
+                            println!("Getting metadata for {:?}", path);
                             match tokio::fs::metadata(path).await {
                                 Ok(md) if md.is_file() => {
+                                    println!("Attempting to remove file {:?}", path);
                                     match tokio::fs::remove_file(path).await {
                                         Ok(_) => {
                                             size_removed
                                                 .fetch_add(file_size as u64, Ordering::Relaxed);
                                         }
-                                        Err(e) => error!(
+                                        Err(e) => println!(
                                             "failed to remove cached file due to error {}",
                                             e
                                         ),
                                     }
                                 }
-                                Ok(_) => warn!(
+                                Ok(_) => println!(
                                     "attempted to remove file that was directory in cache {:?}",
                                     &path
                                 ),
-                                Err(e) => error!(
+                                Err(e) => println!(
                                     "failed to read metadata of file {:?} error {}",
                                     &path, e
                                 ),
@@ -173,60 +168,29 @@ impl CacheManager {
                             //Only keep items that have at least 5 uses, items with a single use etc shoudln't be kept
                             //This helps to prevent excess memory usage through storage of priority 1 objects
                             if i32::MAX - priority > 5 {
-                                removed.write().await.push(file_name, (priority, file_size));
+                                removed.write().await.push(hash, (priority, file_size));
                             }
                         } else {
+                            println!("Working closing...");
                             break;
                         }
                     }
                 });
             }
+            println!("waiting for completion...");
             join_all(handles).await;
+
+            println!("Data removed!");
 
             let mut self_ref = header_master.write().await;
             self_ref.current_size_bytes -= size_removed_master.load(Ordering::Relaxed);
             let mut removed = removed_master.write_owned().await;
             self_ref.cache.append(&mut removed);
+
+            println!("Current size: {}", self_ref.current_size_bytes);
+            println!("Max Allowed Size: {}", self_ref.max_allowed_size_bytes);
+
         }
-    }
-
-    /// Clear all temporary files from their specific location, makes use of workers to
-    /// quickly clear the files. Does not work recursively.
-    async fn clear_temp_files(&mut self) {
-        let paths = match std::fs::read_dir(&self.temp_path) {
-            Ok(f) => f,
-            Err(e) => return error!("unable to read files in cache due to {}", e),
-        };
-        let mut handles = vec![];
-        for entry in paths {
-            if let Ok(entry) = entry {
-                error!("ENTRY_NAME: {:?}", entry.file_name()); //temp
-                match entry.file_name().to_str() {
-                    Some(f) if !self.restricted_files.contains(f) => {}
-                    Some(_) => continue,
-                    None => {
-                        warn!("unable to process a file when clearing temporary files");
-                        continue;
-                    }
-                }
-
-                //Skip directories
-                match entry.metadata() {
-                    Ok(f) if f.is_dir() => {
-                        debug!(
-                            "encountered directory while clearing temporary files, skipping {:?}",
-                            entry.file_name()
-                        );
-                        continue;
-                    }
-                    _ => {}
-                }
-
-                //Delete this file asynchronously
-                handles.push(remove_file(entry.path()));
-            }
-        }
-        join_all(handles).await;
     }
 
     /// consumes the process into an async runtime which can then be monitored via a file handle
@@ -234,22 +198,30 @@ impl CacheManager {
         thread::Builder::new()
             .name(String::from("cache-master"))
             .spawn(move || {
-                println!("cache master process started");
+                debug!("cache master process started");
                 let rt = Runtime::new().unwrap();
                 rt.block_on(async move {
-                    println!("cache master process runtime started");
+                    debug!("cache master process runtime started");
                     let mut count = 0;
 
                     loop {
                         if let Some(msg) = self.rx.recv().await {
-                            println!("cache master received message {:?}", msg);
+                            debug!("cache master received message {:?}", msg);
                             match msg {
                                 CacheAction::Used(f) => {
-                                    self.used(f.0, f.1);
+                                    //Cache this item
+                                    match self.cache.get(&f.0).is_some() {
+                                        true => self.cache.change_priority_by(&f.0, |x| x.0 -= 1),
+                                        false => {
+                                            self.current_size_bytes += f.1 as u64;
+                                            self.cache.push(f.0, (i32::MAX, f.1));
+                                        }
+                                    }
+
                                     //Only enforce the size of the cache every 100 messages to save compute
                                     match count {
-                                        100 => {
-                                            self.enforce_cache_size().await;
+                                        1 => {
+                                            self.enforce_cache_size().await; //TODO Implement timeout
                                             count = 0;
                                         }
                                         _ => count += 1,
@@ -262,7 +234,6 @@ impl CacheManager {
                         } else {
                             //Close and drop
                             self.enforce_cache_size().await;
-                            self.clear_temp_files().await;
                             break;
                         }
                     }
@@ -300,7 +271,6 @@ impl Cache {
 
                 let (cache_manager, sender) = CacheManager::new(
                     PathBuf::from(config.CACHE_PATH()),
-                    PathBuf::from(config.TEMP_PATH()),
                     config.MAX_CACHE_SIZE() as u64,
                 ).unwrap();
 
