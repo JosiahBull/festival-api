@@ -66,14 +66,15 @@ fn load_from_toml(name: &str, path: &PathBuf) -> Result<toml::Value, String> {
 /// at runtime, not at compile-time.
 ///
 /// **Example**
-/// ```rust
+/// ```ignore
 ///     let num_shoes: usize = load_env("&path");
 ///     assert_eq!(num_shoes, 5);
 ///     println!("The number of shoes is {}", num_shoes);
 /// ```
+///
 /// A variety of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.
 ///
-/// Internally this macro relies on `toml::value::Value.try_into()` for type conversion.
+/// Internally this macro relies on 'toml::value::Value.try_into()' for type conversion.
 ///
 fn load_env<T, E>(env_name: &str, path: &PathBuf) -> Result<T, ConfigError>
 where
@@ -438,6 +439,9 @@ pub struct Config {
     /// The path where temporary files are stored, and should be deleted from on a crash.
     temp_path: String,
 
+    /// The maximum size of of the cache that may be stored on the system.
+    max_cache_size: usize,
+
     /// The maximum length of a phrase that the api will process.
     word_length_limit: usize,
 
@@ -477,7 +481,8 @@ impl Config {
             api_name: load_env("API_NAME", &path)?,
             cache_path: load_env("CACHE_PATH", &path)?,
             temp_path: load_env("TEMP_PATH", &path)?,
-            word_length_limit: load_env("WORD_LENGTH_LIMIT", &path)?,
+            max_cache_size: load_env("MAX_CACHE_SIZE_MB", &path)?,
+            word_length_limit: load_env("CHAR_LENGTH_LIMIT", &path)?,
             speed_max_val: load_env("SPEED_MAX_VAL", &path)?,
             speed_min_val: load_env("SPEED_MIN_VAL", &path)?,
             max_requests_acc_threshold: load_env("MAX_REQUESTS_ACC_THRESHOLD", &path)?,
@@ -518,6 +523,10 @@ impl Config {
 
     pub fn TEMP_PATH(&self) -> &str {
         &self.temp_path
+    }
+
+    pub fn MAX_CACHE_SIZE(&self) -> usize {
+        self.max_cache_size
     }
 
     pub fn WORD_LENGTH_LIMIT(&self) -> usize {

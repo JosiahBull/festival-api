@@ -34,14 +34,10 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost/fest_api
 
-      - name: Setup Festival
-        run: | 
+      - name: Setup Flite
+        run: |
           sudo apt-get update
-          sudo apt-get install festival sox libsox-fmt-mp3 -y
-          wget http://www.festvox.org/packed/festival/2.5/voices/festvox_cmu_us_aew_cg.tar.gz
-          tar -xf festvox_cmu_us_aew_cg.tar.gz
-          sudo mkdir -p /usr/share/festival/voices/us/
-          sudo cp -r festival/lib/voices/us/cmu_us_aew_cg/ /usr/share/festival/voices/us/
+          sudo apt-get install festival flite ffmpeg -y
 
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1

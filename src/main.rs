@@ -192,18 +192,6 @@ pub async fn convert(
         },
         Err(_) => failure!("unable to convert file to desired format due to internal error, try again with request as wav"),
     }
-
-    //XXX Make generator function return a filehandle which will destroy itself on drop, or something similar
-    //Remove the link on the filesystem, note that as we have an opened NamedFile, that should persist.
-    //See https://github.com/SergioBenitez/Rocket/issues/610 for more info.
-    // if file_name_wav != converted_file {
-    //     if let Err(e) = rocket::tokio::fs::remove_file(Path::new(&converted_file)).await {
-    //         failure!(
-    //             "Unable to remove temporary file from system prior to response {}",
-    //             e
-    //         )
-    //     };
-    // }
 }
 
 #[doc(hidden)]

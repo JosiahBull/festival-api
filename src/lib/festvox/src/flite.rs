@@ -57,9 +57,12 @@ impl<'r> TtsGenerator<'r> for Flite {
         details: &crate::PhrasePackage,
         config: &config::Config,
     ) -> Result<FileHandle, Self::Error> {
-        let file_name_base = utils::sha_512_hash(&format!("{}_{}", &details.word, &details.lang));
-
+        let file_name_base = utils::sha_256_hash(&format!("{}_{}", &details.word, &details.lang));
         let file_path = PathBuf::from(config.CACHE_PATH()).join(format!("{}.wav", file_name_base));
+
+        if file_path.exists() && file_path.is_file() {
+            return Ok(FileHandle::new(file_path, config.MAX_CACHE_SIZE() > 0));
+        }
 
         let word_gen = Command::new("flite")
             .arg("-voice")
@@ -98,6 +101,6 @@ impl<'r> TtsGenerator<'r> for Flite {
             Err(e) => return Err(FliteError::IoFailure(e)),
         }
 
-        Ok(FileHandle::new(file_path, true))
+        Ok(FileHandle::new(file_path, config.MAX_CACHE_SIZE() > 0))
     }
 }

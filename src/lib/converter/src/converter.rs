@@ -83,7 +83,10 @@ impl Converter {
     ) -> Result<FileHandle, ()> {
         for sub in self.subs.iter() {
             if sub.supported_outputs().contains(desired_format) {
-                match sub.convert(input.clone(), target_speed, desired_format, cfg).await {
+                match sub
+                    .convert(input.clone(), target_speed, desired_format, cfg)
+                    .await
+                {
                     Ok(res) => return Ok(res),
                     Err(e) => error!("Error in converter `{}` occured {:?}", e, sub.name()),
                 }

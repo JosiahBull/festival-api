@@ -7,6 +7,7 @@ use rocket::http::{ContentType, Header, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
 use utils::generate_random_alphanumeric;
+use utils::test_utils::AlteredToml;
 
 /// Test that whitelisting users from the api ratelimits works correctly
 #[test]
@@ -17,7 +18,7 @@ fn ratelimit_whitelist_disabled() {
     let replace_search = "# apply-api-rate-limit = <true/false>";
     let replace_data = format!("\"{}\" = {{ apply-api-rate-limit = false }}", creds.usr);
 
-    let _t = AlteredToml::new(replace_search, &replace_data, PathType::Users);
+    let _t = AlteredToml::new(replace_search, &replace_data, PathType::Users, PathBuf::from("./config"));
 
     let client = Client::tracked(rocket()).expect("valid rocket instance");
 
@@ -78,7 +79,7 @@ fn ratelimit_whitelist_success() {
     let replace_search = "# apply-api-rate-limit = <true/false>";
     let replace_data = format!("\"{}\" = {{ apply-api-rate-limit = true }}", creds.usr);
 
-    let _t = AlteredToml::new(replace_search, &replace_data, PathType::Users);
+    let _t = AlteredToml::new(replace_search, &replace_data, PathType::Users, PathBuf::from("./config"));
 
     let client = Client::tracked(rocket()).expect("valid rocket instance");
 
@@ -133,7 +134,7 @@ fn ratelimit_whitelist_success() {
 fn blacklist_filter() {
     let replace_search = "BLACKLISTED_PHRASES = []";
     let replace_data = "BLACKLISTED_PHRASES = [\"test\", \" things \", \" stuff \"]";
-    let _t = AlteredToml::new(replace_search, replace_data, PathType::General);
+    let _t = AlteredToml::new(replace_search, replace_data, PathType::General, PathBuf::from("./config"));
 
     let test_client = Client::tracked(rocket()).expect("valid rocket instance");
     let (_, _, token) = create_test_account(&test_client);

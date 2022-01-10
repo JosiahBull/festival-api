@@ -7,17 +7,17 @@
 /// Note that a string must be provided (or used like `format!()`).
 ///
 /// **Examples**
-/// ```rust
+/// ```ignore
 ///     #[get("/")]
 ///     fn index() -> Response {
 ///         reject!("You're not cool enough to use this api!");
 ///     }
 /// ```
 ///
-/// ```rust
+/// ```ignore
 ///     #[get("/")]
 ///     fn index() -> Response {
-///         let reason: String = "tall";
+///         let reason: String = "tall".to_string();
 ///         reject!("You're not {} enough to use this api!", reason);
 ///     }
 /// ```
@@ -57,22 +57,22 @@ macro_rules! reject {
 /// Note that a string must be provided (or used like `format!()`).
 ///
 /// **Examples**
-/// ```rust
+/// ```ignore
 ///     #[get("/")]
 ///     fn index() -> Response {
 ///         failure!("The server had a critical error processing your request!");
 ///     }
 /// ```
 ///
-/// /// ```rust
+/// ```ignore
 ///     #[get("/")]
 ///     fn index() -> Response {
-///         let reason: String = "it caught fire!";
+///         let reason: String = "it caught fire!".to_string();
 ///         failure!("The server failed to process your request becuase {}", reason);
 ///     }
 /// ```
 ///
-/// If you need a more detailed failure response other htan 500 + a message
+/// If you need a more detailed failure response other than 500 + a message
 /// please construct the response manually.
 #[macro_export]
 macro_rules! failure {

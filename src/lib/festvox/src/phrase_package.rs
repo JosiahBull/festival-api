@@ -14,7 +14,7 @@ impl PhrasePackage {
     /// Validates (and attempts to fix) a phrase package.
     /// Returns Ok() if the package is valid, and Err otherwise.
     /// Attempts to correct:
-    /// - Speed values larger or smaller than the allowd values
+    /// - Speed values larger or smaller than the allowed values
     /// - Speed values that are not divisible by 0.5
     ///
     /// Fails on:
@@ -26,16 +26,16 @@ impl PhrasePackage {
     pub fn validated(&mut self, cfg: &Config) -> Result<(), String> {
         //Attempt to correct speed values
 
+        if self.speed % 0.5 != 0.0 {
+            self.speed *= 2.0;
+            self.speed = self.speed.floor();
+            self.speed /= 2.0;
+        }
         if self.speed > cfg.SPEED_MAX_VAL() {
             self.speed = cfg.SPEED_MAX_VAL();
         }
         if self.speed < cfg.SPEED_MIN_VAL() {
             self.speed = cfg.SPEED_MIN_VAL();
-        }
-        if self.speed % 0.5 != 0.0 {
-            self.speed *= 2.0;
-            self.speed = self.speed.floor();
-            self.speed /= 2.0;
         }
 
         //Check language selection is valid
@@ -166,12 +166,12 @@ mod tests {
         pack.validated(&cfg).expect("a valid package");
         assert_eq!(pack.speed, cfg.SPEED_MAX_VAL());
 
-        // Validate the 0.5 rounding is in place!
-        for i in 0..100 {
+        // Validate the 0.1 rounding is in place!
+        for i in 0..500 {
             let mut pack = PhrasePackage {
                 word: String::from("Hello, world!"),
                 lang: String::from("en"),
-                speed: 0.0 + 0.1 * i as f32,
+                speed: 0.0 + 0.35 * i as f32,
                 fmt: String::from("mp3"),
             };
 

@@ -12,7 +12,7 @@ API_NAME = "SE206's"
 # Note that if you change this after running the api for some time, you should
 # delete the old cache folder, as the .wav files it contains will remain.
 # Default: "./cache"
-CACHE_PATH = "./cache" 
+CACHE_PATH = "./cache"
 
 # Closely related to the above cache path.
 # This is a temporary location for files to be stored, i.e. if doing a conversion from .wav
@@ -22,10 +22,17 @@ CACHE_PATH = "./cache"
 # Default: "./cache/temp"
 TEMP_PATH = "./cache/temp"
 
+# The maximum size the cache is allowed to be. Setting this to 0 will disable the cache entirely.
+# When the cache reaches this size, the oldest 20% of files will be cleared from the disk.
+# Note that this does add some overhead to the server, but it is minimal.
+# Be conservative with this value, providing 5000 mb of extra space on the system.
+# Default: 20_000
+MAX_CACHE_SIZE_MB = 20_000
+
 # The maximum length of a phrase in chars.
 # A user that sends a phrase longer than this will recieve a 400 response.
 # Default: 100
-WORD_LENGTH_LIMIT = 100
+CHAR_LENGTH_LIMIT = 100
 
 # The maximum speed value that may be passed to the api.
 # A user that sends a value greater than this will recieve a 400 response.
@@ -68,7 +75,7 @@ ALLOWED_FORMATS = [ "wav", "mp3", "aif" ]
 # with a 400 response. 
 # Note that while you may add any chars, care should be taken to avoid certain chars, such as \, (), 
 # {}. These should *theoretically* work and are escaped correctly, but may introduce security concerns.
-# TODO make "" allow all chars
+# TODO "" allow all chars
 # Default: "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,!@#%$/'_-()ĀāĒēĪīŌōŪū "
 ALLOWED_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,?!@#%$/'_-()ĀāĒēĪīŌōŪū "
 
@@ -96,4 +103,4 @@ ALLOWED_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.
 # Take care with what phrases you blacklist and why!
 #
 # Default: []
-BLACKLISTED_PHRASES = ["test", " things ", " stuff "]
+BLACKLISTED_PHRASES = []

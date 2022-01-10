@@ -4,6 +4,8 @@
 /cache/**/*
 /tarpaulin-report.html
 /lcov.info
+debug.rs
+**/*.wav
 
 # Allow
 !/cache/.gitkeep

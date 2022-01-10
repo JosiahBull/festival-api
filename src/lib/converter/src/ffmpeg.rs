@@ -70,14 +70,13 @@ impl ConverterSubprocess for Ffmpeg {
         }
 
         let converted_file_path = format!(
-            "{}/temp/{}_{}_{}.{}",
-            cfg.CACHE_PATH(),
+            "{}/{}_{}.{}",
+            cfg.TEMP_PATH(),
             pathbuf
                 .file_name()
-                .unwrap_or(OsStr::new(""))
+                .unwrap_or(OsStr::new(&generate_random_alphanumeric(10)))
                 .to_string_lossy(),
             desired_speed,
-            generate_random_alphanumeric(10),
             output,
         );
 
@@ -91,7 +90,9 @@ impl ConverterSubprocess for Ffmpeg {
             .output();
 
         match con {
-            Ok(o) if o.status.success() => Ok(FileHandle::new(PathBuf::from(converted_file_path), false)),
+            Ok(o) if o.status.success() => {
+                Ok(FileHandle::new(PathBuf::from(converted_file_path), false))
+            }
             Ok(o) => {
                 let stdout = String::from_utf8(o.stdout)
                     .unwrap_or_else(|_| "Unable to parse stdout!".into());
