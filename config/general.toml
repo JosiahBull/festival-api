@@ -56,11 +56,6 @@ MAX_REQUESTS_ACC_THRESHOLD = 40
 # Default: 5
 MAX_REQUESTS_TIME_PERIOD_MINUTES = 2
 
-# The number of hours a JWT token should be valid for before we require the user to 
-# revalidate their token.
-# Default: 720
-JWT_EXPIRY_TIME_HOURS = 720
-
 # The file formats that may be returned by the api.
 # A user may request their file in any one of these formats.
 # Note that only .wav files will be cached by the api, and converted on the fly to what is required.

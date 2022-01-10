@@ -1,133 +1,10 @@
 use std::path::PathBuf;
-mod common;
-use common::*;
 use config::{Config, PathType};
 use festival_api::rocket;
-use rocket::http::{ContentType, Header, Status};
+use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
-use utils::generate_random_alphanumeric;
 use utils::test_utils::AlteredToml;
-
-/// Test that whitelisting users from the api ratelimits works correctly
-#[test]
-fn ratelimit_whitelist_disabled() {
-    // Generate a client, create custom settings for them
-    let test_client = Client::tracked(rocket()).expect("valid rocket instance");
-    let (creds, _, token) = create_test_account(&test_client);
-    let replace_search = "# apply-api-rate-limit = <true/false>";
-    let replace_data = format!("\"{}\" = {{ apply-api-rate-limit = false }}", creds.usr);
-
-    let _t = AlteredToml::new(replace_search, &replace_data, PathType::Users, PathBuf::from("./config"));
-
-    let client = Client::tracked(rocket()).expect("valid rocket instance");
-
-    // Begin test, this user should be exempt from rate limits now!
-    let cfg: &Config = client.rocket().state::<Config>().unwrap();
-
-    let body = "{
-        \"word\": \"The University of Auckland\",
-        \"lang\": \"en\",
-        \"speed\": 1.0,
-        \"fmt\": \"wav\"
-    }";
-
-    for _ in 0..cfg.MAX_REQUESTS_ACC_THRESHOLD() + 5 {
-        //Test the generation of the .wav file
-        let response = client
-            .post(uri!("/api/convert"))
-            .header(ContentType::new("application", "json"))
-            .header(Header::new("Authorisation", token.clone()))
-            .body(&body)
-            .dispatch();
-        let status = response.status();
-        if status != Status::Ok {
-            panic!(
-                "Failed with status {} \nBody: \n{}\n",
-                status,
-                response.into_string().unwrap()
-            );
-        }
-        assert_eq!(status, Status::Ok);
-    }
-
-    let response = client
-        .post(uri!("/api/convert"))
-        .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token))
-        .body(&body)
-        .dispatch();
-
-    let status = response.status();
-    if status != Status::Ok {
-        panic!(
-            "Failed with status {} \nBody: \n{}\n",
-            status,
-            response.into_string().unwrap()
-        );
-    }
-
-    //Validate that the ratelimit still applies for another user
-    test_limits()
-}
-
-#[test]
-fn ratelimit_whitelist_success() {
-    // Generate a client, create custom settings for them
-    let test_client = Client::tracked(rocket()).expect("valid rocket instance");
-    let (creds, _, token) = create_test_account(&test_client);
-    let replace_search = "# apply-api-rate-limit = <true/false>";
-    let replace_data = format!("\"{}\" = {{ apply-api-rate-limit = true }}", creds.usr);
-
-    let _t = AlteredToml::new(replace_search, &replace_data, PathType::Users, PathBuf::from("./config"));
-
-    let client = Client::tracked(rocket()).expect("valid rocket instance");
-
-    // Begin test, this user should be exempt from rate limits now!
-    let cfg: &Config = client.rocket().state::<Config>().unwrap();
-
-    let body = "{
-        \"word\": \"The University of Auckland\",
-        \"lang\": \"en\",
-        \"speed\": 1.0,
-        \"fmt\": \"wav\"
-    }";
-
-    for _ in 0..cfg.MAX_REQUESTS_ACC_THRESHOLD() {
-        //Test the generation of the .wav file
-        let response = client
-            .post(uri!("/api/convert"))
-            .header(ContentType::new("application", "json"))
-            .header(Header::new("Authorisation", token.clone()))
-            .body(&body)
-            .dispatch();
-        let status = response.status();
-        if status != Status::Ok {
-            panic!(
-                "Failed with status {} \nBody: \n{}\n",
-                status,
-                response.into_string().unwrap()
-            );
-        }
-        assert_eq!(status, Status::Ok);
-    }
-
-    let response = client
-        .post(uri!("/api/convert"))
-        .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token))
-        .body(&body)
-        .dispatch();
-
-    let status = response.status();
-    if status != Status::TooManyRequests {
-        panic!(
-            "Failed with status {} \nBody: \n{}\n",
-            status,
-            response.into_string().unwrap()
-        );
-    }
-}
 
 /// Test that the word blacklist works correctly
 #[test]
@@ -137,7 +14,6 @@ fn blacklist_filter() {
     let _t = AlteredToml::new(replace_search, replace_data, PathType::General, PathBuf::from("./config"));
 
     let test_client = Client::tracked(rocket()).expect("valid rocket instance");
-    let (_, _, token) = create_test_account(&test_client);
 
     //Begin Test
     //Simple test
@@ -151,7 +27,6 @@ fn blacklist_filter() {
     let response = test_client
         .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token.clone()))
         .body(&body)
         .dispatch();
 
@@ -172,7 +47,6 @@ fn blacklist_filter() {
     let response = test_client
         .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token.clone()))
         .body(&body)
         .dispatch();
 
@@ -193,7 +67,6 @@ fn blacklist_filter() {
     let response = test_client
         .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token.clone()))
         .body(&body)
         .dispatch();
 
@@ -214,7 +87,6 @@ fn blacklist_filter() {
     let response = test_client
         .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token.clone()))
         .body(&body)
         .dispatch();
 
@@ -235,7 +107,6 @@ fn blacklist_filter() {
     let response = test_client
         .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token.clone()))
         .body(&body)
         .dispatch();
 
@@ -249,7 +120,6 @@ fn blacklist_filter() {
 #[test]
 fn success_conversion() {
     let client = Client::tracked(rocket()).expect("valid rocket instance");
-    let (_, _, token) = create_test_account(&client);
 
     let body = "{
         \"word\": \"The University of Auckland\",
@@ -262,7 +132,6 @@ fn success_conversion() {
     let response = client
         .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token))
         .body(&body)
         .dispatch();
 
@@ -312,7 +181,6 @@ fn invalid_conversion_strings() {
     ];
     for phrase in dangerous_phrases {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let (_, _, token) = create_test_account(&client);
         let body = format!(
             "{{
             \"word\": \"{}\",
@@ -326,78 +194,12 @@ fn invalid_conversion_strings() {
         let response = client
             .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
-            .header(Header::new("Authorisation", token.clone()))
+
             .body(&body)
             .dispatch();
 
         assert_ne!(response.status(), Status::InternalServerError);
     }
-}
-
-#[test]
-fn test_limits() {
-    let client = Client::tracked(rocket()).expect("valid rocket instance");
-    let (_, _, token) = create_test_account(&client);
-
-    let body = format!(
-        "{{
-        \"word\": \"The University of Auckland_{}\",
-        \"lang\": \"en\",
-        \"speed\": 1.0,
-        \"fmt\": \"wav\"
-    }}",
-        generate_random_alphanumeric(5)
-    );
-
-    let cfg: &Config = client.rocket().state::<Config>().unwrap();
-
-    for _ in 0..cfg.MAX_REQUESTS_ACC_THRESHOLD() {
-        //Test the generation of the .wav file
-        let response = client
-            .post(uri!("/api/convert"))
-            .header(ContentType::new("application", "json"))
-            .header(Header::new("Authorisation", token.clone()))
-            .body(&body)
-            .dispatch();
-        let status = response.status();
-        if status != Status::Ok {
-            panic!(
-                "Failed with status {} \nBody: \n{}\n",
-                status,
-                response.into_string().unwrap()
-            );
-        }
-        assert_eq!(status, Status::Ok);
-    }
-
-    let body = "{
-        \"word\": \"The University of Auckland\",
-        \"lang\": \"en\",
-        \"speed\": 1.0,
-        \"fmt\": \"wav\"
-    }";
-
-    let response = client
-        .post(uri!("/api/convert"))
-        .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token))
-        .body(&body)
-        .dispatch();
-
-    let status = response.status();
-    if status != Status::TooManyRequests {
-        panic!(
-            "Failed with status {} \nBody: \n{}\n",
-            status,
-            response.into_string().unwrap()
-        );
-    }
-
-    //TODO this could check for a tolerance on the seconds number?
-    assert!(response
-        .into_string()
-        .unwrap()
-        .contains("Too many requests! You will be able to make another request in"));
 }
 
 /// Validate that all file format options work as intended
@@ -406,7 +208,6 @@ fn test_every_format() {
     let cfg: Config = Config::new(PathBuf::from("./config")).unwrap();
     for format in cfg.ALLOWED_FORMATS().iter() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let (_, _, token) = create_test_account(&client);
 
         let body = format!(
             "{{
@@ -422,7 +223,7 @@ fn test_every_format() {
         let response = client
             .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
-            .header(Header::new("Authorisation", token))
+
             .body(&body)
             .dispatch();
 
@@ -448,66 +249,10 @@ fn test_every_lang() {
     //TODO
 }
 
-/// Ensure that incorrect tokens fail as expected
-#[test]
-fn test_invalid_auth_tokens() {
-    let client = Client::tracked(rocket()).expect("valid rocket instance");
-    let (_, _, token) = create_test_account(&client);
-
-    let body = "{
-        \"word\": \"The University of Auckland\",
-        \"lang\": \"en\",
-        \"speed\": 1.0,
-        \"fmt\": \"wav\"
-    }";
-
-    //Test No Header
-    let response = client
-        .post(uri!("/api/convert"))
-        .header(ContentType::new("application", "json"))
-        .body(&body)
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Unauthorized);
-    assert_eq!(
-        response.into_string().unwrap(),
-        "Authorisation Header Not Present"
-    );
-
-    //Test Invalid Token
-
-    let bad_token = format!("a{}", &token);
-
-    let response = client
-        .post(uri!("/api/convert"))
-        .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", bad_token))
-        .body(&body)
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Unauthorized);
-    assert_eq!(response.into_string().unwrap(), "Invalid Auth Token");
-
-    //Test Invalid Header
-    let response = client
-        .post(uri!("/api/convert"))
-        .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorizationadf", token))
-        .body(&body)
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Unauthorized);
-    assert_eq!(
-        response.into_string().unwrap(),
-        "Authorisation Header Not Present"
-    );
-}
-
 /// A simple test which ensures that an invalid file format fails out as expected.
 #[test]
 fn test_invalid_formats() {
     let client = Client::tracked(rocket()).expect("valid rocket instance");
-    let (_, _, token) = create_test_account(&client);
 
     let body = "{
         \"word\": \"The University of Auckland\",
@@ -520,7 +265,6 @@ fn test_invalid_formats() {
     let response = client
         .post(uri!("/api/convert"))
         .header(ContentType::new("application", "json"))
-        .header(Header::new("Authorisation", token))
         .body(&body)
         .dispatch();
 
@@ -546,7 +290,6 @@ fn test_speed() {
 
     for format in cfg.ALLOWED_FORMATS().iter() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let (_, _, token) = create_test_account(&client);
 
         let normal = format!(
             "{{
@@ -570,14 +313,14 @@ fn test_speed() {
         let response_normal = client
             .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
-            .header(Header::new("Authorisation", token.clone()))
+
             .body(&normal)
             .dispatch();
 
         let response_fast = client
             .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
-            .header(Header::new("Authorisation", token))
+
             .body(&fast)
             .dispatch();
 

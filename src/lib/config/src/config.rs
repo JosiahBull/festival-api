@@ -15,7 +15,7 @@ use rocket::{
 };
 
 use crate::error::ConfigError;
-use crate::models::{Language, UserSettings};
+use crate::models::{Language};
 
 //General Todos
 //TODO: Macroise a lot of the initalisation code to clean it up.
@@ -378,58 +378,7 @@ fn load_blacklisted_phrases(path: &PathBuf) -> Result<Vec<String>, ConfigError> 
     Ok(res)
 }
 
-fn load_custom_user_settings(path: &PathBuf) -> Result<HashMap<String, UserSettings>, ConfigError> {
-    let file_path = PathType::Users.get_path(path);
-    let data = std::fs::read_to_string(&file_path).unwrap_or_else(|e| {
-        panic!(
-            "Unable to find `{}` due to error {}",
-            file_path.to_string_lossy(),
-            e
-        )
-    });
-    let f = data.parse::<toml::Value>().unwrap_or_else(|e| {
-        panic!(
-            "Unable to parse `{}` due to error {}",
-            file_path.to_string_lossy(),
-            e
-        )
-    });
-    let table = f
-        .as_table()
-        .unwrap_or_else(|| panic!("Unable to parse {} as table.", file_path.to_string_lossy()));
-
-    let mut res: HashMap<String, UserSettings> = HashMap::default();
-
-    for (name, _) in table {
-        let user_table = table
-            .get(name)
-            .expect("success")
-            .as_table()
-            .expect("a table");
-
-        let apply_api_rate_limit = user_table
-            .get("apply-api-rate-limit")
-            .expect("")
-            .as_bool()
-            .expect("");
-
-        let settings: UserSettings = UserSettings {
-            apply_api_rate_limit,
-        };
-
-        res.insert(name.to_string(), settings);
-    }
-
-    Ok(res)
-}
-
 pub struct Config {
-    /// The secret used for fast-hashing JWT's for validation.
-    jwt_secret: String,
-
-    /// The number of hours that a JWT may be used before expiring and forcing the user to revalidate.
-    jwt_expiry_time_hours: usize,
-
     /// The name of the api which is sent with certain requests.
     api_name: String,
 
@@ -451,12 +400,6 @@ pub struct Config {
     /// The lowerest speed at which a phrase can be read.
     speed_min_val: f32,
 
-    /// The maximum requests that an account can make in a given time period established by `MAX_REQUESTS_TIME_PERIOD_MINUTES`
-    max_requests_acc_threshold: usize,
-
-    /// The time period for timing out users who make too many requests.
-    max_requests_time_period_minutes: usize,
-
     /// A list of supported speech languages by this api.
     supported_langs: HashMap<String, Language>,
 
@@ -468,16 +411,11 @@ pub struct Config {
 
     /// A list of phrases that are not allowed on this api.
     blacklisted_phrases: Vec<String>,
-
-    /// A (short!) list of custom user settings. This should be used for lectures/tutors who need higher api rate limits for example.
-    user_settings: HashMap<String, UserSettings>,
 }
 
 impl Config {
     pub fn new(path: PathBuf) -> Result<Self, ConfigError> {
         Ok(Self {
-            jwt_secret: load_env("JWT_SECRET", &path)?,
-            jwt_expiry_time_hours: load_env("JWT_EXPIRY_TIME_HOURS", &path)?,
             api_name: load_env("API_NAME", &path)?,
             cache_path: load_env("CACHE_PATH", &path)?,
             temp_path: load_env("TEMP_PATH", &path)?,
@@ -485,34 +423,17 @@ impl Config {
             word_length_limit: load_env("CHAR_LENGTH_LIMIT", &path)?,
             speed_max_val: load_env("SPEED_MAX_VAL", &path)?,
             speed_min_val: load_env("SPEED_MIN_VAL", &path)?,
-            max_requests_acc_threshold: load_env("MAX_REQUESTS_ACC_THRESHOLD", &path)?,
-            max_requests_time_period_minutes: load_env("MAX_REQUESTS_TIME_PERIOD_MINUTES", &path)?,
             supported_langs: load_supported_langs(&path)?,
             allowed_formats: load_allowed_formats(&path)?,
             allowed_chars: load_allowed_chars(&path)?,
             blacklisted_phrases: load_blacklisted_phrases(&path)?,
-            user_settings: load_custom_user_settings(&path)?,
         })
     }
 }
 
-// impl Default for Config {
-// fn default() -> Self {
-// Self::new()
-// }
-// }
-
 //XXX make a getter macro which can automatically generate all these
 #[allow(non_snake_case)]
 impl Config {
-    pub fn JWT_SECRET(&self) -> &str {
-        &self.jwt_secret
-    }
-
-    pub fn JWT_EXPIRY_TIME_HOURS(&self) -> usize {
-        self.jwt_expiry_time_hours
-    }
-
     pub fn API_NAME(&self) -> &str {
         &self.api_name
     }
@@ -541,14 +462,6 @@ impl Config {
         self.speed_min_val
     }
 
-    pub fn MAX_REQUESTS_ACC_THRESHOLD(&self) -> usize {
-        self.max_requests_acc_threshold
-    }
-
-    pub fn MAX_REQUESTS_TIME_PERIOD_MINUTES(&self) -> usize {
-        self.max_requests_time_period_minutes
-    }
-
     pub fn SUPPORTED_LANGS(&self) -> &HashMap<String, Language> {
         &self.supported_langs
     }
@@ -563,10 +476,6 @@ impl Config {
 
     pub fn BLACKLISTED_PHRASES(&self) -> &[String] {
         &self.blacklisted_phrases
-    }
-
-    pub fn USER_SETTINGS(&self) -> &HashMap<String, UserSettings> {
-        &self.user_settings
     }
 }
 

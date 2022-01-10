@@ -27,11 +27,6 @@ converter = { path = "src/lib/converter/" }
 cache_manager = { path = "src/lib/cache_manager/" }
 
 rocket = {version = "0.5.0-rc.1", features=["json"]}
-diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono"] } 
-rocket_sync_db_pools = { version = "0.1.0-rc.1", default-features = false, features = ["diesel_postgres_pool"] }
-serde = { version = "1.0.126", features = ["derive"] }
-argon2 = { version = "0.3.1", features = ["alloc"] }
-jsonwebtoken = { version = "7.2.0" }
 chrono = { version = "0.4.19", features = ["serde"] }
 
 [dev-dependencies]
