@@ -31,18 +31,7 @@ components:
           type: string
           description: The file format you want to be sent. `wav` is preferred.
           example: wav
-    UserCredentials:
-      type: object
-      required:
-        - usr
-        - pwd
-      properties:
-        usr:
-          type: string
-          example: JoeBloggs123
-        pwd:
-          type: string
-          example: hunter42
+
 paths:
   /docs:
     get:
@@ -53,11 +42,6 @@ paths:
   /api/convert:
     post:
       summary: Convert a phrase into a .wav or .mp3 file.
-      parameters:
-        - in: header
-          name: Authorisation
-          schema:
-            type: string
       requestBody:
         description: Provide the phrase package you wish to convert.
         content:
@@ -87,80 +71,5 @@ paths:
               schema:
                 type: string
                 example: "Missing field 'fmt' on line 4"
-        '401':
-          description: Not Authorised
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: Invalid Auth Token
-        '429':
-          description: Too many requests! You have reached the configured rate limit for your account. Please wait before making further requests.
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: Too many requests! You will be able to make another request in 568 seconds.
         '500':
           description: Panic! Something has gone horribly wrong on our end. Please open an issue at https://github.com/JosiahBull/festival-api.
-
-  /api/login:
-    post:
-      summary: Login to your account, and collect an access token in the form of a JWT.
-      requestBody:
-        description: Provide credentials to the api to login.
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCredentials'
-      responses:
-        '200':
-          description: User succesfully logged in. The returned JWT should be stored and sent with future requests.
-          content:
-            text/plain:
-              schema:
-                type: string
-        '400':
-          description: Incorrect Password or Username.
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: Incorrect Password or Username
-        '429':
-          description: Too many failed login attempts recently. You have been timed out for a period.
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: Too many requests! You have reached the rate limit for this account and have been timed out. Please wait 456 seconds before trying again.
-        '500':
-          description: Panic! Something has gone horribly wrong on our end. Please open an issue at https://github.com/JosiahBull/festival-api.
-
-  /api/create:
-    post:
-      summary: Create a new account, for now this does not require anything special but may require a special token in the future.
-      requestBody:
-        description: Provide user credentials to the api to use to create the new account.
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCredentials'
-      responses:
-        '201':
-          description: User account created, and automatically logged in. The returned JWT should be stored and sent with future requests.
-          content:
-            text/plain:
-              schema:
-                type: string
-        '400':
-          description: Unable to create user due to bad request. This could be becuase of password requirements not being met, or the username being taken.
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: Password Too Short
-        '500':
-          description: Panic! Something has gone horribly wrong on our end. Please open an issue at https://github.com/JosiahBull/festival-api.
-
-

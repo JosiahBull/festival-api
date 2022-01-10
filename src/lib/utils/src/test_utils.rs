@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use config::PathType;
+use std::path::PathBuf;
 
 //***** Helper Methods *****//
 /// A simple struct which allows a property on toml to be changed.

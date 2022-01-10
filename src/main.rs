@@ -9,7 +9,7 @@ use cache_manager::Cache;
 use config::Config;
 use converter::{Converter, Ffmpeg};
 use festvox::{Flite, PhrasePackage, TtsGenerator};
-use macros::{failure};
+use macros::failure;
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
 
@@ -87,7 +87,7 @@ pub async fn convert(
     };
 
     //Cache File
-    if let Err(e) =  cache.used(generated_file.to_path_buf()).await {
+    if let Err(e) = cache.used(generated_file.to_path_buf()).await {
         error!("cache error {}", e);
         failure!("cache failure");
     }

@@ -17,7 +17,7 @@ use rocket::{
 };
 use std::{
     collections::HashSet,
-    convert::{Infallible},
+    convert::Infallible,
     io::ErrorKind,
     os::unix::prelude::OsStrExt,
     path::PathBuf,
@@ -41,7 +41,10 @@ pub struct CacheManager {
 }
 
 impl CacheManager {
-    pub fn new(cache_path: PathBuf, max_allowed_size_mb: u64) -> Result<(Self, mpsc::UnboundedSender<CacheAction>), Box<dyn std::error::Error>> {
+    pub fn new(
+        cache_path: PathBuf,
+        max_allowed_size_mb: u64,
+    ) -> Result<(Self, mpsc::UnboundedSender<CacheAction>), Box<dyn std::error::Error>> {
         //Construct
         let (tx, rx) = mpsc::unbounded_channel();
         let mut res = CacheManager {
@@ -87,8 +90,8 @@ impl CacheManager {
                     continue;
                 }
 
-                let mut bytes: [u8;32] = [0;32];
-                if let Err(_) = hex::decode_to_slice(entry.file_name().as_bytes(),&mut bytes) {
+                let mut bytes: [u8; 32] = [0; 32];
+                if let Err(_) = hex::decode_to_slice(entry.file_name().as_bytes(), &mut bytes) {
                     error!("found unexpected file in cache {:?}", entry.file_name());
                     continue;
                 }
@@ -136,8 +139,7 @@ impl CacheManager {
                             println!("Beginning!");
                             let file_name = hex::encode(hash);
                             //Check if file exists, and if it does remove it
-                            let file_name_string =
-                                format!("{}.wav", file_name);
+                            let file_name_string = format!("{}.wav", file_name);
                             let path = header.read().await.cache_path.join(&file_name_string);
                             let path = path.as_path();
                             println!("Getting metadata for {:?}", path);
@@ -189,7 +191,6 @@ impl CacheManager {
 
             println!("Current size: {}", self_ref.current_size_bytes);
             println!("Max Allowed Size: {}", self_ref.max_allowed_size_bytes);
-
         }
     }
 
@@ -263,16 +264,19 @@ impl Cache {
                 let config = match rocket.state::<Config>() {
                     Some(cfg) => cfg,
                     None => {
-                        warn!("config not found while attempting to attach cache, initalising config");
+                        warn!(
+                            "config not found while attempting to attach cache, initalising config"
+                        );
                         rocket = rocket.manage(Config::fairing());
                         rocket.state::<Config>().unwrap()
-                    },
+                    }
                 };
 
                 let (cache_manager, sender) = CacheManager::new(
                     PathBuf::from(config.CACHE_PATH()),
                     config.MAX_CACHE_SIZE() as u64,
-                ).unwrap();
+                )
+                .unwrap();
 
                 rocket
                     .manage(Box::new(cache_manager.process()))
@@ -327,11 +331,11 @@ impl<'r> FromRequest<'r> for Cache {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
     use crate::Cache;
     use config::{Config, PathType};
     use rocket::{get, http::Status, local::blocking::Client, routes, uri};
-    use utils::{sha_256_hash};
+    use std::path::PathBuf;
+    use utils::sha_256_hash;
     use utils::test_utils::AlteredToml;
 
     #[get("/")]
@@ -359,7 +363,12 @@ mod test {
         let replace_search = "CACHE_PATH = \"./cache\"";
         let replace_data = "CACHE_PATH = \"../../../cache\"";
 
-        let _t = AlteredToml::new(replace_search, &replace_data, PathType::General, PathBuf::from("../../../config"));
+        let _t = AlteredToml::new(
+            replace_search,
+            &replace_data,
+            PathType::General,
+            PathBuf::from("../../../config"),
+        );
 
         let cfg: Config = Config::new(PathBuf::from("../../../config")).unwrap();
 

@@ -15,7 +15,7 @@ use rocket::{
 };
 
 use crate::error::ConfigError;
-use crate::models::{Language};
+use crate::models::Language;
 
 //General Todos
 //TODO: Macroise a lot of the initalisation code to clean it up.

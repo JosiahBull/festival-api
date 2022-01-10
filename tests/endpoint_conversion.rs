@@ -1,9 +1,9 @@
-use std::path::PathBuf;
 use config::{Config, PathType};
 use festival_api::rocket;
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rocket::uri;
+use std::path::PathBuf;
 use utils::test_utils::AlteredToml;
 
 /// Test that the word blacklist works correctly
@@ -11,7 +11,12 @@ use utils::test_utils::AlteredToml;
 fn blacklist_filter() {
     let replace_search = "BLACKLISTED_PHRASES = []";
     let replace_data = "BLACKLISTED_PHRASES = [\"test\", \" things \", \" stuff \"]";
-    let _t = AlteredToml::new(replace_search, replace_data, PathType::General, PathBuf::from("./config"));
+    let _t = AlteredToml::new(
+        replace_search,
+        replace_data,
+        PathType::General,
+        PathBuf::from("./config"),
+    );
 
     let test_client = Client::tracked(rocket()).expect("valid rocket instance");
 
@@ -194,7 +199,6 @@ fn invalid_conversion_strings() {
         let response = client
             .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
-
             .body(&body)
             .dispatch();
 
@@ -223,7 +227,6 @@ fn test_every_format() {
         let response = client
             .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
-
             .body(&body)
             .dispatch();
 
@@ -291,8 +294,7 @@ fn test_speed() {
     for format in cfg.ALLOWED_FORMATS().iter() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
 
-        let normal = format!(
-            "{{
+        let normal = format!("{{
             \"word\": \"The University of Auckland\",
             \"lang\": \"en\",
             \"speed\": 1.0,
@@ -300,8 +302,7 @@ fn test_speed() {
         }}",
             format
         );
-        let fast = format!(
-            "{{
+        let fast = format!("{{
             \"word\": \"The University of Auckland\",
             \"lang\": \"en\",
             \"speed\": 2.0,
@@ -313,14 +314,12 @@ fn test_speed() {
         let response_normal = client
             .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
-
             .body(&normal)
             .dispatch();
 
         let response_fast = client
             .post(uri!("/api/convert"))
             .header(ContentType::new("application", "json"))
-
             .body(&fast)
             .dispatch();
 
