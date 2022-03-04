@@ -1,7 +1,7 @@
 use std::{convert::Infallible, path::PathBuf, process::Command};
 
 use rocket::request::FromRequest;
-use utils::FileHandle;
+use utils::phrase_package::PhrasePackage;
 
 use crate::TtsGenerator;
 
@@ -54,14 +54,13 @@ impl<'r> TtsGenerator<'r> for Flite {
 
     async fn generate(
         &self,
-        details: &crate::PhrasePackage,
+        details: &PhrasePackage,
         config: &config::Config,
-    ) -> Result<FileHandle, Self::Error> {
-        let file_name_base = utils::sha_256_hash(&format!("{}_{}", &details.word, &details.lang));
-        let file_path = PathBuf::from(config.CACHE_PATH()).join(format!("{}.wav", file_name_base));
+    ) -> Result<PathBuf, Self::Error> {
+        let file_path = PathBuf::from(config.CACHE_PATH()).join(format!("{}.wav", details.filename_stem_basespeed()));
 
         if file_path.exists() && file_path.is_file() {
-            return Ok(FileHandle::new(file_path, config.MAX_CACHE_SIZE() > 0));
+            return Ok(file_path);
         }
 
         let word_gen = Command::new("flite")
@@ -101,6 +100,6 @@ impl<'r> TtsGenerator<'r> for Flite {
             Err(e) => return Err(FliteError::IoFailure(e)),
         }
 
-        Ok(FileHandle::new(file_path, config.MAX_CACHE_SIZE() > 0))
+        Ok(file_path)
     }
 }

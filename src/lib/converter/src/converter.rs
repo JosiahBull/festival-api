@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use config::Config;
 use rocket::{error, fairing::AdHoc, request::FromRequest};
-use std::{collections::HashSet, convert::Infallible};
-use utils::FileHandle;
+use std::{collections::HashSet, convert::Infallible, path::PathBuf};
+use utils::phrase_package::PhrasePackage;
 
 #[derive(Debug)]
 pub enum ConversionError {
@@ -40,11 +40,11 @@ pub trait ConverterSubprocess: Send + Sync + std::fmt::Debug {
     fn supported_outputs(&self) -> HashSet<String>;
     async fn convert(
         &self,
-        input: FileHandle,
         target_speed: f32,
+        phrase_package: &PhrasePackage,
         output: &str,
         cfg: &Config,
-    ) -> Result<FileHandle, ConversionError>;
+    ) -> Result<PathBuf, ConversionError>;
 }
 
 pub struct Converter {
@@ -76,15 +76,14 @@ impl Converter {
     //XXX improve error responses
     pub async fn convert(
         &self,
-        input: FileHandle,
-        desired_format: &str,
+        phrase_package: &PhrasePackage,
         target_speed: f32,
         cfg: &Config,
-    ) -> Result<FileHandle, ()> {
+    ) -> Result<PathBuf, ()> {
         for sub in self.subs.iter() {
-            if sub.supported_outputs().contains(desired_format) {
+            if sub.supported_outputs().contains(&phrase_package.fmt) {
                 match sub
-                    .convert(input.clone(), target_speed, desired_format, cfg)
+                    .convert(target_speed, phrase_package, &phrase_package.fmt, cfg)
                     .await
                 {
                     Ok(res) => return Ok(res),

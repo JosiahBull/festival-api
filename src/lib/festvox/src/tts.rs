@@ -1,8 +1,9 @@
-use crate::PhrasePackage;
+use std::path::PathBuf;
+
 use config::Config;
 use rocket::async_trait;
 use rocket::{fairing::AdHoc, request::FromRequest};
-use utils::FileHandle;
+use utils::phrase_package::PhrasePackage;
 
 /// A trait indicating a tts generator that can be constructed and used to generate audio files from speech
 #[async_trait]
@@ -30,5 +31,5 @@ pub trait TtsGenerator<'r>: Send + Sync + Sized + 'static {
         &self,
         details: &PhrasePackage,
         config: &Config,
-    ) -> Result<FileHandle, <Self as TtsGenerator<'r>>::Error>;
+    ) -> Result<PathBuf, <Self as TtsGenerator<'r>>::Error>;
 }

@@ -8,10 +8,11 @@ extern crate rocket;
 use cache_manager::Cache;
 use config::Config;
 use converter::{Converter, Ffmpeg};
-use festvox::{Flite, PhrasePackage, TtsGenerator};
+use festvox::{Flite, TtsGenerator};
 use macros::failure;
 use response::{Data, Response};
 use rocket::{fs::NamedFile, http::Status, serde::json::Json};
+use utils::phrase_package::PhrasePackage;
 
 #[cfg(not(target_os = "linux"))]
 compile_error!("Unable to compile for your platform! This API is only available for Linux due to dependence on Bash commands.");
@@ -63,13 +64,12 @@ pub async fn convert(
 
     //Generate Response
     let response = match converter.convert(
-        generated_file.clone(),
-        &phrase_package.fmt,
+        &phrase_package,
         phrase_package.speed,
         cfg,
     ).await {
         Ok(f) => {
-            let resp_file = match NamedFile::open(f.underlying()).await {
+            let resp_file = match NamedFile::open(f).await {
                 Ok(f) => f,
                 Err(e) => failure!("Unable to open processed file {}, this is an internal error", e),
             };

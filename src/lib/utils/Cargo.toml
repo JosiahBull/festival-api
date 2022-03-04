@@ -9,3 +9,4 @@ license = "MIT or Apache-2.0"
 rand = { version = "0.8.4" }
 sha2 = "0.9.8"
 config = { path = "../config" }
+serde = { version = "1.0.126", features = ["derive"] }

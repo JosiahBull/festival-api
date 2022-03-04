@@ -13,7 +13,8 @@ RUN mv /app/target/release/festival-api /app/target/ \
     && rm -rd /app/.git \
     && rm -rd /app/.github \
     && rm -rd /app/docker-base \
-    && rm -rd /app/benches
+    && rm -rd /app/benches \
+    && rm -rd /app/cache/*
 
 ENV ROCKET_ADDRESS 0.0.0.0
 ENV ROCKET_PORT 3000

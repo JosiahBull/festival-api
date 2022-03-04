@@ -5,7 +5,7 @@ use std::{collections::HashSet, path::PathBuf, process::Command};
 use crate::{ConversionError, ConverterSubprocess};
 use async_trait::async_trait;
 use config::Config;
-use utils::FileHandle;
+use utils::phrase_package::PhrasePackage;
 
 #[derive(Debug)]
 pub struct Ffmpeg {}
@@ -49,41 +49,43 @@ impl ConverterSubprocess for Ffmpeg {
 
     async fn convert(
         &self,
-        input: FileHandle,
         desired_speed: f32,
+        phrase_package: &PhrasePackage,
         output: &str,
         cfg: &Config,
-    ) -> Result<FileHandle, ConversionError> {
-        let pathbuf = input.underlying();
+    ) -> Result<PathBuf, ConversionError> {
+        //Slightly convoluted, but this is a hot-path, and creating the path this way minimises allocation.
+        let mut converted_file_path = phrase_package.filename_stem_properspeed();
+        converted_file_path.reserve(cfg.CACHE_PATH().len() + 5);
+        converted_file_path.push_str(".");
+        converted_file_path.push_str(output);
+        converted_file_path.insert_str(0, "/");
+        converted_file_path.insert_str(0, cfg.CACHE_PATH());
 
-        let converted_file_path = PathBuf::from(format!(
-            "{}/{}.{}",
-            cfg.CACHE_PATH(),
-            pathbuf
-                .file_stem()
-                .expect("a valid os path")
-                .to_str()
-                .expect("a valid str"),
-            output,
-        ));
+        let converted_file_path = PathBuf::from(converted_file_path);
 
         if converted_file_path.exists() {
-            return Ok(FileHandle::new(
-                converted_file_path,
-                cfg.MAX_CACHE_SIZE() > 0,
-            ));
+            return Ok(converted_file_path);
         }
 
-        if !pathbuf.exists() {
+        let mut input_file_path = phrase_package.filename_stem_basespeed();
+        input_file_path.reserve(cfg.CACHE_PATH().len() + 5);
+        input_file_path.push_str(".wav");
+        input_file_path.insert_str(0, "/");
+        input_file_path.insert_str(0, cfg.CACHE_PATH());
+
+        let input_file_path = PathBuf::from(input_file_path);
+
+        if !input_file_path.exists() {
             return Err(ConversionError::NotFound);
         }
-        if !pathbuf.is_file() {
+        if !input_file_path.is_file() {
             return Err(ConversionError::NotFile);
         }
 
         let con = Command::new("ffmpeg")
             .arg("-i")
-            .arg(pathbuf)
+            .arg(input_file_path)
             .arg("-filter:a")
             .arg(format!("atempo={}", desired_speed)) //Change speed of audio
             .arg("-vn") //Strip & disable all video
@@ -91,10 +93,7 @@ impl ConverterSubprocess for Ffmpeg {
             .output();
 
         match con {
-            Ok(o) if o.status.success() => Ok(FileHandle::new(
-                PathBuf::from(converted_file_path),
-                cfg.MAX_CACHE_SIZE() > 0,
-            )),
+            Ok(o) if o.status.success() => Ok(converted_file_path),
             Ok(o) => {
                 let stdout = String::from_utf8(o.stdout)
                     .unwrap_or_else(|_| "Unable to parse stdout!".into());

@@ -11,6 +11,17 @@ pub struct PhrasePackage {
 }
 
 impl PhrasePackage {
+
+    /// Generate a filename, minus the file extension
+    pub fn filename_stem_properspeed(&self) -> String {
+        crate::sha_256_hash(&format!("{}_{}_{}", self.word, self.lang, self.speed))
+    }
+
+    /// Collect the name of the file pre-conversion or speed change
+    pub fn filename_stem_basespeed(&self) -> String {
+        crate::sha_256_hash(&format!("{}_{}_1.0", self.word, self.lang))
+    }
+
     /// Validates (and attempts to fix) a phrase package.
     /// Returns Ok() if the package is valid, and Err otherwise.
     /// Attempts to correct:
@@ -93,9 +104,9 @@ impl PhrasePackage {
 mod tests {
     use std::path::PathBuf;
 
-    use crate::PhrasePackage;
+    use super::PhrasePackage;
     use config::Config;
-    use utils::generate_random_alphanumeric;
+    use crate::generate_random_alphanumeric;
 
     #[test]
     fn validate_success_package() {
