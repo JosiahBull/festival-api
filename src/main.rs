@@ -48,7 +48,7 @@ pub async fn convert(
         .generate(&phrase_package, cfg)
         .await
         .map_err(|e| {
-            error!("{e}");
+            error!("{}", e);
             Response::TextErr(Data {
                 data: String::from(
                     "an error occured in festival/flite while generating the requested phrase",
