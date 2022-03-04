@@ -57,7 +57,8 @@ impl<'r> TtsGenerator<'r> for Flite {
         details: &PhrasePackage,
         config: &config::Config,
     ) -> Result<PathBuf, Self::Error> {
-        let file_path = PathBuf::from(config.CACHE_PATH()).join(format!("{}.wav", details.filename_stem_basespeed()));
+        let file_path = PathBuf::from(config.CACHE_PATH())
+            .join(format!("{}.wav", details.filename_stem_basespeed()));
 
         if file_path.exists() && file_path.is_file() {
             return Ok(file_path);

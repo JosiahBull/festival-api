@@ -11,7 +11,6 @@ pub struct PhrasePackage {
 }
 
 impl PhrasePackage {
-
     /// Generate a filename, minus the file extension
     pub fn filename_stem_properspeed(&self) -> String {
         crate::sha_256_hash(&format!("{}_{}_{}", self.word, self.lang, self.speed))
@@ -105,8 +104,8 @@ mod tests {
     use std::path::PathBuf;
 
     use super::PhrasePackage;
-    use config::Config;
     use crate::generate_random_alphanumeric;
+    use config::Config;
 
     #[test]
     fn validate_success_package() {
