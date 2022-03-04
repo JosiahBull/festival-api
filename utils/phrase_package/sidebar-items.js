@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["PhrasePackage","A phrase package which the user is requesting a speech to be generated for."]]});

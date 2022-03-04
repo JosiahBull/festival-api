@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["CacheAction",""]],"struct":[["Cache","A cache driver which is spawned off by the fairing for sending messages back and forth"],["CacheManager","Handles the size and implementation of the cache folder for any application automatically removing files as needed."]]});

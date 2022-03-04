@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["AlteredToml","A simple struct which allows a property on toml to be changed."]]});

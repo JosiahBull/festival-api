@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src&#x2F;lib&#x2F;config&#x2F;src&#x2F;config.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>config.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../config/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src&#x2F;lib&#x2F;config&#x2F;src&#x2F;config.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>config.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
+    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a class="sidebar-logo" href="../../config/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.png" alt="logo"></div>
+        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../config/index.html"><img class="rust-logo" src="../../rust-logo.png" alt="logo"></a><nav class="sub"><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -511,11 +513,15 @@
 <span id="511">511</span>
 <span id="512">512</span>
 <span id="513">513</span>
+<span id="514">514</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Configuration module for the api. This handles the loading, parsing, and updating of configuration options for the api.</span>
 
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">collections</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>},
     <span class="ident">convert::Infallible</span>,
+    <span class="ident">env::var</span>,
+    <span class="ident">path::PathBuf</span>,
+    <span class="ident">str::FromStr</span>,
 };
 
 <span class="kw">use</span> <span class="ident">rocket</span>::{
@@ -525,16 +531,13 @@
 };
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::error::ConfigError</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models</span>::{<span class="ident">Language</span>, <span class="ident">UserSettings</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::models::Language</span>;
 
 <span class="comment">//General Todos</span>
 <span class="comment">//TODO: Macroise a lot of the initalisation code to clean it up.</span>
 <span class="comment">//TODO: Create functions that load HashSet&lt;T&gt;, or Vec&lt;T&gt; types from toml - this should cleanup the code nicely.</span>
 <span class="comment">//TODO: Work on a viable method for dynamically loading the settings (RwLock) seems most promising - as shown</span>
 <span class="comment">// at the bottom of this page</span>
-
-<span class="doccomment">/// The location of all config files on the system.</span>
-<span class="kw">const</span> <span class="ident">CONFIG_LOCATION</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;./config&quot;</span>;
 
 <span class="doccomment">/// The different config paths we can load from</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">PathType</span> {
@@ -544,31 +547,31 @@
 }
 
 <span class="kw">impl</span> <span class="ident">PathType</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_path</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">String</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_path</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">config_path</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>) -&gt; <span class="ident">PathBuf</span> {
         <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
-            <span class="ident">PathType::General</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;general&quot;</span>,
-            <span class="ident">PathType::Langs</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;langs&quot;</span>,
-            <span class="ident">PathType::Users</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;users&quot;</span>,
+            <span class="ident">PathType::General</span> =&gt; <span class="string">&quot;general&quot;</span>,
+            <span class="ident">PathType::Langs</span> =&gt; <span class="string">&quot;langs&quot;</span>,
+            <span class="ident">PathType::Users</span> =&gt; <span class="string">&quot;users&quot;</span>,
         };
 
-        <span class="macro">format!</span>(<span class="string">&quot;{}/{}.toml&quot;</span>, <span class="ident">CONFIG_LOCATION</span>, <span class="ident">name</span>)
+        <span class="ident">config_path</span>.<span class="ident">join</span>(<span class="macro">format!</span>(<span class="string">&quot;{}.toml&quot;</span>, <span class="ident">name</span>))
     }
 }
 
 <span class="doccomment">/// Opens a toml file, and attempts to load the toml::value as specified in the provided &amp;str.</span>
-<span class="kw">fn</span> <span class="ident">load_from_toml</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">toml::Value</span>, <span class="ident">String</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::General</span>.<span class="ident">get_path</span>();
+<span class="kw">fn</span> <span class="ident">load_from_toml</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">toml::Value</span>, <span class="ident">String</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::General</span>.<span class="ident">get_path</span>(<span class="ident">path</span>);
     <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
     <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>().<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
 
     <span class="kw">return</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">k</span>) <span class="op">=</span> <span class="ident">f</span>.<span class="ident">get</span>(<span class="ident">name</span>) {
         <span class="prelude-val">Ok</span>(<span class="ident">k</span>.<span class="ident">to_owned</span>())
     } <span class="kw">else</span> {
-        <span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">&quot;Key Not found in {}&quot;</span>, <span class="ident">file_path</span>))
+        <span class="prelude-val">Err</span>(<span class="macro">format!</span>(<span class="string">&quot;Key Not found in {}&quot;</span>, <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()))
     };
 }
 
-<span class="doccomment">/// A macro to load configuration from the environment.</span>
+<span class="doccomment">/// A function to load configuration from the environment.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Attempts to load from multiple sources falling back in this order:</span>
 <span class="doccomment">/// 1. Load from environment</span>
@@ -579,72 +582,67 @@
 <span class="doccomment">/// at runtime, not at compile-time.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// **Example**</span>
-<span class="doccomment">/// ```rust</span>
-<span class="doccomment">///     let num_shoes: usize = load_env!(&quot;NUMBER_SHOES&quot;);</span>
+<span class="doccomment">/// ```ignore</span>
+<span class="doccomment">///     let num_shoes: usize = load_env(&quot;&amp;path&quot;);</span>
 <span class="doccomment">///     assert_eq!(num_shoes, 5);</span>
 <span class="doccomment">///     println!(&quot;The number of shoes is {}&quot;, num_shoes);</span>
 <span class="doccomment">/// ```</span>
+<span class="doccomment">///</span>
 <span class="doccomment">/// A variety of types are supported for implicit conversion, look [here](https://docs.rs/toml/0.5.8/toml/value/enum.Value.html#impl-From%3C%26%27a%20str%3E) for a dedicated list of these types.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// Internally this macro relies on `toml::value::Value.try_into()` for type conversion.</span>
+<span class="doccomment">/// Internally this macro relies on &#39;toml::value::Value.try_into()&#39; for type conversion.</span>
 <span class="doccomment">///</span>
-<span class="macro">macro_rules!</span> <span class="ident">load_env</span> {
-    () <span class="op">=</span><span class="op">&gt;</span> {
-        <span class="macro">compile_error!</span>(<span class="string">&quot;String must be provided to load_env macro!&quot;</span>);
-    };
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">arg</span>:<span class="ident">tt</span>, <span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ty</span>) <span class="op">=</span><span class="op">&gt;</span> {{
-        <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::error::ConfigError</span>;
-        <span class="kw">fn</span> <span class="ident">load_val</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">type</span>, <span class="macro-nonterminal">ConfigError</span><span class="op">&gt;</span> {
-            <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config</span>::{<span class="ident">load_from_toml</span>, <span class="ident">PathType</span>};
-            <span class="kw">use</span> <span class="ident">std::env::var</span>;
-            <span class="kw">let</span> <span class="ident">env_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">arg</span>;
+<span class="kw">fn</span> <span class="ident">load_env</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>(<span class="ident">env_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+    <span class="ident">T</span>: <span class="ident">FromStr</span> <span class="op">+</span> <span class="ident">FromStr</span><span class="op">&lt;</span><span class="prelude-val">Err</span> <span class="op">=</span> <span class="ident">E</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">rocket::serde::Deserialize</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span><span class="op">&gt;</span>,
+    <span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ConfigError</span><span class="op">&gt;</span>,
+{
+    <span class="comment">//1. Attempt to load from env</span>
+    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">val</span>) <span class="op">=</span> <span class="ident">var</span>(<span class="ident">env_name</span>) {
+        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">val</span>.<span class="ident">parse</span>().<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span>: <span class="ident">E</span><span class="op">|</span> {
+            <span class="kw">let</span> <span class="ident">e</span>: <span class="ident">ConfigError</span> <span class="op">=</span> <span class="ident">e</span>.<span class="ident">into</span>();
+            <span class="ident">e</span>
+        })<span class="question-mark">?</span>);
+    }
 
-            <span class="comment">//1. Attempt to load from env</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">d</span>) <span class="op">=</span> <span class="ident">var</span>(<span class="ident">env_name</span>) {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">d</span>.<span class="ident">parse</span>().<span class="ident">expect</span>(<span class="string">&quot;a parsed value&quot;</span>));
-            }
-
-            <span class="comment">//2. Attempt to load from config location</span>
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">d</span>) <span class="op">=</span> <span class="ident">load_from_toml</span>(<span class="kw-2">&amp;</span><span class="ident">env_name</span>) {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">v</span>) <span class="op">=</span> <span class="ident">d</span>.<span class="ident">try_into</span>() {
-                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">v</span>);
-                }
-            }
-
-            <span class="comment">//3. Failure</span>
-            <span class="macro">panic!</span>(
-                <span class="string">&quot;Env {} not found in environment or {}. Program start failed.&quot;</span>,
-                <span class="ident">env_name</span>,
-                <span class="ident">PathType::General</span>.<span class="ident">get_path</span>()
-            );
+    <span class="comment">//2. Attempt to load from config location</span>
+    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">val</span>) <span class="op">=</span> <span class="ident">load_from_toml</span>(<span class="ident">env_name</span>, <span class="ident">path</span>) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">val</span>) <span class="op">=</span> <span class="ident">val</span>.<span class="ident">try_into</span>() {
+            <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">val</span>);
         }
+    }
 
-        <span class="ident">load_val</span>()
-    }};
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">arg</span>:<span class="ident">tt</span>) <span class="op">=</span><span class="op">&gt;</span> {
-        <span class="macro">compile_error!</span>(<span class="string">&quot;Type Not provided to macro!&quot;</span>);
-    };
+    <span class="macro">panic!</span>(
+        <span class="string">&quot;Env {} not found in environment or {}. Program start failed.&quot;</span>,
+        <span class="ident">env_name</span>,
+        <span class="ident">PathType::General</span>.<span class="ident">get_path</span>(<span class="ident">path</span>).<span class="ident">to_string_lossy</span>()
+    )
 }
 
-<span class="kw">fn</span> <span class="ident">load_table</span>(<span class="ident">file_path</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">table_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">toml::value::Table</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
+<span class="kw">fn</span> <span class="ident">load_table</span>(<span class="ident">file_path</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>, <span class="ident">table_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">toml::value::Table</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find {}&quot;</span>, <span class="ident">file_path</span>));
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find {}&quot;</span>, <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()));
     <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>
         .<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse `{}`&quot;</span>, <span class="ident">file_path</span>));
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse `{}`&quot;</span>, <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()));
 
     <span class="kw">let</span> <span class="ident">table</span>: <span class="ident">toml::value::Table</span> <span class="op">=</span> <span class="ident">f</span>
         .<span class="ident">get</span>(<span class="ident">table_name</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse {}, no langs provided!&quot;</span>, <span class="ident">file_path</span>))
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+            <span class="macro">panic!</span>(
+                <span class="string">&quot;Unable to parse {}, no langs provided!&quot;</span>,
+                <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+            )
+        })
         .<span class="ident">as_table</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;lang tag is not a table in {}&quot;</span>, <span class="ident">file_path</span>))
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;lang tag is not a table in {}&quot;</span>, <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()))
         .<span class="ident">to_owned</span>();
 
     <span class="prelude-val">Ok</span>(<span class="ident">table</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">load_supported_langs</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Language</span><span class="op">&gt;</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::Langs</span>.<span class="ident">get_path</span>();
+<span class="kw">fn</span> <span class="ident">load_supported_langs</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Language</span><span class="op">&gt;</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::Langs</span>.<span class="ident">get_path</span>(<span class="ident">path</span>);
     <span class="kw">let</span> <span class="ident">languages</span> <span class="op">=</span> <span class="ident">load_table</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>, <span class="string">&quot;lang&quot;</span>)<span class="question-mark">?</span>;
 
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">map</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Language</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::default</span>();
@@ -655,28 +653,54 @@
             .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
                 <span class="macro">panic!</span>(
                     <span class="string">&quot;Unable to parse lang {} from {}, is it correctly formatted?&quot;</span>,
-                    <span class="ident">key</span>, <span class="ident">file_path</span>
+                    <span class="ident">key</span>,
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
                 )
             })
             .<span class="ident">as_table</span>()
-            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to prase {} as table from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">file_path</span>));
+            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+                <span class="macro">panic!</span>(
+                    <span class="string">&quot;Unable to prase {} as table from {}&quot;</span>,
+                    <span class="ident">key</span>,
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+                )
+            });
 
         <span class="kw">let</span> <span class="ident">enabled</span> <span class="op">=</span> <span class="ident">lang</span>
             .<span class="ident">get</span>(<span class="string">&quot;enabled&quot;</span>)
-            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse enabled on {} from {}&quot;</span>, <span class="ident">key</span>, <span class="ident">file_path</span>))
+            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+                <span class="macro">panic!</span>(
+                    <span class="string">&quot;Unable to parse enabled on {} from {}&quot;</span>,
+                    <span class="ident">key</span>,
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+                )
+            })
             .<span class="ident">as_bool</span>()
-            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;{}&#39;s enabled is not a boolean in {}&quot;</span>, <span class="ident">key</span>, <span class="ident">file_path</span>));
+            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+                <span class="macro">panic!</span>(
+                    <span class="string">&quot;{}&#39;s enabled is not a boolean in {}&quot;</span>,
+                    <span class="ident">key</span>,
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+                )
+            });
 
         <span class="kw">let</span> <span class="ident">festival_code</span> <span class="op">=</span> <span class="ident">lang</span>
-            .<span class="ident">get</span>(<span class="string">&quot;festival_code&quot;</span>)
+            .<span class="ident">get</span>(<span class="string">&quot;festvox&quot;</span>)
             .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
                 <span class="macro">panic!</span>(
                     <span class="string">&quot;Unable to parse festival_code on {} from {}&quot;</span>,
-                    <span class="ident">key</span>, <span class="ident">file_path</span>
+                    <span class="ident">key</span>,
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
                 )
             })
             .<span class="ident">as_str</span>()
-            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;{}&#39;s festival_code is not a string in {}&quot;</span>, <span class="ident">key</span>, <span class="ident">file_path</span>))
+            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+                <span class="macro">panic!</span>(
+                    <span class="string">&quot;{}&#39;s festival_code is not a string in {}&quot;</span>,
+                    <span class="ident">key</span>,
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+                )
+            })
             .<span class="ident">to_owned</span>();
 
         <span class="kw">let</span> <span class="ident">iso_691_code</span> <span class="op">=</span> <span class="ident">lang</span>
@@ -684,11 +708,18 @@
             .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
                 <span class="macro">panic!</span>(
                     <span class="string">&quot;Unable to parse iso-691-1_code on {} from {}&quot;</span>,
-                    <span class="ident">key</span>, <span class="ident">file_path</span>
+                    <span class="ident">key</span>,
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
                 )
             })
             .<span class="ident">as_str</span>()
-            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;{}&#39;s iso_691-1_code is not a string in {}&quot;</span>, <span class="ident">key</span>, <span class="ident">file_path</span>))
+            .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+                <span class="macro">panic!</span>(
+                    <span class="string">&quot;{}&#39;s iso_691-1_code is not a string in {}&quot;</span>,
+                    <span class="ident">key</span>,
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+                )
+            })
             .<span class="ident">to_owned</span>();
 
         <span class="ident">map</span>.<span class="ident">insert</span>(
@@ -705,26 +736,40 @@
     <span class="prelude-val">Ok</span>(<span class="ident">map</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">load_allowed_formats</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::General</span>.<span class="ident">get_path</span>();
-    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find `{}` due to error {}&quot;</span>, <span class="ident">file_path</span>, <span class="ident">e</span>));
-    <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>
-        .<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse `{}` due to error {}&quot;</span>, <span class="ident">file_path</span>, <span class="ident">e</span>));
+<span class="kw">fn</span> <span class="ident">load_allowed_formats</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::General</span>.<span class="ident">get_path</span>(<span class="ident">path</span>);
+    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+        <span class="macro">panic!</span>(
+            <span class="string">&quot;Unable to find `{}` due to error {}&quot;</span>,
+            <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>(),
+            <span class="ident">e</span>
+        )
+    });
+    <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+        <span class="macro">panic!</span>(
+            <span class="string">&quot;Unable to parse `{}` due to error {}&quot;</span>,
+            <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>(),
+            <span class="ident">e</span>
+        )
+    });
 
     <span class="kw">let</span> <span class="ident">table</span> <span class="op">=</span> <span class="ident">f</span>
         .<span class="ident">as_table</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse {} as table.&quot;</span>, <span class="ident">file_path</span>));
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse {} as table.&quot;</span>, <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()));
 
     <span class="kw">let</span> <span class="ident">formats</span> <span class="op">=</span> <span class="ident">table</span>
         .<span class="ident">get</span>(<span class="string">&quot;ALLOWED_FORMATS&quot;</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find ALLOWED_FORMATS in {}&quot;</span>, <span class="ident">file_path</span>))
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+            <span class="macro">panic!</span>(
+                <span class="string">&quot;Unable to find ALLOWED_FORMATS in {}&quot;</span>,
+                <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+            )
+        })
         .<span class="ident">as_array</span>()
         .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
             <span class="macro">panic!</span>(
                 <span class="string">&quot;ALLOWED_FORMATS in {} is not an array of strings!&quot;</span>,
-                <span class="ident">file_path</span>
+                <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
             )
         });
 
@@ -736,7 +781,7 @@
             .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
                 <span class="macro">panic!</span>(
                     <span class="string">&quot;ALLOWED_FORMATS in {} is not an array of strings!&quot;</span>,
-                    <span class="ident">file_path</span>
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
                 )
             })
             .<span class="ident">to_owned</span>();
@@ -746,23 +791,42 @@
     <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">load_allowed_chars</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">char</span><span class="op">&gt;</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::General</span>.<span class="ident">get_path</span>();
-    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find `{}` due to error {}&quot;</span>, <span class="ident">file_path</span>, <span class="ident">e</span>));
-    <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>
-        .<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse `{}` due to error {}&quot;</span>, <span class="ident">file_path</span>, <span class="ident">e</span>));
+<span class="kw">fn</span> <span class="ident">load_allowed_chars</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">char</span><span class="op">&gt;</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::General</span>.<span class="ident">get_path</span>(<span class="ident">path</span>);
+    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+        <span class="macro">panic!</span>(
+            <span class="string">&quot;Unable to find `{}` due to error {}&quot;</span>,
+            <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>(),
+            <span class="ident">e</span>
+        )
+    });
+    <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+        <span class="macro">panic!</span>(
+            <span class="string">&quot;Unable to parse `{}` due to error {}&quot;</span>,
+            <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>(),
+            <span class="ident">e</span>
+        )
+    });
 
     <span class="kw">let</span> <span class="ident">table</span> <span class="op">=</span> <span class="ident">f</span>
         .<span class="ident">as_table</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse {} as table.&quot;</span>, <span class="ident">file_path</span>));
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse {} as table.&quot;</span>, <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()));
 
     <span class="kw">let</span> <span class="ident">raw_string</span>: <span class="ident">String</span> <span class="op">=</span> <span class="ident">table</span>
         .<span class="ident">get</span>(<span class="string">&quot;ALLOWED_CHARS&quot;</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find ALLOWED_CHARS in {}&quot;</span>, <span class="ident">file_path</span>))
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+            <span class="macro">panic!</span>(
+                <span class="string">&quot;Unable to find ALLOWED_CHARS in {}&quot;</span>,
+                <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+            )
+        })
         .<span class="ident">as_str</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;ALLOWED_CHARS in {} is not a string!&quot;</span>, <span class="ident">file_path</span>))
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+            <span class="macro">panic!</span>(
+                <span class="string">&quot;ALLOWED_CHARS in {} is not a string!&quot;</span>,
+                <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+            )
+        })
         .<span class="ident">to_owned</span>();
 
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">HashSet::default</span>();
@@ -774,27 +838,41 @@
     <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">load_blacklisted_phrases</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::General</span>.<span class="ident">get_path</span>();
+<span class="kw">fn</span> <span class="ident">load_blacklisted_phrases</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::General</span>.<span class="ident">get_path</span>(<span class="ident">path</span>);
 
-    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find `{}` due to error {}&quot;</span>, <span class="ident">file_path</span>, <span class="ident">e</span>));
-    <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>
-        .<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse `{}` due to error {}&quot;</span>, <span class="ident">file_path</span>, <span class="ident">e</span>));
+    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+        <span class="macro">panic!</span>(
+            <span class="string">&quot;Unable to find `{}` due to error {}&quot;</span>,
+            <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>(),
+            <span class="ident">e</span>
+        )
+    });
+    <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>().<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+        <span class="macro">panic!</span>(
+            <span class="string">&quot;Unable to parse `{}` due to error {}&quot;</span>,
+            <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>(),
+            <span class="ident">e</span>
+        )
+    });
 
     <span class="kw">let</span> <span class="ident">table</span> <span class="op">=</span> <span class="ident">f</span>
         .<span class="ident">as_table</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse {} as table.&quot;</span>, <span class="ident">file_path</span>));
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse {} as table.&quot;</span>, <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()));
 
     <span class="kw">let</span> <span class="ident">phrases</span> <span class="op">=</span> <span class="ident">table</span>
         .<span class="ident">get</span>(<span class="string">&quot;BLACKLISTED_PHRASES&quot;</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find BLACKLISTED_PHRASES in {}&quot;</span>, <span class="ident">file_path</span>))
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+            <span class="macro">panic!</span>(
+                <span class="string">&quot;Unable to find BLACKLISTED_PHRASES in {}&quot;</span>,
+                <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
+            )
+        })
         .<span class="ident">as_array</span>()
         .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
             <span class="macro">panic!</span>(
                 <span class="string">&quot;BLACKLISTED_PHRASES in {} is not an array of strings!&quot;</span>,
-                <span class="ident">file_path</span>
+                <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
             )
         });
 
@@ -806,7 +884,7 @@
             .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> {
                 <span class="macro">panic!</span>(
                     <span class="string">&quot;BLACKLISTED_PHRASES in {} is not an array of strings!&quot;</span>,
-                    <span class="ident">file_path</span>
+                    <span class="ident">file_path</span>.<span class="ident">to_string_lossy</span>()
                 )
             })
             .<span class="ident">to_owned</span>();
@@ -816,57 +894,15 @@
     <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
 }
 
-<span class="kw">fn</span> <span class="ident">load_custom_user_settings</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">UserSettings</span><span class="op">&gt;</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">PathType::Users</span>.<span class="ident">get_path</span>();
-    <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">std::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to find `{}` due to error {}&quot;</span>, <span class="ident">file_path</span>, <span class="ident">e</span>));
-    <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">data</span>
-        .<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">toml::Value</span><span class="op">&gt;</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse `{}` due to error {}&quot;</span>, <span class="ident">file_path</span>, <span class="ident">e</span>));
-    <span class="kw">let</span> <span class="ident">table</span> <span class="op">=</span> <span class="ident">f</span>
-        .<span class="ident">as_table</span>()
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">panic!</span>(<span class="string">&quot;Unable to parse {} as table.&quot;</span>, <span class="ident">file_path</span>));
-
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">UserSettings</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::default</span>();
-
-    <span class="kw">for</span> (<span class="ident">name</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="ident">table</span> {
-        <span class="kw">let</span> <span class="ident">user_table</span> <span class="op">=</span> <span class="ident">table</span>
-            .<span class="ident">get</span>(<span class="ident">name</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;success&quot;</span>)
-            .<span class="ident">as_table</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;a table&quot;</span>);
-
-        <span class="kw">let</span> <span class="ident">apply_api_rate_limit</span> <span class="op">=</span> <span class="ident">user_table</span>
-            .<span class="ident">get</span>(<span class="string">&quot;apply-api-rate-limit&quot;</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;&quot;</span>)
-            .<span class="ident">as_bool</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;&quot;</span>);
-
-        <span class="kw">let</span> <span class="ident">settings</span>: <span class="ident">UserSettings</span> <span class="op">=</span> <span class="ident">UserSettings</span> {
-            <span class="ident">apply_api_rate_limit</span>,
-        };
-
-        <span class="ident">res</span>.<span class="ident">insert</span>(<span class="ident">name</span>.<span class="ident">to_string</span>(), <span class="ident">settings</span>);
-    }
-
-    <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
-}
-
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Config</span> {
-    <span class="doccomment">/// The secret used for fast-hashing JWT&#39;s for validation.</span>
-    <span class="ident">jwt_secret</span>: <span class="ident">String</span>,
-
-    <span class="doccomment">/// The number of hours that a JWT may be used before expiring and forcing the user to revalidate.</span>
-    <span class="ident">jwt_expiry_time_hours</span>: <span class="ident">usize</span>,
-
     <span class="doccomment">/// The name of the api which is sent with certain requests.</span>
     <span class="ident">api_name</span>: <span class="ident">String</span>,
 
     <span class="doccomment">/// The path to the cache for storing .wav files.</span>
     <span class="ident">cache_path</span>: <span class="ident">String</span>,
 
-    <span class="doccomment">/// The path where temporary files are stored, and should be deleted from on a crash.</span>
-    <span class="ident">temp_path</span>: <span class="ident">String</span>,
+    <span class="doccomment">/// The maximum size of of the cache that may be stored on the system.</span>
+    <span class="ident">max_cache_size</span>: <span class="ident">usize</span>,
 
     <span class="doccomment">/// The maximum length of a phrase that the api will process.</span>
     <span class="ident">word_length_limit</span>: <span class="ident">usize</span>,
@@ -876,12 +912,6 @@
 
     <span class="doccomment">/// The lowerest speed at which a phrase can be read.</span>
     <span class="ident">speed_min_val</span>: <span class="ident">f32</span>,
-
-    <span class="doccomment">/// The maximum requests that an account can make in a given time period established by `MAX_REQUESTS_TIME_PERIOD_MINUTES`</span>
-    <span class="ident">max_requests_acc_threshold</span>: <span class="ident">usize</span>,
-
-    <span class="doccomment">/// The time period for timing out users who make too many requests.</span>
-    <span class="ident">max_requests_time_period_minutes</span>: <span class="ident">usize</span>,
 
     <span class="doccomment">/// A list of supported speech languages by this api.</span>
     <span class="ident">supported_langs</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Language</span><span class="op">&gt;</span>,
@@ -894,104 +924,75 @@
 
     <span class="doccomment">/// A list of phrases that are not allowed on this api.</span>
     <span class="ident">blacklisted_phrases</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
-
-    <span class="doccomment">/// A (short!) list of custom user settings. This should be used for lectures/tutors who need higher api rate limits for example.</span>
-    <span class="ident">user_settings</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">UserSettings</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">Config</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">path</span>: <span class="ident">PathBuf</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> {
         <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="ident">jwt_secret</span>: <span class="macro">load_env!</span>(<span class="string">&quot;JWT_SECRET&quot;</span>, <span class="ident">String</span>)<span class="question-mark">?</span>,
-            <span class="ident">jwt_expiry_time_hours</span>: <span class="macro">load_env!</span>(<span class="string">&quot;JWT_EXPIRY_TIME_HOURS&quot;</span>, <span class="ident">usize</span>)<span class="question-mark">?</span>,
-            <span class="ident">api_name</span>: <span class="macro">load_env!</span>(<span class="string">&quot;API_NAME&quot;</span>, <span class="ident">String</span>)<span class="question-mark">?</span>,
-            <span class="ident">cache_path</span>: <span class="macro">load_env!</span>(<span class="string">&quot;CACHE_PATH&quot;</span>, <span class="ident">String</span>)<span class="question-mark">?</span>,
-            <span class="ident">temp_path</span>: <span class="macro">load_env!</span>(<span class="string">&quot;TEMP_PATH&quot;</span>, <span class="ident">String</span>)<span class="question-mark">?</span>,
-            <span class="ident">word_length_limit</span>: <span class="macro">load_env!</span>(<span class="string">&quot;WORD_LENGTH_LIMIT&quot;</span>, <span class="ident">usize</span>)<span class="question-mark">?</span>,
-            <span class="ident">speed_max_val</span>: <span class="macro">load_env!</span>(<span class="string">&quot;SPEED_MAX_VAL&quot;</span>, <span class="ident">f32</span>)<span class="question-mark">?</span>,
-            <span class="ident">speed_min_val</span>: <span class="macro">load_env!</span>(<span class="string">&quot;SPEED_MIN_VAL&quot;</span>, <span class="ident">f32</span>)<span class="question-mark">?</span>,
-            <span class="ident">max_requests_acc_threshold</span>: <span class="macro">load_env!</span>(<span class="string">&quot;MAX_REQUESTS_ACC_THRESHOLD&quot;</span>, <span class="ident">usize</span>)<span class="question-mark">?</span>,
-            <span class="ident">max_requests_time_period_minutes</span>: <span class="macro">load_env!</span>(<span class="string">&quot;MAX_REQUESTS_TIME_PERIOD_MINUTES&quot;</span>, <span class="ident">usize</span>)<span class="question-mark">?</span>,
-            <span class="ident">supported_langs</span>: <span class="ident">load_supported_langs</span>()<span class="question-mark">?</span>,
-            <span class="ident">allowed_formats</span>: <span class="ident">load_allowed_formats</span>()<span class="question-mark">?</span>,
-            <span class="ident">allowed_chars</span>: <span class="ident">load_allowed_chars</span>()<span class="question-mark">?</span>,
-            <span class="ident">blacklisted_phrases</span>: <span class="ident">load_blacklisted_phrases</span>()<span class="question-mark">?</span>,
-            <span class="ident">user_settings</span>: <span class="ident">load_custom_user_settings</span>()<span class="question-mark">?</span>,
+            <span class="ident">api_name</span>: <span class="ident">load_env</span>(<span class="string">&quot;API_NAME&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
+            <span class="ident">cache_path</span>: <span class="ident">load_env</span>(<span class="string">&quot;CACHE_PATH&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
+            <span class="ident">max_cache_size</span>: <span class="ident">load_env</span>(<span class="string">&quot;MAX_CACHE_SIZE_MB&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
+            <span class="ident">word_length_limit</span>: <span class="ident">load_env</span>(<span class="string">&quot;CHAR_LENGTH_LIMIT&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
+            <span class="ident">speed_max_val</span>: <span class="ident">load_env</span>(<span class="string">&quot;SPEED_MAX_VAL&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
+            <span class="ident">speed_min_val</span>: <span class="ident">load_env</span>(<span class="string">&quot;SPEED_MIN_VAL&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
+            <span class="ident">supported_langs</span>: <span class="ident">load_supported_langs</span>(<span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
+            <span class="ident">allowed_formats</span>: <span class="ident">load_allowed_formats</span>(<span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
+            <span class="ident">allowed_chars</span>: <span class="ident">load_allowed_chars</span>(<span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
+            <span class="ident">blacklisted_phrases</span>: <span class="ident">load_blacklisted_phrases</span>(<span class="kw-2">&amp;</span><span class="ident">path</span>)<span class="question-mark">?</span>,
         })
     }
 }
 
-<span class="comment">//TODO make a getter macro which can automatically generate all these</span>
+<span class="comment">//XXX make a getter macro which can automatically generate all these</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_snake_case</span>)]</span>
 <span class="kw">impl</span> <span class="ident">Config</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">JWT_SECRET</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">jwt_secret</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">JWT_EXPIRY_TIME_HOURS</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">jwt_expiry_time_hours</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">API_NAME</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">API_NAME</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">api_name</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">CACHE_PATH</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">CACHE_PATH</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cache_path</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">TEMP_PATH</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">temp_path</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">MAX_CACHE_SIZE</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        <span class="self">self</span>.<span class="ident">max_cache_size</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">WORD_LENGTH_LIMIT</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">WORD_LENGTH_LIMIT</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="ident">word_length_limit</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">SPEED_MAX_VAL</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">f32</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">SPEED_MAX_VAL</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">f32</span> {
         <span class="self">self</span>.<span class="ident">speed_max_val</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">SPEED_MIN_VAL</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">f32</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">SPEED_MIN_VAL</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">f32</span> {
         <span class="self">self</span>.<span class="ident">speed_min_val</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">MAX_REQUESTS_ACC_THRESHOLD</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">max_requests_acc_threshold</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">MAX_REQUESTS_TIME_PERIOD_MINUTES</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">max_requests_time_period_minutes</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">SUPPORTED_LANGS</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Language</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">SUPPORTED_LANGS</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Language</span><span class="op">&gt;</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">supported_langs</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ALLOWED_FORMATS</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ALLOWED_FORMATS</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">allowed_formats</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ALLOWED_CHARS</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">char</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ALLOWED_CHARS</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">char</span><span class="op">&gt;</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">allowed_chars</span>
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">BLACKLISTED_PHRASES</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span>[<span class="ident">String</span>] {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">BLACKLISTED_PHRASES</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">String</span>] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">blacklisted_phrases</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">USER_SETTINGS</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">UserSettings</span><span class="op">&gt;</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">user_settings</span>
     }
 }
 
 <span class="kw">impl</span> <span class="ident">Config</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fairing</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">AdHoc</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fairing</span>() -&gt; <span class="ident">AdHoc</span> {
         <span class="ident">AdHoc::on_ignite</span>(<span class="string">&quot;Custom Configuration Loader&quot;</span>, <span class="op">|</span><span class="ident">rocket</span><span class="op">|</span> {
             <span class="ident">Box::pin</span>(<span class="kw">async</span> <span class="kw">move</span> {
                 <span class="comment">//Generate Config</span>
-                <span class="kw">let</span> <span class="ident">config</span> <span class="op">=</span> <span class="ident">Config::new</span>().<span class="ident">unwrap</span>();
-
+                <span class="kw">let</span> <span class="ident">config</span> <span class="op">=</span> <span class="ident">Config::new</span>(<span class="ident">PathBuf::from</span>(<span class="string">&quot;./config&quot;</span>)).<span class="ident">unwrap</span>();
                 <span class="comment">//Save to State</span>
                 <span class="ident">rocket</span>.<span class="ident">manage</span>(<span class="ident">config</span>)
             })
@@ -1002,7 +1003,7 @@
 <span class="attribute">#[<span class="ident">rocket::async_trait</span>]</span>
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;r</span><span class="op">&gt;</span> <span class="ident">FromRequest</span><span class="op">&lt;</span><span class="lifetime">&#39;r</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;r</span> <span class="ident">Config</span> {
     <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">Infallible</span>;
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">from_request</span>(<span class="ident">req</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;r</span> <span class="ident">Request</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">request::Outcome</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Infallible</span><span class="op">&gt;</span> {
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">from_request</span>(<span class="ident">req</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;r</span> <span class="ident">Request</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">request::Outcome</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Infallible</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">req</span>
             .<span class="ident">rocket</span>()
             .<span class="ident">state</span>::<span class="op">&lt;</span><span class="ident">Config</span><span class="op">&gt;</span>()
@@ -1014,17 +1015,19 @@
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">tarpaulin_include</span>))]</span>
 <span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident">load_env</span>;
+    <span class="kw">use</span> <span class="ident">std::path::PathBuf</span>;
 
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::error::ConfigError</span>;
+
+    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::load_env</span>;
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="attribute">#[<span class="ident">should_panic</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_failed_env_load</span>() {
-        <span class="kw">let</span> <span class="kw">_</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">load_env!</span>(<span class="string">&quot;this_value_does_not_exist123&quot;</span>, <span class="ident">String</span>);
+        <span class="kw">let</span> <span class="kw">_</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">ConfigError</span><span class="op">&gt;</span> <span class="op">=</span>
+            <span class="ident">load_env</span>(<span class="string">&quot;this_value_does_not_exist123&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">PathBuf::from</span>(<span class="string">&quot;/&quot;</span>));
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="config" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div>
-    <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="config" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0 (9d1b2106e 2022-02-23)" ></div>
 </body></html>
