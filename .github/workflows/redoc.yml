@@ -1,4 +1,4 @@
-name: OAS Docs
+name: API Docs
 
 on:
   push:

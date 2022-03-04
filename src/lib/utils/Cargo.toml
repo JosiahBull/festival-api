@@ -1,0 +1,12 @@
+[package]
+name = "utils"
+version = "0.1.0"
+edition = "2018"
+authors = ["Josiah Bull <jbul738@aucklanduni.ac.nz>, Nasser Giacaman <n.giacaman@auckland.ac.nz>"]
+license = "MIT or Apache-2.0"
+
+[dependencies]
+rand = { version = "0.8.4" }
+sha2 = "0.9.8"
+config = { path = "../config" }
+serde = { version = "1.0.126", features = ["derive"] }

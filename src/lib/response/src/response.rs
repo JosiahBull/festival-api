@@ -88,7 +88,7 @@ impl<'r> rocket::response::Responder<'r, 'static> for Response {
     }
 }
 
-// TODO implement once https://github.com/rust-lang/rust/issues/84277 is stabilised
+// XXX implement once https://github.com/rust-lang/rust/issues/84277 is stabilised
 // Then all endpoints in `main.rs` can simply return Response, rather than Result<Response, Response>.
 // impl<'a> std::ops::FromResidual<Result<std::convert::Infallible, response::Response<'_>>> for Response<'a> {
 //     fn from_residual(residual: Result<std::convert::Infallible, response::Response<'_>>) -> Self {

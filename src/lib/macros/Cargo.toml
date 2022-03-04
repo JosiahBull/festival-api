@@ -1,0 +1,10 @@
+[package]
+name = "macros"
+version = "0.1.0"
+edition = "2018"
+authors = ["Josiah Bull <jbul738@aucklanduni.ac.nz>, Nasser Giacaman <n.giacaman@auckland.ac.nz>"]
+license = "MIT or Apache-2.0"
+
+[dependencies]
+rocket = {version = "0.5.0-rc.1"}
+response = { path = "../response/" }

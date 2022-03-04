@@ -1,0 +1,44 @@
+config:
+  target: "http://127.0.0.1:8000"
+  phases:
+    - duration: 10
+      arrivalRate: 5
+      name: Warm up
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 45
+      name: Ramp up load
+    - duration: 600
+      arrivalRate: 90
+      name: Sustained load
+  payload:
+  -
+    path: "wordlist.csv"
+    fields:
+      - "keyword"
+  -
+    path: "wordlist.csv"
+    fields:
+      - "keyword2"
+
+scenarios:
+  - name: "convert words english"
+    flow:
+      - post:
+          url: "/api/convert"
+          content-type: "application/json"
+          json:
+            word: "{{ keyword }} {{ keyword2 }}"
+            lang: "en"
+            speed: 1.0
+            fmt: "wav"
+  - name: "convert words maori"
+    flow:
+      - post:
+          url: "/api/convert"
+          content-type: "application/json"
+          json:
+            word: "{{ keyword }} {{ keyword2 }}"
+            lang: "mi"
+            speed: 1.0
+            fmt: "wav"

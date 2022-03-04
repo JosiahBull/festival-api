@@ -1,0 +1,26 @@
+config:
+  target: "http://127.0.0.1:8000"
+  phases:
+    - duration: 10
+      arrivalRate: 50
+      name: Warm up
+    - duration: 60
+      arrivalRate: 50
+      rampTo: 500
+      name: Ramp up load
+    - duration: 600
+      arrivalRate: 500
+      name: Sustained load
+
+scenarios:
+  - name: "convert words english"
+    flow:
+      - post:
+          url: "/api/convert"
+          headers:
+          content-type: "application/json"
+          json:
+            word: "Queen"
+            lang: "en"
+            speed: 1.0
+            fmt: "wav"
