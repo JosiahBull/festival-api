@@ -59,12 +59,19 @@ impl ConverterSubprocess for Ffmpeg {
         let converted_file_path = PathBuf::from(format!(
             "{}/{}.{}",
             cfg.CACHE_PATH(),
-            pathbuf.file_stem().expect("a valid os path").to_str().expect("a valid str"),
+            pathbuf
+                .file_stem()
+                .expect("a valid os path")
+                .to_str()
+                .expect("a valid str"),
             output,
         ));
 
         if converted_file_path.exists() {
-            return Ok(FileHandle::new(converted_file_path, cfg.MAX_CACHE_SIZE() > 0));
+            return Ok(FileHandle::new(
+                converted_file_path,
+                cfg.MAX_CACHE_SIZE() > 0,
+            ));
         }
 
         if !pathbuf.exists() {
@@ -84,9 +91,10 @@ impl ConverterSubprocess for Ffmpeg {
             .output();
 
         match con {
-            Ok(o) if o.status.success() => {
-                Ok(FileHandle::new(PathBuf::from(converted_file_path), cfg.MAX_CACHE_SIZE() > 0))
-            }
+            Ok(o) if o.status.success() => Ok(FileHandle::new(
+                PathBuf::from(converted_file_path),
+                cfg.MAX_CACHE_SIZE() > 0,
+            )),
             Ok(o) => {
                 let stdout = String::from_utf8(o.stdout)
                     .unwrap_or_else(|_| "Unable to parse stdout!".into());

@@ -4,6 +4,7 @@ use rocket::{
     async_trait, debug, error,
     fairing::AdHoc,
     futures::future::join_all,
+    info,
     request::FromRequest,
     tokio::{
         self,
@@ -13,7 +14,7 @@ use rocket::{
             RwLock,
         },
     },
-    warn, info,
+    warn,
 };
 use std::{
     collections::HashSet,
@@ -90,7 +91,11 @@ impl CacheManager {
 
                 let mut bytes: [u8; 32] = [0; 32];
                 let file_stem = entry.path();
-                let file_stem = file_stem.file_stem().expect("valid file name").to_str().expect("valid str");
+                let file_stem = file_stem
+                    .file_stem()
+                    .expect("valid file name")
+                    .to_str()
+                    .expect("valid str");
                 if let Err(_) = hex::decode_to_slice(file_stem.as_bytes(), &mut bytes) {
                     error!("found unexpected file in cache {}", file_stem);
                     continue;

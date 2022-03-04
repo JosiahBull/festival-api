@@ -294,7 +294,8 @@ fn test_speed() {
     for format in cfg.ALLOWED_FORMATS().iter() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
 
-        let normal = format!("{{
+        let normal = format!(
+            "{{
             \"word\": \"The University of Auckland\",
             \"lang\": \"en\",
             \"speed\": 1.0,
@@ -302,7 +303,8 @@ fn test_speed() {
         }}",
             format
         );
-        let fast = format!("{{
+        let fast = format!(
+            "{{
             \"word\": \"The University of Auckland\",
             \"lang\": \"en\",
             \"speed\": 2.0,

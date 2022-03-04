@@ -49,7 +49,9 @@ pub async fn convert(
         .map_err(|e| {
             error!("{e}");
             Response::TextErr(Data {
-                data: String::from("an error occured in festival/flite while generating the requested phrase"),
+                data: String::from(
+                    "an error occured in festival/flite while generating the requested phrase",
+                ),
                 status: Status::InternalServerError,
             })
         })?;
