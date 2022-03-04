@@ -21,7 +21,7 @@ impl PhrasePackage {
     /// - Invalid language selection
     /// - Invalid file format selection
     /// - Phrase too long
-    /// - Phrase contains invalid chars (TBD) //TODO
+    /// - Phrase contains invalid chars (TBD)
     /// - Phrase contains invalid phrases
     pub fn validated(&mut self, cfg: &Config) -> Result<(), String> {
         //Attempt to correct speed values

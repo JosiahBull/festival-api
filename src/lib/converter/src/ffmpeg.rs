@@ -5,8 +5,7 @@ use std::{collections::HashSet, path::PathBuf, process::Command};
 use crate::{ConversionError, ConverterSubprocess};
 use async_trait::async_trait;
 use config::Config;
-use utils::{generate_random_alphanumeric, FileHandle};
-//TODO Setup temporary files to be cleared on file close.
+use utils::FileHandle;
 
 #[derive(Debug)]
 pub struct Ffmpeg {}
@@ -57,24 +56,23 @@ impl ConverterSubprocess for Ffmpeg {
     ) -> Result<FileHandle, ConversionError> {
         let pathbuf = input.underlying();
 
+        let converted_file_path = PathBuf::from(format!(
+            "{}/{}.{}",
+            cfg.CACHE_PATH(),
+            pathbuf.file_stem().expect("a valid os path").to_str().expect("a valid str"),
+            output,
+        ));
+
+        if converted_file_path.exists() {
+            return Ok(FileHandle::new(converted_file_path, cfg.MAX_CACHE_SIZE() > 0));
+        }
+
         if !pathbuf.exists() {
             return Err(ConversionError::NotFound);
         }
         if !pathbuf.is_file() {
             return Err(ConversionError::NotFile);
         }
-        match pathbuf.extension() {
-            Some(ext) if ext == output && desired_speed == 1.0 => return Ok(input.to_owned()),
-            None => return Err(ConversionError::NoExtension),
-            _ => {}
-        }
-
-        let converted_file_path = format!(
-            "{}/{}.{}",
-            cfg.TEMP_PATH(),
-            generate_random_alphanumeric(10),
-            output,
-        );
 
         let con = Command::new("ffmpeg")
             .arg("-i")
@@ -87,7 +85,7 @@ impl ConverterSubprocess for Ffmpeg {
 
         match con {
             Ok(o) if o.status.success() => {
-                Ok(FileHandle::new(PathBuf::from(converted_file_path), false))
+                Ok(FileHandle::new(PathBuf::from(converted_file_path), cfg.MAX_CACHE_SIZE() > 0))
             }
             Ok(o) => {
                 let stdout = String::from_utf8(o.stdout)

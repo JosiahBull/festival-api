@@ -77,7 +77,7 @@ impl Converter {
     pub async fn convert(
         &self,
         input: FileHandle,
-        desired_format: &str, //XXX accept any?
+        desired_format: &str,
         target_speed: f32,
         cfg: &Config,
     ) -> Result<FileHandle, ()> {
@@ -109,8 +109,3 @@ impl<'r> FromRequest<'r> for &'r Converter {
         rocket::request::Outcome::Success(state)
     }
 }
-
-// mod tests {
-// #[test]
-// fn basic_functionality() {}
-// }

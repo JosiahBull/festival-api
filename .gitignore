@@ -6,8 +6,8 @@
 /lcov.info
 debug.rs
 **/*.wav
+perf.data
+flamegraph.svg
 
 # Allow
 !/cache/.gitkeep
-!/cache/temp
-!/cache/temp/.gitkeep

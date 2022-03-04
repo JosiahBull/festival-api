@@ -385,9 +385,6 @@ pub struct Config {
     /// The path to the cache for storing .wav files.
     cache_path: String,
 
-    /// The path where temporary files are stored, and should be deleted from on a crash.
-    temp_path: String,
-
     /// The maximum size of of the cache that may be stored on the system.
     max_cache_size: usize,
 
@@ -418,7 +415,6 @@ impl Config {
         Ok(Self {
             api_name: load_env("API_NAME", &path)?,
             cache_path: load_env("CACHE_PATH", &path)?,
-            temp_path: load_env("TEMP_PATH", &path)?,
             max_cache_size: load_env("MAX_CACHE_SIZE_MB", &path)?,
             word_length_limit: load_env("CHAR_LENGTH_LIMIT", &path)?,
             speed_max_val: load_env("SPEED_MAX_VAL", &path)?,
@@ -440,10 +436,6 @@ impl Config {
 
     pub fn CACHE_PATH(&self) -> &str {
         &self.cache_path
-    }
-
-    pub fn TEMP_PATH(&self) -> &str {
-        &self.temp_path
     }
 
     pub fn MAX_CACHE_SIZE(&self) -> usize {

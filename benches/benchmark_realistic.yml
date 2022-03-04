@@ -1,18 +1,12 @@
 config:
-  target: "http://127.0.0.1:8000"
+  target: "http://127.0.0.1:3000"
   phases:
-    # - duration: 10
-    #   arrivalRate: 5
-    #   name: Warm up
-    # - duration: 60
-    #   arrivalRate: 5
-    #   rampTo: 45
-    #   name: Ramp up load
     - duration: 600
-      arrivalRate: 150
+      arrivalRate: 200
       name: Sustained load
-  ensure:
-    p95: 1000
+  http:
+    timeout: 10
+    pool: 20
   payload:
   -
     path: "wordlist.csv"
@@ -28,8 +22,6 @@ scenarios:
     flow:
       - post:
           url: "/api/convert"
-          headers:
-            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDQzOTA2NzEsImlhdCI6MTY0MTc5ODY3MSwic3ViIjoxfQ.nhtuA5-8gerR_PcevfLmqVQUyUrD-DutJmxKTg5n4wc
           content-type: "application/json"
           json:
             word: "{{ keyword }} {{ keyword2 }}"
@@ -42,7 +34,6 @@ scenarios:
       - post:
           url: "/api/convert"
           headers:
-            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDQzOTA2NzEsImlhdCI6MTY0MTc5ODY3MSwic3ViIjoxfQ.nhtuA5-8gerR_PcevfLmqVQUyUrD-DutJmxKTg5n4wc
           content-type: "application/json"
           json:
             word: "{{ keyword }} {{ keyword2 }}"
@@ -54,8 +45,6 @@ scenarios:
     flow:
       - post:
           url: "/api/convert"
-          headers:
-            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDQzOTA2NzEsImlhdCI6MTY0MTc5ODY3MSwic3ViIjoxfQ.nhtuA5-8gerR_PcevfLmqVQUyUrD-DutJmxKTg5n4wc
           content-type: "application/json"
           json:
             word: "some word"
@@ -67,8 +56,6 @@ scenarios:
     flow:
       - post:
           url: "/api/convert"
-          headers:
-            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDQzOTA2NzEsImlhdCI6MTY0MTc5ODY3MSwic3ViIjoxfQ.nhtuA5-8gerR_PcevfLmqVQUyUrD-DutJmxKTg5n4wc
           content-type: "application/json"
           json:
             word: "some word"

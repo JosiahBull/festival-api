@@ -16,9 +16,6 @@ use rocket::{fs::NamedFile, http::Status, serde::json::Json};
 #[cfg(not(target_os = "linux"))]
 compile_error!("Unable to compile for your platform! This API is only available for Linux due to dependence on Bash commands.");
 
-// General Todos
-// TODO Implement timeouts for repeated failed login attempts.
-
 /// The base url of the program. This is just a catch-all for those who stumble across the api without knowing what it does.
 #[get("/")]
 pub fn index(cfg: &Config) -> String {
@@ -50,16 +47,16 @@ pub async fn convert(
         .generate(&phrase_package, cfg)
         .await
         .map_err(|e| {
-            //XXX Displaying internal errors to users...?
+            error!("{e}");
             Response::TextErr(Data {
-                data: e.to_string(),
+                data: String::from("an error occured in festival/flite while generating the requested phrase"),
                 status: Status::InternalServerError,
             })
         })?;
 
     // Convert the file
     if !converter.is_supported(&phrase_package.fmt) {
-        failure!("requested file format is not available on this api, this is a misconfiguration of the deployment")
+        failure!("requested file format is not available")
     }
 
     //Generate Response
@@ -72,7 +69,7 @@ pub async fn convert(
         Ok(f) => {
             let resp_file = match NamedFile::open(f.underlying()).await {
                 Ok(f) => f,
-                Err(e) => failure!("Unable to open processed file {}", e),
+                Err(e) => failure!("Unable to open processed file {}, this is an internal error", e),
             };
 
             Ok(Response::FileDownload((

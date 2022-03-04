@@ -30,14 +30,6 @@ docker-compose up #This takes a long time
 
 # Development
 
-Main TODOs to a 0.3 release:
-- [x] Remove temporary files from converter and generator (add configuration)
-- [ ] Update docker container, ci/cd to use ffmpeg instead of sox
-- [x] Move tests to their own integration folder (i.e. ./tests, instead of ./src/tests)
-- [x] Improve test coverage above 90%
-- [ ] Write documentation all over
-- [x] Reimplement speed selection + add a test for it
-
 ## Fedora
 
 To develop this api, you must have [Rust](https://www.rust-lang.org/tools/install) installed.

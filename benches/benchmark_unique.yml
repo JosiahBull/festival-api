@@ -11,8 +11,6 @@ config:
     - duration: 600
       arrivalRate: 90
       name: Sustained load
-  ensure:
-    p95: 1000
   payload:
   -
     path: "wordlist.csv"
@@ -28,8 +26,6 @@ scenarios:
     flow:
       - post:
           url: "/api/convert"
-          headers:
-            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDM4ODUxNTIsImlhdCI6MTY0MTI5MzE1Miwic3ViIjo2MX0.hvJ4QUmBPFb3lKZnsPoii8O6m7EU4rIqVNPNcx2KIj4
           content-type: "application/json"
           json:
             word: "{{ keyword }} {{ keyword2 }}"
@@ -40,8 +36,6 @@ scenarios:
     flow:
       - post:
           url: "/api/convert"
-          headers:
-            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDM4ODUxNTIsImlhdCI6MTY0MTI5MzE1Miwic3ViIjo2MX0.hvJ4QUmBPFb3lKZnsPoii8O6m7EU4rIqVNPNcx2KIj4
           content-type: "application/json"
           json:
             word: "{{ keyword }} {{ keyword2 }}"

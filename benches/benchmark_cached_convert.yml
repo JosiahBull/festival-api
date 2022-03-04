@@ -11,16 +11,12 @@ config:
     - duration: 600
       arrivalRate: 90
       name: Sustained load
-  ensure:
-    p95: 1000
 
 scenarios:
   - name: "convert words english"
     flow:
       - post:
           url: "/api/convert"
-          headers:
-            auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NDQzOTA2NzEsImlhdCI6MTY0MTc5ODY3MSwic3ViIjoxfQ.nhtuA5-8gerR_PcevfLmqVQUyUrD-DutJmxKTg5n4wc
           content-type: "application/json"
           json:
             word: "Queen"

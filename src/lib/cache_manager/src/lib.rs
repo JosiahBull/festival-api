@@ -13,7 +13,7 @@ use rocket::{
             RwLock,
         },
     },
-    warn,
+    warn, info,
 };
 use std::{
     collections::HashSet,
@@ -56,7 +56,6 @@ impl CacheManager {
             restricted_files: vec![String::from(".gitkeep")].into_iter().collect(),
         };
 
-        //TODO: FIX
         //Get current total size of files
         let paths = match std::fs::read_dir(&res.cache_path) {
             Ok(f) => f,
@@ -67,7 +66,6 @@ impl CacheManager {
 
         for entry in paths {
             if let Ok(entry) = entry {
-                error!("ENTRY_NAME: {:?}", entry.file_name()); //temp
                 match entry.file_name().to_str() {
                     Some(f) if !res.restricted_files.contains(f) => {}
                     Some(_) => continue,
@@ -86,13 +84,15 @@ impl CacheManager {
                 };
 
                 if md.is_dir() {
-                    debug!("encountered directory in cache, skipping");
+                    warn!("encountered directory in cache, skipping");
                     continue;
                 }
 
                 let mut bytes: [u8; 32] = [0; 32];
-                if let Err(_) = hex::decode_to_slice(entry.file_name().as_bytes(), &mut bytes) {
-                    error!("found unexpected file in cache {:?}", entry.file_name());
+                let file_stem = entry.path();
+                let file_stem = file_stem.file_stem().expect("valid file name").to_str().expect("valid str");
+                if let Err(_) = hex::decode_to_slice(file_stem.as_bytes(), &mut bytes) {
+                    error!("found unexpected file in cache {}", file_stem);
                     continue;
                 }
                 res.cache.push(bytes, (i32::MAX, md.len() as u32));
@@ -104,15 +104,14 @@ impl CacheManager {
 
     /// If the cache is greater than the maximum allowed size, trims files in the cache
     pub async fn enforce_cache_size(&mut self) {
-        println!("Enforcing cache size");
-        //If greater than allowed, trim files
-        println!("Current size: {}", self.current_size_bytes);
-        println!("Max Allowed Size: {}", self.max_allowed_size_bytes);
-
         if self.current_size_bytes > self.max_allowed_size_bytes {
-            println!("cache size is ready for trimming");
+            info!("Enforcing cache size");
+            //If greater than allowed, trim files
+            debug!("Current size: {}", self.current_size_bytes);
+            debug!("Max Allowed Size: {}", self.max_allowed_size_bytes);
+
             //Number of workers to carry out I/O Operations with
-            const WORKER_COUNT: usize = 10;
+            const WORKER_COUNT: usize = 4;
 
             //Total size to remove, and size removed thus far
             let size_to_remove = self.current_size_bytes / 4;
@@ -127,41 +126,36 @@ impl CacheManager {
 
             //Create our i/o thread pool, execute until we succeed or run out of items to remove
             for _ in 0..WORKER_COUNT {
-                println!("Creating worker");
                 let size_removed = size_removed_master.clone();
                 let header = header_master.clone();
                 let removed = removed_master.clone();
                 handles.push(async move {
                     while size_removed.load(Ordering::Relaxed) < size_to_remove {
-                        println!("Worker processing...");
                         let data = header.write().await.cache.pop();
                         if let Some((hash, (priority, file_size))) = data {
-                            println!("Beginning!");
                             let file_name = hex::encode(hash);
                             //Check if file exists, and if it does remove it
                             let file_name_string = format!("{}.wav", file_name);
                             let path = header.read().await.cache_path.join(&file_name_string);
                             let path = path.as_path();
-                            println!("Getting metadata for {:?}", path);
                             match tokio::fs::metadata(path).await {
                                 Ok(md) if md.is_file() => {
-                                    println!("Attempting to remove file {:?}", path);
                                     match tokio::fs::remove_file(path).await {
                                         Ok(_) => {
                                             size_removed
                                                 .fetch_add(file_size as u64, Ordering::Relaxed);
                                         }
-                                        Err(e) => println!(
+                                        Err(e) => error!(
                                             "failed to remove cached file due to error {}",
                                             e
                                         ),
                                     }
                                 }
-                                Ok(_) => println!(
+                                Ok(_) => error!(
                                     "attempted to remove file that was directory in cache {:?}",
                                     &path
                                 ),
-                                Err(e) => println!(
+                                Err(e) => error!(
                                     "failed to read metadata of file {:?} error {}",
                                     &path, e
                                 ),
@@ -173,28 +167,21 @@ impl CacheManager {
                                 removed.write().await.push(hash, (priority, file_size));
                             }
                         } else {
-                            println!("Working closing...");
                             break;
                         }
                     }
                 });
             }
-            println!("waiting for completion...");
             join_all(handles).await;
-
-            println!("Data removed!");
 
             let mut self_ref = header_master.write().await;
             self_ref.current_size_bytes -= size_removed_master.load(Ordering::Relaxed);
             let mut removed = removed_master.write_owned().await;
             self_ref.cache.append(&mut removed);
-
-            println!("Current size: {}", self_ref.current_size_bytes);
-            println!("Max Allowed Size: {}", self_ref.max_allowed_size_bytes);
         }
     }
 
-    /// consumes the process into an async runtime which can then be monitored via a file handle
+    /// move the process into it's own thread
     fn process(mut self) -> std::thread::JoinHandle<()> {
         thread::Builder::new()
             .name(String::from("cache-master"))

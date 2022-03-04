@@ -14,14 +14,6 @@ API_NAME = "SE206's"
 # Default: "./cache"
 CACHE_PATH = "./cache"
 
-# Closely related to the above cache path.
-# This is a temporary location for files to be stored, i.e. if doing a conversion from .wav
-# to .mp3. This is also where .wavs that aren't cached will be stored after generation
-# before being deleted. Files can be deleted from here when the server is shutdown without
-# risk.
-# Default: "./cache/temp"
-TEMP_PATH = "./cache/temp"
-
 # The maximum size the cache is allowed to be. Setting this to 0 will disable the cache entirely.
 # When the cache reaches this size, the oldest 20% of files will be cleared from the disk.
 # Note that this does add some overhead to the server, but it is minimal.
@@ -43,18 +35,6 @@ SPEED_MAX_VAL = 3.0
 # A user that sends a value lower than this will recieve a 400 response.
 # Default: 0.5
 SPEED_MIN_VAL = 0.5
-
-# The maximum number of requests that can be recieved from a given user
-# over a time period of MAX_REQUESTS_TIME_PERIOD_MINUTES before we return
-# 429 responses to requests from that user.
-# This can be set fairly aggressively.
-# //TODO Setting this to -1 will disable ACC rate limiting.
-# Default: 40
-MAX_REQUESTS_ACC_THRESHOLD = 40
-
-# The time period over which request rate limits apply.
-# Default: 5
-MAX_REQUESTS_TIME_PERIOD_MINUTES = 2
 
 # The file formats that may be returned by the api.
 # A user may request their file in any one of these formats.
